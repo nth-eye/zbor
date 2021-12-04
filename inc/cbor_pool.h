@@ -2,6 +2,7 @@
 #define CBOR_POOL_H
 
 #include "cbor.h"
+#include <cmath>
 
 namespace cbor {
 
