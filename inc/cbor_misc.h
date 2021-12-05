@@ -47,9 +47,9 @@ enum Type {
     TYPE_MAP,
     TYPE_TAG,
     TYPE_SIMPLE,
-    TYPE_FLOAT_16,
-    TYPE_FLOAT_32,
-    TYPE_FLOAT_64,
+    TYPE_HALF,
+    TYPE_FLOAT,
+    TYPE_DOUBLE,
     TYPE_INVALID,
 };
 
@@ -84,54 +84,63 @@ struct Bytes {
 
 struct CBOR;
 
-struct Array {
+struct Pair {
+    CBOR *key;
+    CBOR *val;
+};
 
-    struct iter {
+struct iter {
 
-        iter(CBOR *p) : p(p) {}
+    iter(CBOR *p) : p(p) {}
 
-        void    operator++();
-        bool    operator!=(const iter &other)   { return p != other.p; }
-        CBOR&   operator*()                     { return *p; }
-    private:
-        CBOR *p;
-    };
+    bool    operator!=(const iter &other)   { return p != other.p; }
+    CBOR&   operator*()                     { return *p; }
+    void    operator++();
+private:
+    CBOR *p;
+};
 
-    iter begin()    { return iter(head); }
-    iter end()      { return iter(NULL); }
+struct map_iter {
 
-    void    reset();
-    Err     push(CBOR *val);
-    Err     pop(CBOR *val);
+    map_iter(CBOR *p) : p(p) {}
+
+    bool    operator!=(const map_iter &other)   { return p != other.p; }
+    Pair    operator*();
+    void    operator++();
+private:
+    CBOR *p;
+};
+
+struct List {
+
+    void clear()
+    {
+        head = NULL;
+        tail = NULL;
+        len = 0;
+    }
 
     CBOR *head;
     CBOR *tail;
     size_t len;
 };
 
-struct Map {
-
-    struct iter {
-
-        iter(CBOR *p) : p(p) {}
-
-        void    operator++();
-        bool    operator!=(const iter &other)   { return p != other.p; }
-        CBOR&   operator*()                     { return *p; }
-    private:
-        CBOR *p;
-    };
+struct Array : List {
 
     iter begin()    { return iter(head); }
     iter end()      { return iter(NULL); }
 
-    void    reset();
-    Err     insert(CBOR *key, CBOR *val);
-    Err     erase(CBOR *key);
+    Err push(CBOR *val);
+    Err pop(CBOR *val);
+};
 
-    CBOR *head;
-    CBOR *tail;
-    size_t len;
+struct Map : List {
+
+    map_iter begin()    { return map_iter(head); }
+    map_iter end()      { return map_iter(NULL); }
+
+    Err push(CBOR *key, CBOR *val);
+    Err pop(CBOR *key);
 };
 
 };

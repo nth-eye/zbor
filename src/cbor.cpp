@@ -3,9 +3,7 @@
 namespace cbor {
 
 CBOR::CBOR(int val) : CBOR(int64_t(val))
-{
-
-}
+{}
 
 CBOR::CBOR(int64_t val)
 {
@@ -18,24 +16,19 @@ CBOR::CBOR(int64_t val)
     }
 }
 
-CBOR::CBOR(uint64_t val)
+CBOR::CBOR(uint64_t val) : type(TYPE_UINT), uint(val)
+{}
+
+CBOR::CBOR(const void *data, size_t len) : type(TYPE_DATA)
 {
-    type = TYPE_UINT;
-    uint = val;
+    str.data = (uint8_t*) data;
+    str.len = len;
 }
 
-CBOR::CBOR(const uint8_t *data, size_t len)
+CBOR::CBOR(const char *text, size_t len) : type(TYPE_TEXT)
 {
-    type        = TYPE_DATA;
-    str.data    = data;
-    str.len     = len;
-}
-
-CBOR::CBOR(const char *text, size_t len)
-{
-    type        = TYPE_TEXT;
-    str.text    = text;
-    str.len     = len;
+    str.text = text;
+    str.len = len;
 }
 
 CBOR::CBOR(CBOR *element)
@@ -45,7 +38,7 @@ CBOR::CBOR(CBOR *element)
     if (element)
         arr.push(element);
     else
-        arr.reset();
+        arr.clear();
 }
 
 CBOR::CBOR(CBOR *key, CBOR *val)
@@ -53,17 +46,13 @@ CBOR::CBOR(CBOR *key, CBOR *val)
     type = TYPE_MAP;
 
     if (key && val)
-        map.insert(key, val);
+        map.push(key, val);
     else
-        map.reset();
+        map.clear();
 }
 
-CBOR::CBOR(uint64_t tag_val, CBOR *tag_content)
-{
-    type = TYPE_TAG;
-    uint = tag_val;
-    next = tag_content;
-}
+CBOR::CBOR(uint64_t tag_val, CBOR *tag_content) : type(TYPE_TAG), uint(tag_val), next(tag_content)
+{}
 
 CBOR::CBOR(Prim val)
 {
@@ -74,39 +63,29 @@ CBOR::CBOR(Prim val)
 }
 
 CBOR::CBOR(bool val) : CBOR(val ? PRIM_TRUE : PRIM_FALSE)
-{
+{}
 
-}
+CBOR::CBOR(float val) : type(TYPE_FLOAT), f(val)
+{}
 
-CBOR::CBOR(float val)
-{
-    type    = TYPE_FLOAT_32;
-    f.f32   = val;
-}
-
-CBOR::CBOR(double val)
-{
-    type    = TYPE_FLOAT_64;
-    f.f64   = val;
-}
-
-void CBOR::iter::operator++()
-{ 
-    p = p->next; 
-}
+CBOR::CBOR(double val) : type(TYPE_DOUBLE), d(val)
+{}
 
 // SECTION: Array and map
 
-void Array::iter::operator++()
+void iter::operator++()
 { 
     p = p->next; 
 }
 
-void Array::reset()
+void map_iter::operator++()
 {
-    head = NULL;
-    tail = NULL;
-    len = 0;
+    p = p->next->next;
+}
+
+Pair map_iter::operator*()
+{
+    return {p, p->next};
 }
 
 Err Array::push(CBOR *val)
@@ -135,10 +114,14 @@ Err Array::pop(CBOR *val)
     if (!len)
         return ERR_ALREADY_EMPTY;
 
-    for (CBOR *it = head; it;) {
+    for (auto it = head; it;) {
+
         CBOR *next = it->next;
+        CBOR *prev = it->prev;
+
         if (it == val) {
-            it->prev->next = next;
+            if (prev)
+                prev->next = next;
             if (next)
                 next = NULL;
             --len;
@@ -149,19 +132,7 @@ Err Array::pop(CBOR *val)
     return ERR_NOT_FOUND;
 }
 
-void Map::iter::operator++()
-{ 
-    p = p->next->next; 
-}
-
-void Map::reset()
-{
-    head = NULL;
-    tail = NULL;
-    len = 0;
-}
-
-Err Map::insert(CBOR *key, CBOR *val)
+Err Map::push(CBOR *key, CBOR *val)
 {
     if (!key || !val)
         return ERR_NULL_PTR;
@@ -180,7 +151,7 @@ Err Map::insert(CBOR *key, CBOR *val)
     return NO_ERR;
 }
 
-Err Map::erase(CBOR *key)
+Err Map::pop(CBOR *key)
 {
     if (!key)
         return ERR_NULL_PTR;
@@ -188,12 +159,14 @@ Err Map::erase(CBOR *key)
     if (!len)
         return ERR_ALREADY_EMPTY;
 
-    for (CBOR *it = head; it;) {
+    for (auto it = head; it;) {
 
         CBOR *next = it->next->next;
+        CBOR *prev = it->prev;
 
         if (it == key) {
-            it->prev->next = next;
+            if (prev)
+                prev->next = next;
             if (next)
                 next = NULL;
             --len;
