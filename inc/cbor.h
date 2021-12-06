@@ -11,10 +11,10 @@ struct CBOR {
     CBOR(int val);
     CBOR(int64_t val);
     CBOR(uint64_t val);
-    CBOR(const void *data, size_t len);
+    CBOR(const uint8_t *data, size_t len);
     CBOR(const char *text, size_t len);
-    CBOR(CBOR *element);
-    CBOR(CBOR *key, CBOR *val);
+    CBOR(Array arr);
+    CBOR(Map map);
     CBOR(uint64_t tag_val, CBOR *tag_content);
     CBOR(Prim val);
     CBOR(bool val);
@@ -42,28 +42,24 @@ struct CBOR {
 template<size_t N>
 struct Pool {
 
-    void clear() 
-    { 
-        cnt = 0;
-    }
-
     template<typename... Args>
     CBOR* make(Args... args)
     {
-        if (cnt < N)
-            return &(buf[cnt++] = CBOR(args...));
-        return nullptr;
+        return cnt < N ? &(buf[cnt++] = CBOR(args...)) : nullptr;
     }
 
     void free(CBOR *p)
     {
-        if (p < buf || p >= buf + N)
+        if (p <   buf       || 
+            p >=  buf + N   ||
+            p == &buf[--cnt])
             return;
-
-        if (&buf[--cnt] == p)
-            return;
-
         *p = buf[cnt];
+    }
+
+    void clear() 
+    { 
+        cnt = 0;
     }
 private:
     CBOR    buf[N];

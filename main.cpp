@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include "cbor.h"
+#include "cbor_codec.h"
 
 #define SIZE(x) (sizeof(x) / sizeof(x[0]))
 
@@ -74,57 +75,61 @@ void pretty_cbor_sequence(CBOR &cbor)
 
 int main(int, char**) 
 {
-    Pool<3> pool;
+    // Pool<3> pool;
 
-    CBOR *list[] = {
-        pool.make(),
-        pool.make(666),
-        pool.make(-99),
-        pool.make(PRIM_TRUE),
-    };
+    // CBOR *list[] = {
+    //     pool.make(),
+    //     pool.make(666),
+    //     pool.make(-99),
+    //     pool.make(PRIM_TRUE),
+    // };
 
-    pool.free(list[2]);
-    pool.make(PRIM_TRUE);
+    // pool.free(list[2]);
+    // pool.make(PRIM_TRUE);
 
-    for (size_t i = 0; i < SIZE(list) - 1; ++i) {
-        if (list[i] && list[i + 1])
-            list[i]->next = list[i + 1];
-    }
+    // for (size_t i = 0; i < SIZE(list) - 1; ++i) {
+    //     if (list[i] && list[i + 1])
+    //         list[i]->next = list[i + 1];
+    // }
 
-    if (list[0])
-        pretty_cbor_sequence(*list[0]);
+    // if (list[0])
+    //     pretty_cbor_sequence(*list[0]);
 
     // printf("CBOR: %lu bytes \n", sizeof(CBOR));
 
-    // const uint8_t data[] = { 0xde, 0xad, 0xbe, 0xef };
-    // const char *text = "test";
+    Codec<128> codec;
 
-    // CBOR content = false;
-    // CBOR arr = nullptr;
-    // CBOR el_0 = 0;
-    // CBOR el_1 = -99;
-    // CBOR el_2 = { text, strlen(text) };
+    codec.encode(0.0);
 
-    // arr.arr.push(&el_0);
-    // arr.arr.push(&el_1);
-    // arr.arr.push(&el_2);
+    const uint8_t data[] = { 0xde, 0xad, 0xbe, 0xef };
+    const char *text = "test";
 
-    // CBOR cbors[] = {
-    //     666,
-    //     -44,
-    //     { data, sizeof(data) },
-    //     { text, strlen(text) },
-    //     arr,
-    //     { nullptr, nullptr },
-    //     { 2, &content },
-    //     content,
-    //     PRIM_NULL,
-    //     0.0f,
-    //     0.0,
-    // };
+    CBOR content = false;
+    CBOR arr = Array();
+    CBOR el_0 = 0;
+    CBOR el_1 = -99;
+    CBOR el_2 = { text, strlen(text) };
 
-    // for (size_t i = 0; i < SIZE(cbors) - 1; ++i) // Imitate decoding process, when all saved sequentialy
-    //     cbors[i].next = &cbors[i + 1];
+    arr.arr.push(&el_0);
+    arr.arr.push(&el_1);
+    arr.arr.push(&el_2);
 
-    // pretty_cbor_sequence(cbors[0]);
+    CBOR cbors[] = {
+        666,
+        -44,
+        { data, sizeof(data) },
+        { text, strlen(text) },
+        arr,
+        Map(),
+        { 2, &content },
+        content,
+        PRIM_NULL,
+        0.0f,
+        0.0,
+    };
+
+    for (size_t i = 0; i < SIZE(cbors) - 1; ++i) // Imitate decoding process, when all saved sequentialy
+        cbors[i].next = &cbors[i + 1];
+
+    pretty_cbor_sequence(cbors[0]);
 }

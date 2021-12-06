@@ -6,8 +6,6 @@
 
 namespace cbor {
 
-using half = uint16_t;
-
 enum MT {
     MT_UINT     = 0 << 5,
     MT_NINT     = 1 << 5,
@@ -28,7 +26,7 @@ enum AI {
     AI_INDEF    = 31,
 };
 
-enum Prim {
+enum Prim : uint8_t {
     PRIM_FALSE      = 20,
     PRIM_TRUE       = 21,
     PRIM_NULL       = 22,
@@ -65,16 +63,9 @@ enum Err {
     ERR_NO_VAL_FOR_KEY,
 };
 
-union Float {
-    uint16_t    u16;
-    half        f16;
-    uint32_t    u32;
-    float       f32;
-    uint64_t    u64;
-    double      f64;
-};
-
 struct Bytes {
+    Bytes(const uint8_t *data, size_t len) : data(data), len(len) {}
+    Bytes(const char *text, size_t len) : text(text), len(len) {}
     union {
         const uint8_t *data;
         const char *text;
@@ -120,9 +111,9 @@ struct List {
         len = 0;
     }
 
-    CBOR *head;
-    CBOR *tail;
-    size_t len;
+    CBOR *head = NULL;
+    CBOR *tail = NULL;
+    size_t len = 0;
 };
 
 struct Array : List {

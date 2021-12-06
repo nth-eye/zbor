@@ -19,37 +19,17 @@ CBOR::CBOR(int64_t val)
 CBOR::CBOR(uint64_t val) : type(TYPE_UINT), uint(val)
 {}
 
-CBOR::CBOR(const void *data, size_t len) : type(TYPE_DATA)
-{
-    str.data = (uint8_t*) data;
-    str.len = len;
-}
+CBOR::CBOR(const uint8_t *data, size_t len) : type(TYPE_DATA), str{data, len}
+{}
 
-CBOR::CBOR(const char *text, size_t len) : type(TYPE_TEXT)
-{
-    str.text = text;
-    str.len = len;
-}
+CBOR::CBOR(const char *text, size_t len) : type(TYPE_TEXT), str{text, len}
+{}
 
-CBOR::CBOR(CBOR *element)
-{
-    type = TYPE_ARRAY;
+CBOR::CBOR(Array arr) : type(TYPE_ARRAY), arr(arr)
+{}
 
-    if (element)
-        arr.push(element);
-    else
-        arr.clear();
-}
-
-CBOR::CBOR(CBOR *key, CBOR *val)
-{
-    type = TYPE_MAP;
-
-    if (key && val)
-        map.push(key, val);
-    else
-        map.clear();
-}
+CBOR::CBOR(Map map) : type(TYPE_MAP), map(map)
+{}
 
 CBOR::CBOR(uint64_t tag_val, CBOR *tag_content) : type(TYPE_TAG), uint(tag_val), next(tag_content)
 {}
