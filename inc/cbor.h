@@ -15,7 +15,7 @@ struct CBOR {
     CBOR(const char *text, size_t len);
     CBOR(Array arr);
     CBOR(Map map);
-    CBOR(uint64_t tag_val, CBOR *tag_content);
+    CBOR(Tag tag);
     CBOR(Prim val);
     CBOR(bool val);
     CBOR(float val);
@@ -28,12 +28,13 @@ struct CBOR {
     union {
         uint64_t uint;
         int64_t sint;
-        Bytes str;
+        String str;
+        Array arr;
+        Map map;
+        Tag tag;
         Prim prim;
         float f;
         double d;
-        Array arr;
-        Map map;
     };
     CBOR *next = NULL;
     CBOR *prev = NULL;

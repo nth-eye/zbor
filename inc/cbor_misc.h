@@ -56,6 +56,7 @@ enum Err {
     ERR_NULL_PTR,
     ERR_INVALID_PARAM,
     ERR_INVALID_DATA,
+    ERR_INVALID_TYPE,
     ERR_OUT_OF_MEM,
     ERR_OUT_OF_DATA,
     ERR_ALREADY_EMPTY,
@@ -63,9 +64,9 @@ enum Err {
     ERR_NO_VAL_FOR_KEY,
 };
 
-struct Bytes {
-    Bytes(const uint8_t *data, size_t len) : data(data), len(len) {}
-    Bytes(const char *text, size_t len) : text(text), len(len) {}
+struct String {
+    String(const uint8_t *data, size_t len) : data(data), len(len) {}
+    String(const char *text, size_t len) : text(text), len(len) {}
     union {
         const uint8_t *data;
         const char *text;
@@ -74,6 +75,11 @@ struct Bytes {
 };
 
 struct CBOR;
+
+struct Tag {
+    uint64_t val;
+    CBOR *content;
+};
 
 struct Pair {
     CBOR *key;

@@ -36,9 +36,9 @@ void pretty_cbor(CBOR &obj)
             printf("}");
             break;
         case TYPE_TAG: 
-            printf("%lu(", obj.uint);
-            if (obj.next)
-                pretty_cbor(*obj.next);
+            printf("%lu(", obj.tag.val);
+            if (obj.tag.content)
+                pretty_cbor(*obj.tag.content);
             printf(")");
             break;
         case TYPE_SIMPLE:
@@ -95,7 +95,7 @@ int main(int, char**)
     // if (list[0])
     //     pretty_cbor_sequence(*list[0]);
 
-    // printf("CBOR: %lu bytes \n", sizeof(CBOR));
+    printf("CBOR: %lu bytes \n", sizeof(CBOR));
 
     Codec<128> codec;
 
@@ -105,7 +105,7 @@ int main(int, char**)
     const char *text = "test";
 
     CBOR content = false;
-    CBOR arr = Array();
+    CBOR arr = Array{};
     CBOR el_0 = 0;
     CBOR el_1 = -99;
     CBOR el_2 = { text, strlen(text) };
@@ -120,8 +120,8 @@ int main(int, char**)
         { data, sizeof(data) },
         { text, strlen(text) },
         arr,
-        Map(),
-        { 2, &content },
+        Map{},
+        Tag{2, &content},
         content,
         PRIM_NULL,
         0.0f,

@@ -10,7 +10,7 @@ namespace cbor {
 #define CBOR_USE_FLOAT16    false
 
 #if CBOR_USE_FLOAT16
-using half = __fp16;
+using half = _Float16;
 #endif
 union Float {
 #if CBOR_USE_FLOAT16

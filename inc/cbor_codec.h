@@ -14,22 +14,33 @@ template<size_t N>
 struct Codec {
 
     Err encode(CBOR *val);
+    Err encode(int val);
     Err encode(int64_t val);
     Err encode(uint64_t val);
-    Err encode(const void *data, size_t len);
+    Err encode(const uint8_t *data, size_t len);
     Err encode(const char *text, size_t len);
+    Err encode(Array arr);
+    Err encode(Map map);
+    Err encode(Tag tag);
     Err encode(Prim val);
     Err encode(bool val);
     Err encode(float val);
     Err encode(double val);
+    Err encode_n18446744073709551616();
+
+    template<class Pool>
+    Err decode(Pool &pool, uint8_t *buf, size_t buf_len);
+
+    size_t size() const { return cnt; }
+
+    uint8_t buf[N];
 private:
     Err encode_base(uint8_t start, uint64_t val, size_t ai_len, size_t add_len = 0);
     Err encode_int(MT mt, uint64_t val, size_t add_len = 0);
     Err encode_bytes(MT mt, const void *data, size_t len);
     Err encode_float(Prim type, Float val);
 
-    uint8_t buf[N];
-    size_t  cnt = 0;
+    size_t cnt = 0;
 };
 
 // SECTION: Private
@@ -126,6 +137,33 @@ Err Codec<N>::encode_float(Prim type, Float val)
 // !SECTION: Private
 
 template<size_t N>
+Err Codec<N>::encode(CBOR *val)
+{
+    if (!val)
+        return ERR_NULL_PTR;
+
+    switch (val->type) {
+        case TYPE_UINT: return encode(val->uint);
+        case TYPE_SINT: return encode(val->sint);
+        case TYPE_DATA: return encode(val->str.data, val->str.len);
+        case TYPE_TEXT: return encode(val->str.text, val->str.len);
+        case TYPE_ARRAY: return encode(val->arr);
+        case TYPE_MAP: return encode(val->map);
+        case TYPE_TAG: return encode(val->tag);
+        case TYPE_SIMPLE: return encode(val->prim);
+        case TYPE_FLOAT: return encode(val->f);
+        case TYPE_DOUBLE: return encode(val->d);
+        default: return ERR_INVALID_TYPE;
+    }
+}
+
+template<size_t N>
+Err Codec<N>::encode(int val)
+{
+    return encode(int64_t(val));
+}
+
+template<size_t N>
 Err Codec<N>::encode(uint64_t val)
 {
     return encode_int(MT_UINT, val);
@@ -135,11 +173,11 @@ template<size_t N>
 Err Codec<N>::encode(int64_t val)
 {
     uint64_t ui = val >> 63;
-    return encode_int(ui & 0x20, ui ^ val);
+    return encode_int(MT(ui & 0x20), ui ^ val);
 }
 
 template<size_t N>
-Err Codec<N>::encode(const void *data, size_t len)
+Err Codec<N>::encode(const uint8_t *data, size_t len)
 {
     return encode_bytes(MT_DATA, data, len);
 }
@@ -148,6 +186,44 @@ template<size_t N>
 Err Codec<N>::encode(const char *text, size_t len)
 {
     return encode_bytes(MT_TEXT, text, len);
+}
+
+template<size_t N>
+Err Codec<N>::encode(Array arr)
+{
+    Err err = encode_int(MT_ARRAY, arr.len);
+    if (err != NO_ERR)
+        return err;
+
+    for (auto it : arr) {
+        if ((err = encode(&it)) != NO_ERR)
+            return err;
+    }
+    return NO_ERR;
+}
+
+template<size_t N>
+Err Codec<N>::encode(Map map)
+{
+    Err err = encode_int(MT_MAP, map.len);
+    if (err != NO_ERR)
+        return err;
+
+    for (auto it : map) {
+        if ((err = encode(it.key)) != NO_ERR ||
+            (err = encode(it.val)) != NO_ERR)
+            return err;
+    }
+    return NO_ERR;
+}
+
+template<size_t N>
+Err Codec<N>::encode(Tag tag)
+{
+    Err err = encode_int(MT_TAG, tag.val, 0);
+    if (err != NO_ERR)
+        return err; 
+    return encode(tag.content);
 }
 
 template<size_t N>
@@ -181,11 +257,18 @@ Err Codec<N>::encode(double val)
     return encode_float(PRIM_FLOAT_64, tmp);
 }
 
-// template<size_t N>
-// Err Pool<N>::decode(uint8_t *buf, size_t buf_len)
-// {
-//     if (!buf || !buf_len)
-//         return ERR_INVALID_PARAM;
+template<size_t N>
+Err Codec<N>::encode_n18446744073709551616()
+{
+    return encode_int(MT_NINT, 0xffffffffffffffff);
+}
+
+template<size_t N>
+template<class Pool>
+Err Codec<N>::decode(Pool &pool, uint8_t *buf, size_t buf_len)
+{
+    if (!buf || !buf_len)
+        return ERR_INVALID_PARAM;
 
 //     Float fp;
 //     CBOR *obj;
@@ -284,8 +367,8 @@ Err Codec<N>::encode(double val)
 //             break;
 //         }
 //     }
-//     return NO_ERR;
-// }
+    return NO_ERR;
+}
 
 }
 

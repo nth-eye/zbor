@@ -31,7 +31,7 @@ CBOR::CBOR(Array arr) : type(TYPE_ARRAY), arr(arr)
 CBOR::CBOR(Map map) : type(TYPE_MAP), map(map)
 {}
 
-CBOR::CBOR(uint64_t tag_val, CBOR *tag_content) : type(TYPE_TAG), uint(tag_val), next(tag_content)
+CBOR::CBOR(Tag tag) : type(TYPE_TAG), tag(tag)
 {}
 
 CBOR::CBOR(Prim val)
