@@ -1,19 +1,19 @@
-#ifndef CBOR_FLOAT_H
-#define CBOR_FLOAT_H
+#ifndef ZBOR_FLOAT_H
+#define ZBOR_FLOAT_H
 
 #include <cstdint>
 #include <cmath>
 #include <cfloat>
 
-namespace cbor {
+namespace zbor {
 
-#define CBOR_USE_FLOAT16    false
+#define ZBOR_USE_FLOAT16    false
 
-#if CBOR_USE_FLOAT16
+#if ZBOR_USE_FLOAT16
 using half = _Float16;
 #endif
 union Float {
-#if CBOR_USE_FLOAT16
+#if ZBOR_USE_FLOAT16
     uint16_t    u16;
     half        f16;
 #endif

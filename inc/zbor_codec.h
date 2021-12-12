@@ -1,14 +1,12 @@
-#ifndef CBOR_BUF_H
-#define CBOR_BUF_H
+#ifndef ZBOR_CODEC_H
+#define ZBOR_CODEC_H
 
-#include "cbor.h"
-#include "cbor_float.h"
+#include "zbor.h"
+#include "zbor_float.h"
 
-namespace cbor {
+namespace zbor {
 
-constexpr int bit(int x)    { return 1 << x; }
-// constexpr int get_mt(int x) { return x & 0xe0; }
-// constexpr int get_ai(int x) { return x & 0x1f; }
+constexpr int bit(int x) { return 1 << x; }
 
 template<size_t N>
 struct Codec {
@@ -26,7 +24,6 @@ struct Codec {
     Err encode(bool val);
     Err encode(float val);
     Err encode(double val);
-    Err encode_n18446744073709551616();
 
     template<class Pool>
     Err decode(Pool &pool, uint8_t *buf, size_t buf_len);
@@ -110,7 +107,7 @@ Err Codec<N>::encode_float(Prim type, Float val)
         {
             if (val.f32 != val.f32)
                 goto if_nan;
-#if CBOR_USE_FLOAT16
+#if ZBOR_USE_FLOAT16
             half f16 = val.f32;
             if (val.f32 != f16) // Else we can fallthrough to FLOAT_16
                 return encode_base(MT_SIMPLE | PRIM_FLOAT_32, val.u32, 4);
@@ -121,7 +118,7 @@ Err Codec<N>::encode_float(Prim type, Float val)
             return encode_base(MT_SIMPLE | PRIM_FLOAT_32, 0x7fc00000, 4);
 #endif
         }
-#if CBOR_USE_FLOAT16
+#if ZBOR_USE_FLOAT16
         case PRIM_FLOAT_16:
             if (val.f16 != val.f16)
                 goto if_nan;
@@ -255,12 +252,6 @@ Err Codec<N>::encode(double val)
     Float tmp;
     tmp.f64 = val;
     return encode_float(PRIM_FLOAT_64, tmp);
-}
-
-template<size_t N>
-Err Codec<N>::encode_n18446744073709551616()
-{
-    return encode_int(MT_NINT, 0xffffffffffffffff);
 }
 
 template<size_t N>

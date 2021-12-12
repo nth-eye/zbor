@@ -3,7 +3,7 @@ project(zbor VERSION 0.1.0)
 
 include_directories(inc ../Util-c/inc)
 file(GLOB SRC_FILES src/*.cpp ../Util-c/src/util.c) 
-add_executable(zbor main.cpp ${SRC_FILES})
+add_executable(zbor main.cpp ${SRC_FILES}) 
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,9 +19,9 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(hello_test test.cpp ${SRC_FILES})
+add_executable(zbor_test test.cpp ${SRC_FILES})
 
-target_link_libraries(hello_test gtest_main)
+target_link_libraries(zbor_test gtest_main)
 
 include(GoogleTest)
-gtest_discover_tests(hello_test)
+gtest_discover_tests(zbor_test)

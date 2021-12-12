@@ -1,6 +1,6 @@
-#include "cbor.h"
+#include "zbor.h"
 
-namespace cbor {
+namespace zbor {
 
 CBOR::CBOR(int val) : CBOR(int64_t(val))
 {}

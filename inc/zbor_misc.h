@@ -1,10 +1,10 @@
-#ifndef CBOR_TYPES_H
-#define CBOR_TYPES_H
+#ifndef ZBOR_MISC_H
+#define ZBOR_MISC_H
 
 #include <cstddef>
 #include <cstdint>
 
-namespace cbor {
+namespace zbor {
 
 enum MT {
     MT_UINT     = 0 << 5,

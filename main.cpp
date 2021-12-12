@@ -1,11 +1,11 @@
 #include <cstdio>
 #include <cstring>
-#include "cbor.h"
-#include "cbor_codec.h"
+#include "zbor.h"
+#include "zbor_codec.h"
 
 #define SIZE(x) (sizeof(x) / sizeof(x[0]))
 
-using namespace cbor;
+using namespace zbor;
 
 void pretty_cbor(CBOR &obj)
 {
@@ -62,57 +62,21 @@ void pretty_cbor(CBOR &obj)
     }
 }
 
-void pretty_cbor_sequence(CBOR &cbor)
-{
-    int i = 0;
-
-    for (auto &obj : cbor) {
-        printf("%d) ", ++i);
-        pretty_cbor(obj);
-        printf("\n");
-    }
-}
-
 int main(int, char**) 
 {
-    // Pool<3> pool;
-
-    // CBOR *list[] = {
-    //     pool.make(),
-    //     pool.make(666),
-    //     pool.make(-99),
-    //     pool.make(PRIM_TRUE),
-    // };
-
-    // pool.free(list[2]);
-    // pool.make(PRIM_TRUE);
-
-    // for (size_t i = 0; i < SIZE(list) - 1; ++i) {
-    //     if (list[i] && list[i + 1])
-    //         list[i]->next = list[i + 1];
-    // }
-
-    // if (list[0])
-    //     pretty_cbor_sequence(*list[0]);
-
     printf("CBOR: %lu bytes \n", sizeof(CBOR));
-
-    Codec<128> codec;
-
-    codec.encode(0.0);
 
     const uint8_t data[] = { 0xde, 0xad, 0xbe, 0xef };
     const char *text = "test";
 
-    CBOR content = false;
-    CBOR arr = Array{};
-    CBOR el_0 = 0;
-    CBOR el_1 = -99;
-    CBOR el_2 = { text, strlen(text) };
+    Array arr;
+    CBOR elements[] = { 0, -99, { text, strlen(text) } };
 
-    arr.arr.push(&el_0);
-    arr.arr.push(&el_1);
-    arr.arr.push(&el_2);
+    arr.push(&elements[0]);
+    arr.push(&elements[1]);
+    arr.push(&elements[2]);
+
+    CBOR tag_content = false;
 
     CBOR cbors[] = {
         666,
@@ -120,16 +84,19 @@ int main(int, char**)
         { data, sizeof(data) },
         { text, strlen(text) },
         arr,
-        Map{},
-        Tag{2, &content},
-        content,
+        Map{ },
+        Tag{ 2, &tag_content },
+        true,
         PRIM_NULL,
         0.0f,
         0.0,
     };
 
-    for (size_t i = 0; i < SIZE(cbors) - 1; ++i) // Imitate decoding process, when all saved sequentialy
-        cbors[i].next = &cbors[i + 1];
+    int i = 0;
 
-    pretty_cbor_sequence(cbors[0]);
+    for (auto &obj : cbors) {
+        printf("%d) ", ++i);
+        pretty_cbor(obj);
+        printf("\n");
+    }
 }

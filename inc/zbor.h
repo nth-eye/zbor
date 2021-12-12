@@ -1,9 +1,9 @@
-#ifndef CBOR_H
-#define CBOR_H
+#ifndef ZBOR_H
+#define ZBOR_H
 
-#include "cbor_misc.h"
+#include "zbor_misc.h"
 
-namespace cbor {
+namespace zbor {
 
 struct CBOR {
 
