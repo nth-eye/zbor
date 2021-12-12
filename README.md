@@ -11,5 +11,5 @@ allocated from static pool templated by number of tokens.
 
 ## TODO
 
-[ ] - Half float precision encoding
-[ ] - Decoder
+- [ ] Half float precision encoding
+- [ ] Decoder

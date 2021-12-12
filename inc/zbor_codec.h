@@ -8,6 +8,9 @@ namespace zbor {
 
 constexpr int bit(int x) { return 1 << x; }
 
+template<class Pool>
+Err decode(Pool &pool, uint8_t *buf, size_t buf_len);
+
 template<size_t N>
 struct Codec {
 
@@ -24,9 +27,6 @@ struct Codec {
     Err encode(bool val);
     Err encode(float val);
     Err encode(double val);
-
-    template<class Pool>
-    Err decode(Pool &pool, uint8_t *buf, size_t buf_len);
 
     size_t size() const { return cnt; }
 
@@ -107,21 +107,30 @@ Err Codec<N>::encode_float(Prim type, Float val)
         {
             if (val.f32 != val.f32)
                 goto if_nan;
-#if ZBOR_USE_FLOAT16
+#if ZBOR_USE_FP16
+#if ZBOR_USE_FP16_SW
+            // TODO
+#else
             half f16 = val.f32;
             if (val.f32 != f16) // Else we can fallthrough to FLOAT_16
                 return encode_base(MT_SIMPLE | PRIM_FLOAT_32, val.u32, 4);
             val.f16 = f16;
+#endif
 #else
             return encode_base(MT_SIMPLE | PRIM_FLOAT_32, val.u32, 4);
         if_nan: 
             return encode_base(MT_SIMPLE | PRIM_FLOAT_32, 0x7fc00000, 4);
 #endif
         }
-#if ZBOR_USE_FLOAT16
+#if ZBOR_USE_FP16
         case PRIM_FLOAT_16:
-            if (val.f16 != val.f16)
+#if ZBOR_USE_FP16_SW
+            if ((val.u16 & 0x7fff) > 0x7c00) {
+#else
+            if (val.f16 != val.f16) {
+#endif
                 goto if_nan;
+            }
             return encode_base(MT_SIMPLE | PRIM_FLOAT_16, val.u16, 2);
         if_nan: 
             return encode_base(MT_SIMPLE | PRIM_FLOAT_16, 0x7e00, 2);
@@ -254,9 +263,8 @@ Err Codec<N>::encode(double val)
     return encode_float(PRIM_FLOAT_64, tmp);
 }
 
-template<size_t N>
 template<class Pool>
-Err Codec<N>::decode(Pool &pool, uint8_t *buf, size_t buf_len)
+Err decode(Pool &pool, uint8_t *buf, size_t buf_len)
 {
     if (!buf || !buf_len)
         return ERR_INVALID_PARAM;
