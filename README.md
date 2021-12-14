@@ -13,5 +13,5 @@ allocated from static pool templated by number of tokens.
 
 ## TODO
 
-- [x] Half float precision encoding
+- [ ] Remove unnecessary code bloat in zbor_float.cpp
 - [ ] Decoder
