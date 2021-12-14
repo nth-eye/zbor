@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cfloat>
+#include "half.h"
 
 namespace zbor {
 
@@ -19,6 +20,10 @@ using half = _Float16;
 #endif
 
 union Float {
+    Float(float f) : f32(f) {}
+    Float(double f) : f64(f) {} 
+    Float(uint32_t u) : u32(u) {}
+    Float(uint64_t u) : u64(u) {} 
 #if ZBOR_USE_FP16
     uint16_t    u16;
     half        f16;

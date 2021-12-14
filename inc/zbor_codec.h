@@ -109,7 +109,11 @@ Err Codec<N>::encode_float(Prim type, Float val)
                 goto if_nan;
 #if ZBOR_USE_FP16
 #if ZBOR_USE_FP16_SW
-            // TODO
+            uint16_t u16 = half_from_float(val.u32);
+            Float tmp = half_to_float(u16);
+            if (val.f32 != tmp.f32)
+                return encode_base(MT_SIMPLE | PRIM_FLOAT_32, val.u32, 4);
+            val.u16 = u16;
 #else
             half f16 = val.f32;
             if (val.f32 != f16) // Else we can fallthrough to FLOAT_16
@@ -250,17 +254,13 @@ Err Codec<N>::encode(bool val)
 template<size_t N>
 Err Codec<N>::encode(float val)
 {
-    Float tmp;
-    tmp.f32 = val;
-    return encode_float(PRIM_FLOAT_32, tmp);
+    return encode_float(PRIM_FLOAT_32, val);
 }
 
 template<size_t N>
 Err Codec<N>::encode(double val)
 {
-    Float tmp;
-    tmp.f64 = val;
-    return encode_float(PRIM_FLOAT_64, tmp);
+    return encode_float(PRIM_FLOAT_64, val);
 }
 
 template<class Pool>
