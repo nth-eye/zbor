@@ -7,13 +7,13 @@ inline uint32_t u32_inc(uint32_t a) { return a + 1; }
 inline uint32_t u32_not(uint32_t a) { return ~a; }
 inline uint32_t u32_neg(uint32_t a) { return -a; }
 inline uint32_t u32_ext(uint32_t a) { return ((int32_t) a) >> 31; }
-inline uint32_t u32_and(uint32_t a, uint32_t b) { return a & b; }
-inline uint32_t u32_andc(uint32_t a, uint32_t b) { return a & ~b; }
 inline uint32_t u32_or(uint32_t a, uint32_t b) { return a | b; }
-inline uint32_t u32_srl(uint32_t a, int sa) { return a >> sa; }
-inline uint32_t u32_sll(uint32_t a, int sa) { return a << sa; }
 inline uint32_t u32_add(uint32_t a, uint32_t b) { return a + b; }
 inline uint32_t u32_sub(uint32_t a, uint32_t b) { return a - b; }
+inline uint32_t u32_and(uint32_t a, uint32_t b) { return a & b; }
+inline uint32_t u32_andc(uint32_t a, uint32_t b) { return a & ~b; }
+inline uint32_t u32_srl(uint32_t a, int sa) { return a >> sa; }
+inline uint32_t u32_sll(uint32_t a, int sa) { return a << sa; }
 
 // Select on Sign bit
 inline uint32_t u32_sels(uint32_t test, uint32_t a, uint32_t b)
@@ -29,42 +29,20 @@ inline uint32_t u32_sels(uint32_t test, uint32_t a, uint32_t b)
 // Count Leading Zeros
 inline uint32_t u32_cntlz(uint32_t x)
 {
+    if (!x) return 32;
 #ifdef __GNUC__
-    /* NOTE: __builtin_clz is undefined for x == 0 */
-    /* On PowerPC, this will map to insn: cntlzw   */
-    /* On Pentium, this will map to insn: clz      */
-    uint32_t is_x_nez_msb = u32_neg(x);
-    uint32_t nlz          = __builtin_clz(x);
-    uint32_t result       = u32_sels(is_x_nez_msb, nlz, 0x00000020);
-    return result;
+    return __builtin_clz(x);
 #else
-    const uint32_t x0  = u32_srl(x, 1);
-    const uint32_t x1  = u32_or(x, x0);
-    const uint32_t x2  = u32_srl(x1, 2);
-    const uint32_t x3  = u32_or(x1, x2);
-    const uint32_t x4  = u32_srl(x3, 4);
-    const uint32_t x5  = u32_or(x3, x4);
-    const uint32_t x6  = u32_srl(x5, 8);
-    const uint32_t x7  = u32_or(x5, x6);
-    const uint32_t x8  = u32_srl(x7, 16);
-    const uint32_t x9  = u32_or(x7, x8);
-    const uint32_t xA  = u32_not(x9);
-    const uint32_t xB  = u32_srl(xA, 1);
-    const uint32_t xC  = u32_and(xB, 0x55555555);
-    const uint32_t xD  = u32_sub(xA, xC);
-    const uint32_t xE  = u32_and(xD, 0x33333333);
-    const uint32_t xF  = u32_srl(xD, 2);
-    const uint32_t x10 = u32_and(xF, 0x33333333);
-    const uint32_t x11 = u32_add(xE, x10);
-    const uint32_t x12 = u32_srl(x11, 4);
-    const uint32_t x13 = u32_add(x11, x12);
-    const uint32_t x14 = u32_and(x13, 0x0f0f0f0f);
-    const uint32_t x15 = u32_srl(x14, 8);
-    const uint32_t x16 = u32_add(x14, x15);
-    const uint32_t x17 = u32_srl(x16, 16);
-    const uint32_t x18 = u32_add(x16, x17);
-    const uint32_t x19 = u32_and(x18, 0x0000003f);
-    return x19;
+    constexpr char debruijn32[32] = {
+        0, 31, 9, 30, 3, 8, 13, 29, 2, 5, 7, 21, 12, 24, 28, 19,
+        1, 10, 4, 14, 6, 22, 25, 20, 11, 15, 23, 26, 16, 27, 17, 18
+    };
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return debruijn32[++x * 0x076be629 >> 27];
 #endif
 }
 

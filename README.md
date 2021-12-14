@@ -13,5 +13,5 @@ allocated from static pool templated by number of tokens.
 
 ## TODO
 
-- [ ] Remove unnecessary code bloat in zbor_float.cpp
+- [x] Remove unnecessary code bloat in zbor_float.cpp
 - [ ] Decoder
