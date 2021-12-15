@@ -1,7 +1,6 @@
 #include <cstdio>
 #include <cstring>
 #include "zbor.h"
-#include "zbor_codec.h"
 
 #define SIZE(x) (sizeof(x) / sizeof(x[0]))
 
@@ -62,23 +61,39 @@ void pretty_cbor(CBOR &obj)
     }
 }
 
-#include <ctime>
+// #include <ctime>
 
-template<size_t N = 1, class Fn, class ...Args>
-clock_t measure_time(Fn &&fn, Args &&...args)
-{
-    clock_t begin = clock();
-    for (size_t i = 0; i < N; ++i) 
-        fn(args...);
-    clock_t end = clock();
+// template<size_t N = 1, class Fn, class ...Args>
+// clock_t measure_time(Fn &&fn, Args &&...args)
+// {
+//     clock_t begin = clock();
+//     for (size_t i = 0; i < N; ++i) 
+//         fn(args...);
+//     clock_t end = clock();
 
-    return (end - begin); // / N;
-}
+//     return (end - begin); // / N;
+// }
 
 int main(int, char**) 
 {
-    // printf("CBOR: %lu bytes \n", sizeof(CBOR));
+    printf("CBOR: %lu bytes \n", sizeof(CBOR));
 
+    Pool<16> pool;
+
+    const uint8_t buf[] = { 0x0a, 0x17, /*0x18, 0x64*/ };
+
+    auto ret = decode(pool, buf, sizeof(buf));
+
+    printf("pool size: %lu \n", pool.size());
+
+    if (ret.root) {
+        int i = 0;
+        for (auto it : *ret.root) {
+            printf("%d) ", ++i);
+            pretty_cbor(it);
+            printf("\n");
+        }
+    }
     // const uint8_t data[] = { 0xde, 0xad, 0xbe, 0xef };
     // const char *text = "test";
 

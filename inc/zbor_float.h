@@ -19,6 +19,7 @@ using half = _Float16;
 #endif
 
 union Float {
+    Float() {}
     Float(float f) : f32(f) {}
     Float(double f) : f64(f) {} 
     Float(uint32_t u) : u32(u) {}

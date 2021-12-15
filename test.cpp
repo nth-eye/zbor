@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "zbor.h"
-#include "zbor_codec.h"
 
 using namespace zbor;
 
