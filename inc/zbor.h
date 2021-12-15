@@ -17,38 +17,40 @@ struct DecodeResult {
 template<size_t N>
 DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
 {
-    if (!buf || !buf_len)
-        return {nullptr, 0, ERR_INVALID_PARAM};
-
     CBOR *root  = nullptr;
-    CBOR *obj   = nullptr;
     CBOR *prev  = nullptr;
+    CBOR *item  = nullptr;
     size_t cnt  = 0;
-    Float fp;
 
+    auto ret = [&](Err err) { return DecodeResult{root, cnt, err}; };
+
+    if (!buf || !buf_len)
+        return ret(ERR_INVALID_PARAM);
+
+    Float fp;
     const uint8_t *p    = buf;
     const uint8_t *end  = buf + buf_len;
 
     while (p < end) {
 
-        obj = pool.make();
+        item = pool.make();
 
-        if (!obj)
-            return {root, cnt, ERR_OUT_OF_MEM};
+        if (!item)
+            return ret(ERR_OUT_OF_MEM);
 
         if (!root)
-            root = obj;
+            root = item;
 
         if (prev) {
-            prev->next = obj;
-            obj->prev = prev;
+            prev->next = item;
+            item->prev = prev;
         }
 
         uint8_t mt = *p     & 0xe0;
         uint8_t ai = *p++   & 0x1f;
         uint64_t val = ai;
 
-        obj->type = Type(mt >> 5);
+        item->type = Type(mt >> 5);
 
         switch (ai) 
         {
@@ -59,80 +61,81 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
         {
             size_t len = bit(ai - AI_1);
             if (p + len > end)
-                return {root, cnt, ERR_OUT_OF_DATA};
+                return ret(ERR_OUT_OF_DATA);
             val = 0;
             for (int i = 8 * len - 8; i >= 0; i -= 8)
-                val |= ((uint64_t) *p++) << i;
+                val |= *p++ << i;
             break;
         }
         case 28:
         case 29:
         case 30:
-            return {root, cnt, ERR_INVALID_DATA};
+            return ret(ERR_INVALID_DATA);
             break;
 
         case AI_INDEF:
-            return {root, cnt, ERR_INVALID_DATA};
+            return ret(ERR_INVALID_DATA);
             break;
         }
 
         switch (mt) 
         {
         case MT_UINT:
-            obj->uint = val;
+            item->uint = val;
             break;
 
         case MT_NINT:
-            obj->sint = ~val;
+            item->sint = ~val;
             break;
 
         case MT_DATA:
         case MT_TEXT:
             if (p + val > end)
-                return {root, cnt, ERR_OUT_OF_DATA};
-            obj->str.data   = p;
-            obj->str.len    = val;
+                return ret(ERR_OUT_OF_DATA);
+            item->str.data   = p;
+            item->str.len    = val;
             p += val;
             break;
         
         case MT_ARRAY:
         case MT_MAP:
         case MT_TAG:
-            return {root, cnt, ERR_INVALID_DATA};
+            return ret(ERR_INVALID_DATA);
 
         case MT_SIMPLE:
             switch (ai) 
             {
             case PRIM_FLOAT_16:
-                obj->d      = half_to_double(val);
-                obj->type   = TYPE_DOUBLE;
+                item->d     = half_to_double(val);
+                item->type  = TYPE_DOUBLE;
+                break;
             case PRIM_FLOAT_32:
                 fp.u32      = val;
-                obj->d      = fp.f32;
-                obj->type   = TYPE_DOUBLE;
+                item->d     = fp.f32;
+                item->type  = TYPE_DOUBLE;
                 break;
             case PRIM_FLOAT_64:
                 fp.u64      = val;
-                obj->d      = fp.f64;
-                obj->type   = TYPE_DOUBLE;
+                item->d     = fp.f64;
+                item->type  = TYPE_DOUBLE;
                 break;
             default:
-                obj->prim = Prim(val);
+                item->prim = Prim(val);
                 if (val >= 24 &&
                     val <= 31)
-                    return {root, cnt, ERR_INVALID_DATA};
+                    return ret(ERR_INVALID_DATA);
                 break;
             }
             break;
 
         default:
-            return {root, cnt, ERR_INVALID_DATA};
+            return ret(ERR_INVALID_DATA);
             break;
         }
         ++cnt;
-        prev = obj;        
+        prev = item;        
     }
-    return {root, cnt, NO_ERR};
+    return ret(NO_ERR);
 }
 
 template<size_t N>
@@ -264,7 +267,7 @@ Err Codec<N>::encode_float(Prim type, Float val)
             return encode_base(MT_SIMPLE | PRIM_FLOAT_16, 0x7e00, 2);
 #endif
         default:
-            return ERR_INVALID_PARAM;
+            return ERR_INVALID_FLOAT_TYPE;
     }
 }
 
@@ -363,8 +366,9 @@ Err Codec<N>::encode(Tag tag)
 template<size_t N>
 Err Codec<N>::encode(Prim val)
 {
-    if (val >= 24 && val <= 31)
-        return ERR_INVALID_PARAM;
+    if (val >= 24 && 
+        val <= 31)
+        return ERR_INVALID_SIMPLE;
 
     return encode_int(MT_SIMPLE, val);
 }

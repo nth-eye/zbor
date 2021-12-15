@@ -155,7 +155,7 @@ Err Map::pop(CBOR *key)
         if (next)
             it = next;
         else
-            return ERR_NO_VAL_FOR_KEY;
+            return ERR_NO_VALUE_FOR_KEY;
     }
     return ERR_NOT_FOUND;
 }

@@ -55,8 +55,8 @@ void pretty_cbor(CBOR &obj)
             }
             break;
         case TYPE_HALF: printf("NOT IMPLEMENTED"); break;
-        case TYPE_FLOAT: printf("%ef", obj.f); break;
-        case TYPE_DOUBLE: printf("%e", obj.d); break;
+        case TYPE_FLOAT: printf("%ff", obj.f); break;
+        case TYPE_DOUBLE: printf("%f", obj.d); break;
         default: printf("<unknown>");
     }
 }
@@ -78,13 +78,43 @@ int main(int, char**)
 {
     printf("CBOR: %lu bytes \n", sizeof(CBOR));
 
-    Pool<16> pool;
+    Pool<32> pool;
 
-    const uint8_t buf[] = { 0x0a, 0x17, /*0x18, 0x64*/ };
+    const uint8_t buf[] = { 
+        0x0a, 
+        0x17, 
+        0x18, 0x64,
+        0x39, 0x03, 0xe7,
+        0x44, 0x01, 0x02, 0x03, 0x04,
+        0x64, 0x49, 0x45, 0x54, 0x46,
+
+        0xf4,
+        0xf5,
+        0xf6,
+        0xf7,
+        0xf0,
+        0xf8, 0xff,
+
+        0xf9, 0x00, 0x00,
+        0xf9, 0x80, 0x00,
+        0xf9, 0x3c, 0x00,
+        0xfa, 0x47, 0xc3, 0x50, 0x00,
+        0xfb, 0x3f, 0xf1, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9a,
+        0xf9, 0x7c, 0x00,
+        0xf9, 0x7e, 0x00,
+        0xf9, 0xfc, 0x00,
+    };
 
     auto ret = decode(pool, buf, sizeof(buf));
 
-    printf("pool size: %lu \n", pool.size());
+    printf("Pool: %lu tokens \n", pool.size());
+    printf("        \n\
+        root:   %p  \n\
+        size:   %lu \n\
+        err:    %s  \n",
+        (void*) ret.root,
+        ret.len,
+        err_str(ret.err));
 
     if (ret.root) {
         int i = 0;

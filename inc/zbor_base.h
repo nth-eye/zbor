@@ -57,12 +57,31 @@ enum Err {
     ERR_INVALID_PARAM,
     ERR_INVALID_DATA,
     ERR_INVALID_TYPE,
+    ERR_INVALID_SIMPLE,
+    ERR_INVALID_FLOAT_TYPE,
     ERR_OUT_OF_MEM,
     ERR_OUT_OF_DATA,
     ERR_ALREADY_EMPTY,
     ERR_NOT_FOUND,
-    ERR_NO_VAL_FOR_KEY,
+    ERR_NO_VALUE_FOR_KEY,
 };
+
+inline const char* err_str(Err err)
+{
+    constexpr const char *str[] = {
+        "NO_ERR",
+        "ERR_NULL_PTR",
+        "ERR_INVALID_PARAM",
+        "ERR_INVALID_DATA",
+        "ERR_INVALID_TYPE",
+        "ERR_OUT_OF_MEM",
+        "ERR_OUT_OF_DATA",
+        "ERR_ALREADY_EMPTY",
+        "ERR_NOT_FOUND",
+        "ERR_NO_VALUE_FOR_KEY",
+    };
+    return str[err];
+}
 
 struct String {
     String(const uint8_t *data, size_t len) : data(data), len(len) {}
