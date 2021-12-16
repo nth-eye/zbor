@@ -61,24 +61,24 @@ void pretty_cbor(CBOR &obj)
     }
 }
 
-// #include <ctime>
+#include <ctime>
 
-// template<size_t N = 1, class Fn, class ...Args>
-// clock_t measure_time(Fn &&fn, Args &&...args)
-// {
-//     clock_t begin = clock();
-//     for (size_t i = 0; i < N; ++i) 
-//         fn(args...);
-//     clock_t end = clock();
+template<size_t N = 1, class Fn, class ...Args>
+clock_t measure_time(Fn &&fn, Args &&...args)
+{
+    clock_t begin = clock();
+    for (size_t i = 0; i < N; ++i) 
+        fn(args...);
+    clock_t end = clock();
 
-//     return (end - begin); // / N;
-// }
+    return (end - begin); // / N;
+}
 
 int main(int, char**) 
 {
     printf("CBOR: %lu bytes \n", sizeof(CBOR));
 
-    Pool<32> pool;
+    Pool<64> pool;
 
     const uint8_t buf[] = { 
         0x0a, 
@@ -103,7 +103,20 @@ int main(int, char**)
         0xf9, 0x7c, 0x00,
         0xf9, 0x7e, 0x00,
         0xf9, 0xfc, 0x00,
+
+        0x80,
+        0x83, 0x01, 0x02, 0x03,
+        0x83, 0x01, 0x82, 0x02, 0x03, 0x82, 0x04, 0x05,
+
+        // 0x81, 0x01,
+        // 0x81, 0x82, 0x02, 0x03,
     };
+
+    // printf("1: %lu clock_t \n", measure_time<10000000>(decode_test<32>, pool, buf, sizeof(buf)));
+    // printf("2: %lu clock_t \n", measure_time<10000000>(decode_test_2<32>, pool, buf, sizeof(buf)));
+    // printf("1: %lu clock_t \n", measure_time<10000000>(decode_test<32>, pool, buf, sizeof(buf)));
+    // printf("2: %lu clock_t \n", measure_time<10000000>(decode_test_2<32>, pool, buf, sizeof(buf)));
+    // printf("1: %lu clock_t \n", measure_time<10000000>(decode_test<32>, pool, buf, sizeof(buf)));
 
     auto ret = decode(pool, buf, sizeof(buf));
 

@@ -14,6 +14,29 @@ struct DecodeResult {
     Err err;
 };
 
+struct StackItem {
+    CBOR *item;
+    size_t cnt;
+};
+
+template<size_t N>
+struct Stack {
+
+    void push(StackItem item)
+    {
+        if (size < N) 
+            stack[size++] = item;
+    }
+
+    StackItem pop()
+    {
+        return size ? stack[--size] : StackItem{nullptr, 0};
+    }
+private:
+    StackItem stack[N];
+    size_t size = 0;
+};
+
 template<size_t N>
 DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
 {
@@ -28,6 +51,8 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
         return ret(ERR_INVALID_PARAM);
 
     Float fp;
+    Stack<N> stack;
+    StackItem parent    = {nullptr, 0};
     const uint8_t *p    = buf;
     const uint8_t *end  = buf + buf_len;
 
@@ -41,7 +66,14 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
         if (!root)
             root = item;
 
-        if (prev) {
+        if (parent.item) {
+            parent.item->arr.push(item);
+            --parent.cnt;
+        } else {
+            ++cnt;
+        }
+
+        if (prev && !parent.item) {
             prev->next = item;
             item->prev = prev;
         }
@@ -52,13 +84,11 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
 
         item->type = Type(mt >> 5);
 
-        switch (ai) 
-        {
+        switch (ai) {
         case AI_1:
         case AI_2:
         case AI_4:
-        case AI_8:
-        {
+        case AI_8: {
             size_t len = bit(ai - AI_1);
             if (p + len > end)
                 return ret(ERR_OUT_OF_DATA);
@@ -72,22 +102,18 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
         case 30:
             return ret(ERR_INVALID_DATA);
             break;
-
         case AI_INDEF:
             return ret(ERR_INVALID_DATA);
             break;
         }
 
-        switch (mt) 
-        {
+        switch (mt) {
         case MT_UINT:
             item->uint = val;
             break;
-
         case MT_NINT:
             item->sint = ~val;
             break;
-
         case MT_DATA:
         case MT_TEXT:
             if (p + val > end)
@@ -96,15 +122,20 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
             item->str.len    = val;
             p += val;
             break;
-        
         case MT_ARRAY:
+            item->arr.clear();
+            stack.push(parent);
+            parent = {item, val};
+            break;
         case MT_MAP:
+            item->map.clear();
+            stack.push(parent);
+            parent = {item, val};
+            break;
         case MT_TAG:
             return ret(ERR_INVALID_DATA);
-
         case MT_SIMPLE:
-            switch (ai) 
-            {
+            switch (ai) {
             case PRIM_FLOAT_16:
                 item->d     = half_to_double(val);
                 item->type  = TYPE_DOUBLE;
@@ -127,13 +158,17 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
                 break;
             }
             break;
-
         default:
             return ret(ERR_INVALID_DATA);
             break;
         }
-        ++cnt;
-        prev = item;        
+
+        if (parent.item && !parent.cnt) {
+            prev = parent.item;
+            parent = stack.pop();
+        } else {
+            prev = item;
+        }
     }
     return ret(NO_ERR);
 }

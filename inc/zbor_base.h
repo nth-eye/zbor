@@ -74,6 +74,8 @@ inline const char* err_str(Err err)
         "ERR_INVALID_PARAM",
         "ERR_INVALID_DATA",
         "ERR_INVALID_TYPE",
+        "ERR_INVALID_SIMPLE",
+        "ERR_INVALID_FLOAT_TYPE",
         "ERR_OUT_OF_MEM",
         "ERR_OUT_OF_DATA",
         "ERR_ALREADY_EMPTY",
