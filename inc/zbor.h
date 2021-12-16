@@ -21,16 +21,16 @@ struct StackItem {
 
 template<size_t N>
 struct Stack {
-
-    void push(StackItem item)
-    {
-        if (size < N) 
-            stack[size++] = item;
+    bool push(StackItem item) 
+    { 
+        if (size >= N)
+            return false;
+        stack[size++] = item;
+        return true;
     }
-
-    StackItem pop()
+    void pop(StackItem &item) 
     {
-        return size ? stack[--size] : StackItem{nullptr, 0};
+        item = stack[--size];
     }
 private:
     StackItem stack[N];
@@ -40,6 +40,8 @@ private:
 template<size_t N>
 DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
 {
+    pool.clear();
+
     CBOR *root  = nullptr;
     CBOR *prev  = nullptr;
     CBOR *item  = nullptr;
@@ -68,9 +70,9 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
 
         if (parent.item) {
             parent.item->arr.push(item);
-            --parent.cnt;
+            parent.cnt--;
         } else {
-            ++cnt;
+            cnt++;
         }
 
         if (prev && !parent.item) {
@@ -123,12 +125,8 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
             p += val;
             break;
         case MT_ARRAY:
-            item->arr.clear();
-            stack.push(parent);
-            parent = {item, val};
-            break;
         case MT_MAP:
-            item->map.clear();
+            item->map.clear(); // Same List.clear for array
             stack.push(parent);
             parent = {item, val};
             break;
@@ -163,12 +161,11 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
             break;
         }
 
-        if (parent.item && !parent.cnt) {
-            prev = parent.item;
-            parent = stack.pop();
-        } else {
-            prev = item;
+        while (parent.item && !parent.cnt) {
+            item = parent.item;
+            stack.pop(parent);
         }
+        prev = item;
     }
     return ret(NO_ERR);
 }

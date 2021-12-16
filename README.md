@@ -13,5 +13,7 @@ allocated from static pool templated by number of tokens.
 
 ## TODO
 
-- [ ] Decoder
-- [ ] More precise errors in decoding routine
+- [ ] Decoder: map
+- [ ] Decoder: tag
+- [ ] Decoder: indefinite data
+- [ ] Decoder: more precise errors
