@@ -13,6 +13,7 @@ allocated from static pool templated by number of tokens.
 
 ## TODO
 
+- [ ] Recreate everything using GoogleTest and TDD
 - [ ] Decoder: map
 - [ ] Decoder: tag
 - [ ] Decoder: indefinite data
