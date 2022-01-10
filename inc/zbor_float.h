@@ -7,16 +7,7 @@
 
 namespace zbor {
 
-#define ZBOR_USE_FP16       true
-#define ZBOR_USE_FP16_SW    true
-
-#if ZBOR_USE_FP16
-#if ZBOR_USE_FP16_SW
-using half = uint16_t;
-#else
-using half = _Float16;
-#endif
-#endif
+#define ZBOR_USE_FP16 true
 
 union Float {
     Float() {}
@@ -26,7 +17,6 @@ union Float {
     Float(uint64_t u) : u64(u) {} 
 #if ZBOR_USE_FP16
     uint16_t    u16;
-    half        f16;
 #endif
     uint32_t    u32;
     float       f32;

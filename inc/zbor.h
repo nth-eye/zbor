@@ -96,7 +96,7 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
                 return ret(ERR_OUT_OF_DATA);
             val = 0;
             for (int i = 8 * len - 8; i >= 0; i -= 8)
-                val |= *p++ << i;
+                val |= ((uint64_t) *p++) << i;
             break;
         }
         case 28:
@@ -124,9 +124,10 @@ DecodeResult decode(Pool<N> &pool, const uint8_t *buf, size_t buf_len)
             item->str.len    = val;
             p += val;
             break;
-        case MT_ARRAY:
         case MT_MAP:
-            item->map.clear(); // Same List.clear for array
+            val <<= 1;
+        case MT_ARRAY:
+            item->arr.clear();
             stack.push(parent);
             parent = {item, val};
             break;
@@ -267,18 +268,11 @@ Err Codec<N>::encode_float(Prim type, Float val)
             if (val.f32 != val.f32)
                 goto if_nan;
 #if ZBOR_USE_FP16
-#if ZBOR_USE_FP16_SW
             uint16_t u16 = half_from_float(val.u32);
             Float tmp = half_to_float(u16);
             if (val.f32 != tmp.f32)
                 return encode_base(MT_SIMPLE | PRIM_FLOAT_32, val.u32, 4);
             val.u16 = u16;
-#else
-            half f16 = val.f32;
-            if (val.f32 != f16) // Else we can fallthrough to FLOAT_16
-                return encode_base(MT_SIMPLE | PRIM_FLOAT_32, val.u32, 4);
-            val.f16 = f16;
-#endif
 #else
             return encode_base(MT_SIMPLE | PRIM_FLOAT_32, val.u32, 4);
         if_nan: 
@@ -287,13 +281,8 @@ Err Codec<N>::encode_float(Prim type, Float val)
         }
 #if ZBOR_USE_FP16
         case PRIM_FLOAT_16:
-#if ZBOR_USE_FP16_SW
-            if ((val.u16 & 0x7fff) > 0x7c00) {
-#else
-            if (val.f16 != val.f16) {
-#endif
+            if ((val.u16 & 0x7fff) > 0x7c00)
                 goto if_nan;
-            }
             return encode_base(MT_SIMPLE | PRIM_FLOAT_16, val.u16, 2);
         if_nan: 
             return encode_base(MT_SIMPLE | PRIM_FLOAT_16, 0x7e00, 2);
@@ -309,19 +298,19 @@ template<size_t N>
 Err Codec<N>::encode(CBOR *val)
 {
     if (!val)
-        return ERR_NULL_PTR;
+        return ERR_NULLPTR;
 
     switch (val->type) {
-        case TYPE_UINT: return encode(val->uint);
-        case TYPE_SINT: return encode(val->sint);
-        case TYPE_DATA: return encode(val->str.data, val->str.len);
-        case TYPE_TEXT: return encode(val->str.text, val->str.len);
-        case TYPE_ARRAY: return encode(val->arr);
-        case TYPE_MAP: return encode(val->map);
-        case TYPE_TAG: return encode(val->tag);
-        case TYPE_SIMPLE: return encode(val->prim);
-        case TYPE_FLOAT: return encode(val->f);
-        case TYPE_DOUBLE: return encode(val->d);
+        case TYPE_UINT:     return encode(val->uint);
+        case TYPE_SINT:     return encode(val->sint);
+        case TYPE_DATA:     return encode(val->str.data, val->str.len);
+        case TYPE_TEXT:     return encode(val->str.text, val->str.len);
+        case TYPE_ARRAY:    return encode(val->arr);
+        case TYPE_MAP:      return encode(val->map);
+        case TYPE_TAG:      return encode(val->tag);
+        case TYPE_SIMPLE:   return encode(val->prim);
+        case TYPE_FLOAT:    return encode(val->f);
+        case TYPE_DOUBLE:   return encode(val->d);
         default: return ERR_INVALID_TYPE;
     }
 }
@@ -374,7 +363,7 @@ Err Codec<N>::encode(Array arr)
 template<size_t N>
 Err Codec<N>::encode(Map map)
 {
-    Err err = encode_int(MT_MAP, map.len);
+    Err err = encode_int(MT_MAP, map.len >> 1);
     if (err != NO_ERR)
         return err;
 

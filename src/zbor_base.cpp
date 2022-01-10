@@ -16,28 +16,34 @@ CBOR::CBOR(int64_t val)
     }
 }
 
-CBOR::CBOR(uint64_t val) : type(TYPE_UINT), uint(val)
+CBOR::CBOR(uint64_t val) : type{TYPE_UINT}, uint{val}
+{}
+#if ZBOR_STRING
+CBOR::CBOR(const uint8_t *data, size_t len) : type{TYPE_DATA}, str{data, len}
 {}
 
-CBOR::CBOR(const uint8_t *data, size_t len) : type(TYPE_DATA), str{data, len}
+CBOR::CBOR(const char *text, size_t len) : type{TYPE_TEXT}, str{text, len}
+{}
+#else
+CBOR::CBOR(const uint8_t *data, size_t len) : type{TYPE_DATA}, data{data}, len{len}
 {}
 
-CBOR::CBOR(const char *text, size_t len) : type(TYPE_TEXT), str{text, len}
+CBOR::CBOR(const char *text, size_t len) : type{TYPE_TEXT}, text{text}, len{len}
+{}
+#endif
+CBOR::CBOR(Array arr) : type{TYPE_ARRAY}, arr{arr}
 {}
 
-CBOR::CBOR(Array arr) : type(TYPE_ARRAY), arr(arr)
-{}
+// CBOR::CBOR(Map map) : type(TYPE_MAP), map(map)
+// {}
 
-CBOR::CBOR(Map map) : type(TYPE_MAP), map(map)
-{}
+// CBOR::CBOR(Tag tag) : type(TYPE_TAG), tag(tag)
+// {}
 
-CBOR::CBOR(Tag tag) : type(TYPE_TAG), tag(tag)
-{}
-
-CBOR::CBOR(Prim val)
+CBOR::CBOR(Prim val) 
 {
-    if (val < 24 || val > 31) { // Otherwise invalid
-        type = TYPE_SIMPLE;
+    if (val < 24 || (val > 31 && val < 256)) {
+        type = TYPE_PRIM;
         prim = val;
     }
 }
@@ -45,25 +51,22 @@ CBOR::CBOR(Prim val)
 CBOR::CBOR(bool val) : CBOR(val ? PRIM_TRUE : PRIM_FALSE)
 {}
 
-CBOR::CBOR(float val) : type(TYPE_FLOAT), f(val)
-{}
-
-CBOR::CBOR(double val) : type(TYPE_DOUBLE), d(val)
+CBOR::CBOR(double val) : type{TYPE_DOUBLE}, dbl{val}
 {}
 
 // SECTION: Array and map
 
-void iter::operator++()
+void Iter::operator++()
 { 
     p = p->next; 
 }
 
-void map_iter::operator++()
+void MapIter::operator++()
 {
     p = p->next->next;
 }
 
-Pair map_iter::operator*()
+Pair MapIter::operator*()
 {
     return {p, p->next};
 }
@@ -71,9 +74,9 @@ Pair map_iter::operator*()
 Err Array::push(CBOR *val)
 {
     if (!val)
-        return ERR_NULL_PTR;
-
-    val->next = NULL;
+        return ERR_NULLPTR;
+    
+    val->prev = tail;
 
     if (tail)
         tail->next = val;
@@ -81,6 +84,8 @@ Err Array::push(CBOR *val)
         head = val;
 
     tail = val;
+    tail->next = nullptr;
+
     ++len;
 
     return NO_ERR;
@@ -89,25 +94,33 @@ Err Array::push(CBOR *val)
 Err Array::pop(CBOR *val)
 {
     if (!val)
-        return ERR_NULL_PTR;
+        return ERR_NULLPTR;
 
     if (!len)
-        return ERR_ALREADY_EMPTY;
+        return ERR_EMPTY;
 
     for (auto it = head; it;) {
 
-        CBOR *next = it->next;
-        CBOR *prev = it->prev;
+        auto next = it->next;
+        auto prev = it->prev;
 
         if (it == val) {
+
+            --len;
+
             if (prev)
                 prev->next = next;
+            else
+                head = next;
+
             if (next)
-                next = NULL;
-            --len;
+                next->prev = prev;
+            else
+                tail = prev;
+
             return NO_ERR;
         }
-        it = it->next;
+        it = next;
     }
     return ERR_NOT_FOUND;
 }
@@ -115,10 +128,11 @@ Err Array::pop(CBOR *val)
 Err Map::push(CBOR *key, CBOR *val)
 {
     if (!key || !val)
-        return ERR_NULL_PTR;
+        return ERR_NULLPTR;
 
     key->next = val;
-    val->next = NULL;
+    key->prev = tail;
+    val->prev = key;
 
     if (tail)
         tail->next = key;
@@ -126,6 +140,8 @@ Err Map::push(CBOR *key, CBOR *val)
         head = key;
 
     tail = val;
+    tail->next = nullptr;
+    
     ++len;
 
     return NO_ERR;
@@ -134,28 +150,30 @@ Err Map::push(CBOR *key, CBOR *val)
 Err Map::pop(CBOR *key)
 {
     if (!key)
-        return ERR_NULL_PTR;
+        return ERR_NULLPTR;
 
-    if (!len)
-        return ERR_ALREADY_EMPTY;
+    // if (!len)
+    //     return ERR_ALREADY_EMPTY;
 
     for (auto it = head; it;) {
 
-        CBOR *next = it->next->next;
-        CBOR *prev = it->prev;
+        if (!it->next)
+            return ERR_NO_VALUE_FOR_KEY;
+
+        auto next = it->next->next;
+        auto prev = it->prev;
 
         if (it == key) {
-            if (prev)
-                prev->next = next;
-            if (next)
-                next = NULL;
             --len;
             return NO_ERR;
+            // if (prev)
+            //     prev->next = next;
+            // if (next)
+            //     next = nullptr;
+            // len -= 2;
+            // return NO_ERR;
         }
-        if (next)
-            it = next;
-        else
-            return ERR_NO_VALUE_FOR_KEY;
+        it = next;
     }
     return ERR_NOT_FOUND;
 }
