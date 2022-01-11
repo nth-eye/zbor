@@ -18,27 +18,21 @@ CBOR::CBOR(int64_t val)
 
 CBOR::CBOR(uint64_t val) : type{TYPE_UINT}, uint{val}
 {}
-#if ZBOR_STRING
+
 CBOR::CBOR(const uint8_t *data, size_t len) : type{TYPE_DATA}, str{data, len}
 {}
 
 CBOR::CBOR(const char *text, size_t len) : type{TYPE_TEXT}, str{text, len}
 {}
-#else
-CBOR::CBOR(const uint8_t *data, size_t len) : type{TYPE_DATA}, data{data}, len{len}
-{}
 
-CBOR::CBOR(const char *text, size_t len) : type{TYPE_TEXT}, text{text}, len{len}
-{}
-#endif
 CBOR::CBOR(Array arr) : type{TYPE_ARRAY}, arr{arr}
 {}
 
-// CBOR::CBOR(Map map) : type(TYPE_MAP), map(map)
-// {}
+CBOR::CBOR(Map map) : type{TYPE_MAP}, map{map}
+{}
 
-// CBOR::CBOR(Tag tag) : type(TYPE_TAG), tag(tag)
-// {}
+CBOR::CBOR(Tag tag) : type{TYPE_TAG}, tag{tag}
+{}
 
 CBOR::CBOR(Prim val) 
 {
@@ -63,12 +57,12 @@ void Iter::operator++()
 
 void MapIter::operator++()
 {
-    p = p->next->next;
+    p = p->next ? p->next->next : nullptr;
 }
 
 Pair MapIter::operator*()
 {
-    return {p, p->next};
+    return {p, p ? p->next : nullptr};
 }
 
 Err Array::push(CBOR *val)
@@ -152,8 +146,8 @@ Err Map::pop(CBOR *key)
     if (!key)
         return ERR_NULLPTR;
 
-    // if (!len)
-    //     return ERR_ALREADY_EMPTY;
+    if (!len)
+        return ERR_EMPTY;
 
     for (auto it = head; it;) {
 
@@ -164,14 +158,20 @@ Err Map::pop(CBOR *key)
         auto prev = it->prev;
 
         if (it == key) {
+
             --len;
+
+            if (prev)
+                prev->next = next;
+            else
+                head = next;
+
+            if (next)
+                next->prev = prev;
+            else
+                tail = prev;
+
             return NO_ERR;
-            // if (prev)
-            //     prev->next = next;
-            // if (next)
-            //     next = nullptr;
-            // len -= 2;
-            // return NO_ERR;
         }
         it = next;
     }

@@ -14,6 +14,16 @@ protected:
 TEST_F(MapTest, Default)
 {
     EXPECT_EQ(map.size(), 0);
+
+    auto it = map.begin();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
+
+    it = map.end();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
 }
 
 TEST_F(MapTest, PushOne)
@@ -28,6 +38,11 @@ TEST_F(MapTest, PushOne)
 
     EXPECT_EQ((*it).key, &key);
     EXPECT_EQ((*it).val, &val);
+
+    it = map.end();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
 }
 
 TEST_F(MapTest, PushNullptrValue)
@@ -36,6 +51,16 @@ TEST_F(MapTest, PushNullptrValue)
 
     EXPECT_EQ(map.push(&key, nullptr), ERR_NULLPTR);
     EXPECT_EQ(map.size(), 0);
+
+    auto it = map.begin();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
+
+    it = map.end();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
 }
 
 TEST_F(MapTest, PushNullptrKey)
@@ -44,12 +69,32 @@ TEST_F(MapTest, PushNullptrKey)
 
     EXPECT_EQ(map.push(nullptr, &val), ERR_NULLPTR);
     EXPECT_EQ(map.size(), 0);
+    
+    auto it = map.begin();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
+
+    it = map.end();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
 }
 
 TEST_F(MapTest, PushNullptrKeyAndValue)
 {
     EXPECT_EQ(map.push(nullptr, nullptr), ERR_NULLPTR);
     EXPECT_EQ(map.size(), 0);
+
+    auto it = map.begin();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
+
+    it = map.end();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
 }
 
 TEST_F(MapTest, PushAndPop)
@@ -61,6 +106,16 @@ TEST_F(MapTest, PushAndPop)
     
     EXPECT_EQ(map.pop(&key), NO_ERR);
     EXPECT_EQ(map.size(), 0);
+
+    auto it = map.begin();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
+
+    it = map.end();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
 }
 
 TEST_F(MapTest, PushAndPopNullptr)
@@ -72,6 +127,16 @@ TEST_F(MapTest, PushAndPopNullptr)
     
     EXPECT_EQ(map.pop(nullptr), ERR_NULLPTR);
     EXPECT_EQ(map.size(), 1);
+
+    auto it = map.begin();
+
+    EXPECT_EQ((*it).key, &key);
+    EXPECT_EQ((*it).val, &val);
+
+    it = map.end();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
 }
 
 TEST_F(MapTest, PushAndPopWrong)
@@ -84,4 +149,32 @@ TEST_F(MapTest, PushAndPopWrong)
     
     EXPECT_EQ(map.pop(&wrong), ERR_NOT_FOUND);
     EXPECT_EQ(map.size(), 1);
+
+    auto it = map.begin();
+
+    EXPECT_EQ((*it).key, &key);
+    EXPECT_EQ((*it).val, &val);
+
+    it = map.end();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
+}
+
+TEST_F(MapTest, PopWhenAlreadyEmpty)
+{
+    CBOR wrong = 43;
+    
+    EXPECT_EQ(map.pop(&wrong), ERR_EMPTY);
+    EXPECT_EQ(map.size(), 0);
+
+    auto it = map.begin();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
+
+    it = map.end();
+
+    EXPECT_EQ((*it).key, nullptr);
+    EXPECT_EQ((*it).val, nullptr);
 }

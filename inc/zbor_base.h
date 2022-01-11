@@ -77,39 +77,34 @@ enum Err {
 //     ERR_OUT_OF_DATA,
 };
 
-// inline const char* err_str(Err err)
-// {
-//     constexpr const char *str[] = {
-//         "NO_ERR",
-//         "ERR_NULLPTR",
-//         "ERR_INVALID_PARAM",
-//         "ERR_INVALID_DATA",
-//         "ERR_INVALID_TYPE",
-//         "ERR_INVALID_SIMPLE",
-//         "ERR_INVALID_FLOAT_TYPE",
-//         "ERR_OUT_OF_MEM",
-//         "ERR_OUT_OF_DATA",
-//         "ERR_ALREADY_EMPTY",
-//         "ERR_NOT_FOUND",
-//         "ERR_NO_VALUE_FOR_KEY",
-//     };
-//     return str[err];
-// }
-
 struct CBOR;
 
-// struct Tag {
-//     uint64_t val;
-//     CBOR *content;
-// };
-
+/**
+ * @brief Pair of pointers to CBOR key and value.
+ * 
+ */
 struct Pair {
     CBOR *key;
     CBOR *val;
 };
 
 /**
- * @brief Linked list iterator, used in Array and CBOR sequence.
+ * @brief String wrapper for length and data / text pointers.
+ * 
+ */
+struct String {
+    String() = default;
+    String(const uint8_t *dat, size_t len) : dat{dat}, len{len} {}
+    String(const char *txt, size_t len) : txt{txt}, len{len} {}
+    union {
+        const uint8_t *dat;
+        const char *txt;
+    };
+    size_t len;
+};
+
+/**
+ * @brief Linked list iterator, used in Array and Sequence.
  * 
  */
 struct Iter {
@@ -123,6 +118,11 @@ private:
     CBOR *p;
 };
 
+/**
+ * @brief Iterator for map. Basically same as Iter, but 
+ * returns Pair and is incremented two times in a row.
+ * 
+ */
 struct MapIter {
 
     MapIter(CBOR *p) : p(p) {}
@@ -136,9 +136,10 @@ private:
 
 /**
  * @brief Array for storing CBOR elements. Actually uses linked list
- * implementation under the hood, to efficiently add and remove elements.
- * Hence, provides range-based for loop support and doesn't provide operator[],
- * to not confuse users about its access time.
+ * implementation under the hood, to efficiently add and remove elements 
+ * on the fly and to not rely on memory allocation. Provides range-based 
+ * for loop support and doesn't provide operator[], to not confuse users 
+ * about its access time.
  * 
  */
 struct Array {
@@ -155,6 +156,11 @@ protected:
     size_t len = 0;
 };
 
+/**
+ * @brief Map for storing CBOR key-value pairs. Same as Array, but
+ * uses MapIter and doesn't have front() and back().
+ * 
+ */
 struct Map : Array {
     MapIter begin()    { return head; }
     MapIter end()      { return NULL; }
@@ -164,20 +170,21 @@ struct Map : Array {
     Err pop(CBOR *key);
 };
 
-#define ZBOR_STRING true
-
-#if ZBOR_STRING
-struct String {
-    String() = default;
-    String(const uint8_t *dat, size_t len) : dat{dat}, len{len} {}
-    String(const char *txt, size_t len) : txt{txt}, len{len} {}
-    union {
-        const uint8_t *dat;
-        const char *txt;
-    };
-    size_t len;
+/**
+ * @brief CBOR tag, stores integer tag value and pointer 
+ * to CBOR content object. 
+ * 
+ */
+struct Tag {
+    uint64_t val;
+    CBOR *content;
 };
-#endif
+
+// struct Sequence {
+//     CBOR *root;
+//     size_t size;
+//     Err err;
+// };
 
 struct CBOR {
 
@@ -188,14 +195,11 @@ struct CBOR {
     CBOR(const uint8_t *data, size_t len);
     CBOR(const char *text, size_t len);
     CBOR(Array arr);
-    // CBOR(Map map);
-    // CBOR(Tag tag);
+    CBOR(Map map);
+    CBOR(Tag tag);
     CBOR(Prim val);
     CBOR(bool val);
     CBOR(double val);
-
-    // Iter begin()    { return this; }
-    // Iter end()      { return NULL; }
 
     CBOR *next  = nullptr;
     CBOR *prev  = nullptr;
@@ -203,21 +207,13 @@ struct CBOR {
     union {
         uint64_t uint;
         int64_t sint;
-#if ZBOR_STRING
         String str;
-#else
-        const uint8_t *data;
-        const char *text;
-#endif
         Array arr;
-        // Map map;
-        // Tag tag;
+        Map map;
+        Tag tag;
         Prim prim;
         double dbl;
     };
-#if !ZBOR_STRING
-    size_t len  = 0;
-#endif
 };
 
 /**
@@ -260,3 +256,22 @@ private:
 };
 
 #endif
+
+// inline const char* err_str(Err err)
+// {
+//     constexpr const char *str[] = {
+//         "NO_ERR",
+//         "ERR_NULLPTR",
+//         "ERR_INVALID_PARAM",
+//         "ERR_INVALID_DATA",
+//         "ERR_INVALID_TYPE",
+//         "ERR_INVALID_SIMPLE",
+//         "ERR_INVALID_FLOAT_TYPE",
+//         "ERR_OUT_OF_MEM",
+//         "ERR_OUT_OF_DATA",
+//         "ERR_ALREADY_EMPTY",
+//         "ERR_NOT_FOUND",
+//         "ERR_NO_VALUE_FOR_KEY",
+//     };
+//     return str[err];
+// }

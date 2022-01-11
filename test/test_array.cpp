@@ -35,9 +35,8 @@ TEST_F(ArrayTest, PushAndPop)
     CBOR obj;
 
     arr.push(&obj);
-    auto err = arr.pop(&obj);
 
-    ASSERT_EQ(err, NO_ERR);
+    ASSERT_EQ(arr.pop(&obj), NO_ERR);
     EXPECT_EQ(arr.front(), nullptr);
     EXPECT_EQ(arr.back(), nullptr);
     EXPECT_EQ(arr.size(), 0);
@@ -49,9 +48,8 @@ TEST_F(ArrayTest, PushAndPopWrongObject)
     CBOR wrong;
 
     arr.push(&obj);
-    auto err = arr.pop(&wrong);
 
-    ASSERT_EQ(err, ERR_NOT_FOUND);
+    ASSERT_EQ(arr.pop(&wrong), ERR_NOT_FOUND);
     EXPECT_EQ(arr.front(), &obj);
     EXPECT_EQ(arr.back(), &obj);
     EXPECT_EQ(arr.size(), 1);
@@ -59,9 +57,7 @@ TEST_F(ArrayTest, PushAndPopWrongObject)
 
 TEST_F(ArrayTest, PushNullptr)
 {
-    auto err = arr.push(nullptr);
-
-    ASSERT_EQ(err, ERR_NULLPTR);
+    ASSERT_EQ(arr.push(nullptr), ERR_NULLPTR);
     EXPECT_EQ(arr.front(), nullptr);
     EXPECT_EQ(arr.back(), nullptr);
     EXPECT_EQ(arr.size(), 0);
@@ -69,9 +65,7 @@ TEST_F(ArrayTest, PushNullptr)
 
 TEST_F(ArrayTest, PopNullptr)
 {
-    auto err = arr.pop(nullptr);
-
-    ASSERT_EQ(err, ERR_NULLPTR);
+    ASSERT_EQ(arr.pop(nullptr), ERR_NULLPTR);
     EXPECT_EQ(arr.front(), nullptr);
     EXPECT_EQ(arr.back(), nullptr);
     EXPECT_EQ(arr.size(), 0);
@@ -81,9 +75,7 @@ TEST_F(ArrayTest, PopAlreadyEmpty)
 {
     CBOR obj;
 
-    auto err = arr.pop(&obj);
-
-    ASSERT_EQ(err, ERR_EMPTY);
+    ASSERT_EQ(arr.pop(&obj), ERR_EMPTY);
     EXPECT_EQ(arr.front(), nullptr);
     EXPECT_EQ(arr.back(), nullptr);
     EXPECT_EQ(arr.size(), 0);
@@ -95,9 +87,8 @@ TEST_F(ArrayTest, DoublePop)
 
     arr.push(&obj);
     arr.pop(&obj);
-    auto err = arr.pop(&obj);
 
-    ASSERT_EQ(err, ERR_EMPTY);
+    ASSERT_EQ(arr.pop(&obj), ERR_EMPTY);
     EXPECT_EQ(arr.front(), nullptr);
     EXPECT_EQ(arr.back(), nullptr);
     EXPECT_EQ(arr.size(), 0);

@@ -60,13 +60,8 @@ TEST(CBOR, DataString)
     CBOR cbor = {data, sizeof(data)};
 
     EXPECT_EQ(cbor.type, TYPE_DATA);
-#if ZBOR_STRING
     EXPECT_EQ(cbor.str.dat, data);
     EXPECT_EQ(cbor.str.len, sizeof(data));
-#else
-    EXPECT_EQ(cbor.data, data);
-    EXPECT_EQ(cbor.len, sizeof(data));
-#endif
 }
 
 TEST(CBOR, TextString)
@@ -75,13 +70,8 @@ TEST(CBOR, TextString)
     CBOR cbor = {text, strlen(text)};
 
     EXPECT_EQ(cbor.type, TYPE_TEXT);
-#if ZBOR_STRING
     EXPECT_EQ(cbor.str.txt, text);
     EXPECT_EQ(cbor.str.len, strlen(text));
-#else
-    EXPECT_EQ(cbor.text, text);
-    EXPECT_EQ(cbor.len, strlen(text));
-#endif
 }
 
 TEST(CBOR, ArrayEmpty)
@@ -97,8 +87,7 @@ TEST(CBOR, ArrayCreateThenPush)
     CBOR cbor = Array();
     CBOR obj;
 
-    cbor.arr.push(&obj);
-
+    EXPECT_EQ(cbor.arr.push(&obj), NO_ERR);
     EXPECT_EQ(cbor.arr.size(), 1);
     EXPECT_EQ(cbor.arr.front(), &obj);
 }
@@ -108,7 +97,7 @@ TEST(CBOR, ArrayPushThenCreate)
     auto arr = Array();
     CBOR obj;
 
-    arr.push(&obj);
+    EXPECT_EQ(arr.push(&obj), NO_ERR);
 
     CBOR cbor = arr;
 
@@ -117,7 +106,49 @@ TEST(CBOR, ArrayPushThenCreate)
     EXPECT_EQ(cbor.arr.front(), &obj);
 }
 
-// TODO: Map and tag
+TEST(CBOR, MapEmpty)
+{
+    CBOR cbor = Map();
+
+    EXPECT_EQ(cbor.type, TYPE_MAP);
+    EXPECT_EQ(cbor.map.size(), 0);
+}
+
+TEST(CBOR, MapCreateThenPush)
+{
+    CBOR cbor = Map();
+    CBOR key;
+    CBOR val;
+
+    EXPECT_EQ(cbor.map.push(&key, &val), NO_ERR);
+    EXPECT_EQ(cbor.map.size(), 1);
+
+    auto it = cbor.map.begin();
+
+    EXPECT_EQ((*it).key, &key);
+    EXPECT_EQ((*it).val, &val);
+}
+
+TEST(CBOR, MapPushThenCreate)
+{
+    auto map = Map();
+    CBOR key;
+    CBOR val;
+
+    EXPECT_EQ(map.push(&key, &val), NO_ERR);
+
+    CBOR cbor = map;
+
+    EXPECT_EQ(cbor.type, TYPE_MAP);
+    EXPECT_EQ(cbor.map.size(), 1);
+
+    auto it = cbor.map.begin();
+
+    EXPECT_EQ((*it).key, &key);
+    EXPECT_EQ((*it).val, &val);   
+}
+
+// TODO: Tag
 
 TEST(CBOR, BoolFalse)
 {
