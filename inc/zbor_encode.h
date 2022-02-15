@@ -24,6 +24,8 @@ struct Encoder {
     Err encode(bool val);
     Err encode(float val);
     Err encode(double val);
+    Err encode_start_indef(MT mt);
+    Err encode_break();
 
     const uint8_t& operator[](size_t i) const { return buf[i]; }
     const uint8_t* data() const { return buf; }
@@ -32,6 +34,7 @@ private:
     uint8_t buf[N];
     size_t idx = 0;
 
+    Err encode_byte(uint8_t byte);
     Err encode_base(uint8_t start, uint64_t val, size_t ai_len, size_t add_len = 0);
     Err encode_int(MT mt, uint64_t val, size_t add_len = 0);
     Err encode_bytes(MT mt, const void *data, size_t len);
@@ -39,6 +42,15 @@ private:
 };
 
 // SECTION: Private
+
+template<size_t N>
+Err Encoder<N>::encode_byte(uint8_t byte)
+{
+    if (idx >= N)
+        return ERR_OUT_OF_MEM;
+    buf[idx++] = byte;
+    return NO_ERR;
+}
 
 template<size_t N>
 Err Encoder<N>::encode_base(uint8_t start, uint64_t val, size_t ai_len, size_t add_len)
@@ -245,6 +257,23 @@ template<size_t N>
 Err Encoder<N>::encode(double val)
 {
     return encode_float(PRIM_FLOAT_64, val);
+}
+
+template<size_t N>
+Err Encoder<N>::encode_start_indef(MT mt)
+{
+    if (mt != MT_MAP    &&
+        mt != MT_ARRAY  &&
+        mt != MT_TEXT   &&
+        mt != MT_DATA)
+        return ERR_INVALID_TYPE;
+    return encode_byte(mt | AI_INDEF);
+}
+
+template<size_t N>
+Err Encoder<N>::encode_break()
+{
+    return encode_byte(0xff);
 }
 
 }

@@ -284,3 +284,43 @@ TEST(Encode, Float)
 
     encode_check(enc, exp);
 }
+
+TEST(Encode, Indef)
+{
+    const uint8_t exp[] = {
+        0x5f, 
+        0x42, 0x01, 0x02, 
+        0x43, 0x03, 0x04, 0x05, 
+        0xff,
+        0x7f,
+        0x65, 0x73, 0x74, 0x72, 0x65, 0x61,
+        0x64, 0x6d, 0x69, 0x6e, 0x67,
+        0xff,
+        0x9f,
+        0xff,
+
+        // 0x9f,
+        // 0x01,
+        // 0x82, 0x02, 0x03,
+        // 0x9f,
+        // 0x04, 0x05,
+        // 0xff,
+        // 0xff,
+    };
+    Encoder<sizeof(exp)> enc;
+
+    enc.encode_start_indef(MT_DATA);
+    enc.encode((uint8_t*) "\x01\x02", 2);
+    enc.encode((uint8_t*) "\x03\x04\x05", 3);
+    enc.encode_break();
+    enc.encode_start_indef(MT_TEXT);
+    enc.encode("strea", strlen("strea"));
+    enc.encode("ming", strlen("ming"));
+    enc.encode_break();
+    enc.encode_start_indef(MT_ARRAY);
+    enc.encode_break();
+    // enc.encode_start_indef(MT_ARRAY);
+    // enc.encode_break();
+
+    encode_check(enc, exp);
+}
