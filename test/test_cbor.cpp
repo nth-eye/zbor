@@ -3,15 +3,7 @@
 
 using namespace zbor;
 
-// class DefaultCBOR : public ::testing::Test {
-// protected:
-//     void SetUp() override 
-//     {
-//     }
-//     CBOR cbor;
-// };
-
-TEST(CBOR, Default)
+TEST(Cbor, Default)
 {
     CBOR cbor;
 
@@ -20,7 +12,7 @@ TEST(CBOR, Default)
     EXPECT_EQ(cbor.type, TYPE_INVALID);
 }
 
-TEST(CBOR, Unsigned)
+TEST(Cbor, Unsigned)
 {
     CBOR cbor = 42;
 
@@ -28,7 +20,7 @@ TEST(CBOR, Unsigned)
     EXPECT_EQ(cbor.uint, 42);
 }
 
-TEST(CBOR, Signed)
+TEST(Cbor, Signed)
 {
     CBOR cbor = -42;
 
@@ -36,7 +28,7 @@ TEST(CBOR, Signed)
     EXPECT_EQ(cbor.sint, -42);
 }
 
-TEST(CBOR, MaxUnsigned)
+TEST(Cbor, MaxUnsigned)
 {
     uint64_t max_uint = 18446744073709551615ul;
     CBOR cbor = max_uint;
@@ -45,7 +37,7 @@ TEST(CBOR, MaxUnsigned)
     EXPECT_EQ(cbor.uint, max_uint);
 }
 
-TEST(CBOR, MinSigned)
+TEST(Cbor, MinSigned)
 {
     int64_t min_sint = int64_t(-9223372036854775807 - 1);
     CBOR cbor = min_sint;
@@ -54,7 +46,7 @@ TEST(CBOR, MinSigned)
     EXPECT_EQ(cbor.uint, min_sint);
 }
 
-TEST(CBOR, DataString)
+TEST(Cbor, DataString)
 {
     const uint8_t data[] = {0x00, 0x11, 0x22, 0x33};
     CBOR cbor = {data, sizeof(data)};
@@ -64,7 +56,7 @@ TEST(CBOR, DataString)
     EXPECT_EQ(cbor.str.len, sizeof(data));
 }
 
-TEST(CBOR, TextString)
+TEST(Cbor, TextString)
 {
     const char *text = "hello";
     CBOR cbor = {text, strlen(text)};
@@ -74,7 +66,7 @@ TEST(CBOR, TextString)
     EXPECT_EQ(cbor.str.len, strlen(text));
 }
 
-TEST(CBOR, ArrayEmpty)
+TEST(Cbor, ArrayEmpty)
 {
     CBOR cbor = Array();
 
@@ -82,7 +74,7 @@ TEST(CBOR, ArrayEmpty)
     EXPECT_EQ(cbor.arr.size(), 0);
 }
 
-TEST(CBOR, ArrayCreateThenPush)
+TEST(Cbor, ArrayCreateThenPush)
 {
     CBOR cbor = Array();
     CBOR obj;
@@ -92,7 +84,7 @@ TEST(CBOR, ArrayCreateThenPush)
     EXPECT_EQ(cbor.arr.front(), &obj);
 }
 
-TEST(CBOR, ArrayPushThenCreate)
+TEST(Cbor, ArrayPushThenCreate)
 {
     auto arr = Array();
     CBOR obj;
@@ -106,7 +98,7 @@ TEST(CBOR, ArrayPushThenCreate)
     EXPECT_EQ(cbor.arr.front(), &obj);
 }
 
-TEST(CBOR, MapEmpty)
+TEST(Cbor, MapEmpty)
 {
     CBOR cbor = Map();
 
@@ -114,7 +106,7 @@ TEST(CBOR, MapEmpty)
     EXPECT_EQ(cbor.map.size(), 0);
 }
 
-TEST(CBOR, MapCreateThenPush)
+TEST(Cbor, MapCreateThenPush)
 {
     CBOR cbor = Map();
     CBOR key;
@@ -129,7 +121,7 @@ TEST(CBOR, MapCreateThenPush)
     EXPECT_EQ((*it).val, &val);
 }
 
-TEST(CBOR, MapPushThenCreate)
+TEST(Cbor, MapPushThenCreate)
 {
     auto map = Map();
     CBOR key;
@@ -148,9 +140,16 @@ TEST(CBOR, MapPushThenCreate)
     EXPECT_EQ((*it).val, &val);   
 }
 
-// TODO: Tag
+TEST(Cbor, Tag)
+{
+    CBOR content = 42;
+    CBOR cbor = Tag{777, &content};
 
-TEST(CBOR, BoolFalse)
+    EXPECT_EQ(cbor.tag.val, 777);
+    EXPECT_EQ(cbor.tag.content, &content);
+}
+
+TEST(Cbor, BoolFalse)
 {
     CBOR cbor = false;
 
@@ -158,7 +157,7 @@ TEST(CBOR, BoolFalse)
     EXPECT_EQ(cbor.prim, PRIM_FALSE);
 }
 
-TEST(CBOR, BoolTrue)
+TEST(Cbor, BoolTrue)
 {
     CBOR cbor = true;
 
@@ -166,7 +165,7 @@ TEST(CBOR, BoolTrue)
     EXPECT_EQ(cbor.prim, PRIM_TRUE);
 }
 
-TEST(CBOR, PrimitiveFalse)
+TEST(Cbor, PrimitiveFalse)
 {
     CBOR cbor = PRIM_FALSE;
 
@@ -174,7 +173,7 @@ TEST(CBOR, PrimitiveFalse)
     EXPECT_EQ(cbor.prim, PRIM_FALSE);
 }
 
-TEST(CBOR, PrimitiveTrue)
+TEST(Cbor, PrimitiveTrue)
 {
     CBOR cbor = PRIM_TRUE;
 
@@ -182,7 +181,7 @@ TEST(CBOR, PrimitiveTrue)
     EXPECT_EQ(cbor.prim, PRIM_TRUE);
 }
 
-TEST(CBOR, PrimitiveNull)
+TEST(Cbor, PrimitiveNull)
 {
     CBOR cbor = PRIM_NULL;
 
@@ -190,7 +189,7 @@ TEST(CBOR, PrimitiveNull)
     EXPECT_EQ(cbor.prim, PRIM_NULL);
 }
 
-TEST(CBOR, PrimitiveUndefined)
+TEST(Cbor, PrimitiveUndefined)
 {
     CBOR cbor = PRIM_UNDEFINED;
 
@@ -198,21 +197,21 @@ TEST(CBOR, PrimitiveUndefined)
     EXPECT_EQ(cbor.prim, PRIM_UNDEFINED);
 }
 
-TEST(CBOR, PrimitiveReserved)
+TEST(Cbor, PrimitiveReserved)
 {
     CBOR cbor = PRIM_FLOAT_16;
 
     EXPECT_EQ(cbor.type, TYPE_INVALID);
 }
 
-TEST(CBOR, PrimitiveInvalid)
+TEST(Cbor, PrimitiveInvalid)
 {
     CBOR cbor = Prim(31);
 
     EXPECT_EQ(cbor.type, TYPE_INVALID);
 }
 
-TEST(CBOR, PrimitiveValid)
+TEST(Cbor, PrimitiveValid)
 {
     CBOR cbor = Prim(32);
 
@@ -220,14 +219,14 @@ TEST(CBOR, PrimitiveValid)
     EXPECT_EQ(cbor.prim, Prim(32));
 }
 
-TEST(CBOR, PrimitiveGreaterThanMax)
+TEST(Cbor, PrimitiveGreaterThanMax)
 {
     CBOR cbor = Prim(512);
 
     EXPECT_EQ(cbor.type, TYPE_INVALID);
 }
 
-TEST(CBOR, Float)
+TEST(Cbor, Float)
 {
     CBOR cbor = 1.0f;
 
@@ -235,15 +234,10 @@ TEST(CBOR, Float)
     EXPECT_EQ(cbor.dbl, 1.0f);
 }
 
-TEST(CBOR, Double)
+TEST(Cbor, Double)
 {
     CBOR cbor = 1.0;
 
     EXPECT_EQ(cbor.type, TYPE_DOUBLE);
     EXPECT_EQ(cbor.dbl, 1.0);
-}
-
-TEST(CBOR, Sizeof)
-{
-    std::cout << "sizeof CBOR: " << sizeof(CBOR) << std::endl;
 }

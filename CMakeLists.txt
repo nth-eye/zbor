@@ -3,7 +3,7 @@ project(zbor VERSION 0.1.0)
 
 include_directories(inc)
 file(GLOB SRC_FILES src/*.cpp) 
-# add_executable(zbor main.cpp ${SRC_FILES}) 
+add_executable(zbor main.cpp ${SRC_FILES}) 
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

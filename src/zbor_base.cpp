@@ -48,8 +48,6 @@ CBOR::CBOR(bool val) : CBOR(val ? PRIM_TRUE : PRIM_FALSE)
 CBOR::CBOR(double val) : type{TYPE_DOUBLE}, dbl{val}
 {}
 
-// SECTION: Array and map
-
 void Iter::operator++()
 { 
     p = p->next; 
@@ -177,7 +175,5 @@ Err Map::pop(CBOR *key)
     }
     return ERR_NOT_FOUND;
 }
-
-// !SECTION: Array and map
 
 };

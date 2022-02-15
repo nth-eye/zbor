@@ -1,30 +1,37 @@
 #ifndef ZBOR_BASE_H
 #define ZBOR_BASE_H
 
-#include <cstddef>
-#include <cstdint>
+#include "zbor_util.h"
 
 namespace zbor {
 
-// enum MT {
-//     MT_UINT     = 0 << 5,
-//     MT_NINT     = 1 << 5,
-//     MT_DATA     = 2 << 5,
-//     MT_TEXT     = 3 << 5,
-//     MT_ARRAY    = 4 << 5,
-//     MT_MAP      = 5 << 5,
-//     MT_TAG      = 6 << 5,
-//     MT_SIMPLE   = 7 << 5,
-// };
+/**
+ * @brief CBOR major type (3 bits).
+ * 
+ */
+enum MT {
+    MT_UINT     = 0 << 5,
+    MT_NINT     = 1 << 5,
+    MT_DATA     = 2 << 5,
+    MT_TEXT     = 3 << 5,
+    MT_ARRAY    = 4 << 5,
+    MT_MAP      = 5 << 5,
+    MT_TAG      = 6 << 5,
+    MT_SIMPLE   = 7 << 5,
+};
 
-// enum AI {
-//     AI_0        = 23,
-//     AI_1        = 24,
-//     AI_2        = 25,
-//     AI_4        = 26,
-//     AI_8        = 27,
-//     AI_INDEF    = 31,
-// };
+/**
+ * @brief CBOR additional info (5 bits).
+ * 
+ */
+enum AI {
+    AI_0        = 23,
+    AI_1        = 24,
+    AI_2        = 25,
+    AI_4        = 26,
+    AI_8        = 27,
+    AI_INDEF    = 31,
+};
 
 /**
  * @brief Enum for primitive (simple) values. Includes FLOAT 
@@ -70,10 +77,10 @@ enum Err {
     ERR_NO_VALUE_FOR_KEY,
 //     ERR_INVALID_PARAM,
 //     ERR_INVALID_DATA,
-//     ERR_INVALID_TYPE,
-//     ERR_INVALID_SIMPLE,
-//     ERR_INVALID_FLOAT_TYPE,
-//     ERR_OUT_OF_MEM,
+    ERR_INVALID_TYPE,
+    ERR_INVALID_SIMPLE,
+    ERR_INVALID_FLOAT_TYPE,
+    ERR_OUT_OF_MEM,
 //     ERR_OUT_OF_DATA,
 };
 
@@ -180,12 +187,24 @@ struct Tag {
     CBOR *content;
 };
 
-// struct Sequence {
-//     CBOR *root;
-//     size_t size;
-//     Err err;
-// };
+/**
+ * @brief Used as decoding result, which provides all necessary
+ * info, including fail reason. Has begin and end iterators.
+ * 
+ */
+struct Sequence {
+    Iter begin()    { return root; }
+    Iter end()      { return NULL; }
+    CBOR *root = nullptr;
+    size_t size = 0;
+    Err err;
+};
 
+/**
+ * @brief General CBOR element, which can store any type. 
+ * Includes appropriate constructors.
+ * 
+ */
 struct CBOR {
 
     CBOR() {}
@@ -218,40 +237,11 @@ struct CBOR {
 
 /**
  * @brief Object pool for CBOR elements with static allocation.
- * Zero-size partial specialization is reserved for dynamic 
- * allocation (currently not implemented).
  * 
- * @tparam N Number of elements, 0 is reserved for dynamic allocation
+ * @tparam N Number of elements
  */
 template<size_t N>
-struct Pool {
-
-    template<typename... Args>
-    CBOR* make(Args... args)
-    {
-        return idx < N ? &(buf[idx++] = CBOR(args...)) : nullptr;
-    }
-
-    void free(CBOR *p)
-    {
-        if (p < buf || p >= buf + N || !idx || p == &buf[--idx])
-            return;
-        *p = buf[idx];
-    }
-
-    void clear() 
-    { 
-        idx = 0;
-    }
-
-    size_t size() const
-    {
-        return idx;
-    }
-private:
-    CBOR    buf[N];
-    size_t  idx = 0;
-};
+using Pool = StaticPool<CBOR, N>;
 
 };
 
