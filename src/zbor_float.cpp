@@ -1,6 +1,5 @@
 #include "zbor_float.h"
 #include <cmath>
-// #include <cfloat>
 
 namespace {
 

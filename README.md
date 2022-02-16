@@ -14,8 +14,5 @@ allocated from static pool templated by number of tokens.
 ## TODO
 
 - [ ] Decoder
-    - [ ] tests
-    - [x] indefinite array
-    - [x] indefinite map
-    - [x] indefinite data/text
+    - [ ] more tests
     - [ ] more precise errors

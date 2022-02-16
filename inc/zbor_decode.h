@@ -144,12 +144,14 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
         case MT_MAP:
             val <<= 1;
         case MT_ARRAY:
-            stack.push(parent);
+            if (!stack.push(parent))
+                ret(ERR_DEPTH_EXCEEDED);
             item->arr.init();
             parent = {item, val};
         break;
         case MT_TAG:
-            stack.push(parent);
+            if (!stack.push(parent))
+                ret(ERR_DEPTH_EXCEEDED);
             item->tag.val = val;
             parent = {item, 1};
         break;
@@ -170,10 +172,6 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
                 item->dbl   = fp.f64;
                 item->type  = TYPE_DOUBLE;
             break;
-            case AI_INDEF:
-                item = parent.item;
-                stack.pop(parent);
-            break;
             default:
                 item->prim = Prim(val);
                 if (val >= 24 &&
@@ -192,7 +190,7 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
         }
         prev = item;
     }
-    if (parent.item)
+    if (parent.item || indef)
         return ret(ERR_INVALID_DATA);
     return ret(NO_ERR);
 }

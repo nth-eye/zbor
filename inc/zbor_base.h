@@ -82,6 +82,7 @@ enum Err {
     ERR_INVALID_FLOAT_TYPE,
     ERR_OUT_OF_MEM,
     ERR_OUT_OF_DATA,
+    ERR_DEPTH_EXCEEDED,
 };
 
 struct CBOR;
