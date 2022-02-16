@@ -79,6 +79,8 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
         item->type = Type(mt >> 5);
 
         if (indef) {
+            if (ai == AI_INDEF)
+                return ret(ERR_INVALID_DATA);
             if (mt != MT_DATA && 
                 mt != MT_TEXT)
             {
