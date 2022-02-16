@@ -17,5 +17,5 @@ allocated from static pool templated by number of tokens.
     - [ ] tests
     - [x] indefinite array
     - [x] indefinite map
-    - [ ] indefinite data/text
+    - [x] indefinite data/text
     - [ ] more precise errors

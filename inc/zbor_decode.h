@@ -17,6 +17,7 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
     CBOR *prev  = nullptr;
     CBOR *item  = nullptr;
     size_t cnt  = 0;
+    bool indef  = false;
 
     auto ret = [&](Err err) { return Sequence{root, cnt, err}; };
 
@@ -32,14 +33,15 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
     while (p < end) {
 
         if (*p == 0xff) {
+            ++p;
+            if (indef) {
+                indef = false;
+                continue;
+            } 
             if (!parent.item)
                 return ret(ERR_INVALID_DATA);
             item = parent.item;
-            // if (item->type == TYPE_DATA ||
-            //     item->type == TYPE_TEXT)
-            //     pool.free(item);
             stack.pop(parent);
-            ++p;
             continue;
         }
 
@@ -56,15 +58,9 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
                 case TYPE_ARRAY:
                 case TYPE_MAP: parent.item->arr.push(item); break;
                 case TYPE_TAG: parent.item->tag.content = item; break;
-                // case TYPE_DATA:
-                // case TYPE_TEXT:
-                // cnt++; 
-                // if (prev) {
-                //     prev->next = item;
-                //     item->prev = prev;
-                // }
-                // break;
-                default: return ret(ERR_INVALID_DATA);
+                default:
+                    pool.free(item); 
+                    return ret(ERR_INVALID_DATA);
             }
             parent.cnt--;
         } else {
@@ -81,6 +77,15 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
         uint64_t val = ai;
 
         item->type = Type(mt >> 5);
+
+        if (indef) {
+            if (mt != MT_DATA && 
+                mt != MT_TEXT)
+            {
+                pool.free(item);
+                return ret(ERR_INVALID_DATA);
+            }
+        }
 
         switch (ai) {
         case AI_1:
@@ -103,11 +108,14 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
         break;
         case AI_INDEF:
             if (mt == MT_DATA || mt == MT_TEXT) {
-                // cnt--;
-                // stack.push(parent);
-                // parent = {item, -1};
-                // continue;
-                return ret(ERR_INVALID_DATA);
+                cnt--;
+                indef = true;
+                if (prev)
+                    prev->next = nullptr;
+                if (root == item)
+                    root = nullptr;
+                pool.free(item);
+                continue;
             } else if (mt == MT_ARRAY || mt == MT_MAP) {
                 val = -1;
             } else {

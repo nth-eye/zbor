@@ -396,17 +396,17 @@ TEST(Decode, IndefMap)
     decode_check<12, 1, 5>(encoded, exp);
 }
 
-// TEST(Decode, IndefString)
-// {
-//     const uint8_t encoded[] = {
-//         0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff,
-//         // 0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, 
-//     };
-//     const CBOR exp[] = {
-//         {(uint8_t*) "\x01\x02", 2},
-//         {(uint8_t*) "\x03\x04\x05", 3},
-//         // {"strea", strlen("strea")},
-//         // {"ming", strlen("ming")}
-//     };
-//     decode_check<9, 2, 16>(encoded, exp);
-// }
+TEST(Decode, IndefString)
+{
+    const uint8_t encoded[] = {
+        0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff,
+        0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, 
+    };
+    const CBOR exp[] = {
+        {(uint8_t*) "\x01\x02", 2},
+        {(uint8_t*) "\x03\x04\x05", 3},
+        {"strea", strlen("strea")},
+        {"ming", strlen("ming")}
+    };
+    decode_check(encoded, exp);
+}
