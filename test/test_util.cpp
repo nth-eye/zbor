@@ -93,3 +93,14 @@ TEST(Util, StaticPool)
     ASSERT_EQ(el_4, el_1);
     EXPECT_EQ(*el_4, 4);
 }
+
+TEST(Util, StaticPool2Bytes)
+{
+    StaticPool<int, 9> pool;
+
+    for (int i = 0; i < 8; ++i)
+        ASSERT_NE(pool.make(), nullptr);
+
+    ASSERT_NE(pool.make(), nullptr);
+    ASSERT_EQ(pool.make(), nullptr);
+}

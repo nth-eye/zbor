@@ -13,14 +13,10 @@ allocated from static pool templated by number of tokens.
 
 ## TODO
 
-- [ ] Tests
-    - [ ] float
-    - [ ] encoder
-    - [ ] decoder
-- [ ] Encoder
-    - [ ] indefinite data
 - [ ] Decoder
-    - [ ] map
-    - [ ] tag
+    - [ ] tests
+    - [x] array
+    - [x] map
+    - [x] tag
     - [ ] indefinite data
     - [ ] more precise errors

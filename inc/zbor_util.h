@@ -78,7 +78,7 @@ struct StaticPool {
     T* make(Args... args)
     {
         constexpr auto last_byte = Bytes - 1;
-        constexpr auto last_bit = N & 7 ? N & 7 : 8;
+        constexpr auto last_byte_bit = N & 7 ? N & 7 : 8;
 
         size_t byte = last_byte;
 
@@ -88,6 +88,8 @@ struct StaticPool {
                 break;
             }
         }
+        const auto last_bit = byte == last_byte ? last_byte_bit : 8;
+
         for (unsigned bit = 0; bit < last_bit; ++bit) {
             if (get_bit(taken[byte], bit) == false) {
                 set_bit(taken[byte], bit);
@@ -107,6 +109,32 @@ struct StaticPool {
 private:
     T       arr[N];
     uint8_t taken[Bytes] = {};
+};
+
+/**
+ * @brief Static stack without memory allocation.
+ * 
+ * @tparam T Type of elements
+ * @tparam N Number of elements (stack depth)
+ */
+template<class T, size_t N>
+struct Stack {
+    
+    bool push(T item) 
+    { 
+        if (size >= N)
+            return false;
+        stack[size++] = item;
+        return true;
+    }
+
+    void pop(T &item) 
+    {
+        item = stack[--size];
+    }
+private:
+    T stack[N];
+    size_t size = 0;
 };
 
 }

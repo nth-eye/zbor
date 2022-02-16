@@ -120,28 +120,28 @@ TEST(Encode, Array)
 
     arr_2.push(pool.make(1));
 
-    CBOR *arr_2_1 = pool.make(Array());
+    Array arr_2_1;
 
-    arr_2_1->arr.push(pool.make(2));
-    arr_2_1->arr.push(pool.make(3));
+    arr_2_1.push(pool.make(2));
+    arr_2_1.push(pool.make(3));
 
-    CBOR *arr_2_2 = pool.make(Array());
+    Array arr_2_2;
 
-    arr_2_2->arr.push(pool.make(4));
-    arr_2_2->arr.push(pool.make(5));
+    arr_2_2.push(pool.make(4));
+    arr_2_2.push(pool.make(5));
 
-    arr_2.push(arr_2_1);
-    arr_2.push(arr_2_2);
+    arr_2.push(pool.make(arr_2_1));
+    arr_2.push(pool.make(arr_2_2));
 
     for (int i = 1; i < 26; ++i)
         arr_3.push(pool.make(i));
 
-    CBOR *map = pool.make(Map());
+    Map map;
 
-    map->map.push(pool.make("b", 1), pool.make("c", 1));
+    map.push(pool.make("b", 1), pool.make("c", 1));
     
     arr_4.push(pool.make("a", 1));
-    arr_4.push(map);
+    arr_4.push(pool.make(map));
 
     enc.encode(arr_0);
     enc.encode(arr_1);
@@ -171,14 +171,13 @@ TEST(Encode, Map)
     map_1.push(pool.make(1), pool.make(2));
     map_1.push(pool.make(3), pool.make(4));
 
-    CBOR *arr = pool.make(Array());
-    Array *arr_p = &arr->arr;
+    Array arr;
 
-    arr_p->push(pool.make(2));
-    arr_p->push(pool.make(3));
+    arr.push(pool.make(2));
+    arr.push(pool.make(3));
 
     map_2.push(pool.make("a", 1), pool.make(1));
-    map_2.push(pool.make("b", 1), arr);
+    map_2.push(pool.make("b", 1), pool.make(arr));
 
     map_3.push(pool.make("a", 1), pool.make("A", 1));
     map_3.push(pool.make("b", 1), pool.make("B", 1));
@@ -291,9 +290,12 @@ TEST(Encode, Indef)
         0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff,
         0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, 
         0x9f, 0xff,
-        // 0x9f, 0x01, 0x82, 0x02, 0x03, 0x9f, 0x04, 0x05, 0xff, 0xff,
+        0x9f, 0x01, 0x82, 0x02, 0x03, 0x9f, 0x04, 0x05, 0xff, 0xff,
+        0x9f, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x18, 0x18, 0x19, 0xff,
+        0xbf, 0x61, 0x61, 0x01, 0x61, 0x62, 0x9f, 0x02, 0x03, 0xff, 0xff,
     };
     Encoder<sizeof(exp)> enc;
+    Pool<64> pool;
 
     enc.encode_start_indef(MT_DATA);
     enc.encode((uint8_t*) "\x01\x02", 2);
@@ -308,8 +310,32 @@ TEST(Encode, Indef)
     enc.encode_start_indef(MT_ARRAY);
     enc.encode_break();
 
-    // enc.encode_start_indef(MT_ARRAY);
-    // enc.encode_break();
+    enc.encode_start_indef(MT_ARRAY);
+    enc.encode(pool.make(1));
+    Array arr;
+    arr.push(pool.make(2));
+    arr.push(pool.make(3));
+    enc.encode(pool.make(arr));
+    enc.encode_start_indef(MT_ARRAY);
+    enc.encode(pool.make(4));
+    enc.encode(pool.make(5));
+    enc.encode_break();
+    enc.encode_break();
+
+    enc.encode_start_indef(MT_ARRAY);
+    for (int i = 1; i < 26; ++i)
+        enc.encode(pool.make(i));
+    enc.encode_break();
+
+    enc.encode_start_indef(MT_MAP);
+    enc.encode(pool.make("a", 1));
+    enc.encode(pool.make(1));
+    enc.encode(pool.make("b", 1));
+    enc.encode_start_indef(MT_ARRAY);
+    enc.encode(pool.make(2));
+    enc.encode(pool.make(3));
+    enc.encode_break();
+    enc.encode_break();
 
     encode_check(enc, exp);
 }

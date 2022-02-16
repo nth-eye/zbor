@@ -1,5 +1,5 @@
 #include "zbor_float.h"
-// #include <cmath>
+#include <cmath>
 // #include <cfloat>
 
 namespace {
@@ -195,18 +195,18 @@ uint16_t half_from_double(uint64_t d)
     return half_from_float(fp.f32);
 }
 
-// double half_to_double(uint16_t h) 
-// {
-//     unsigned exp = (h >> 10) & 0x1f;
-//     unsigned mant = h & 0x3ff;
-//     double val;
-//     if (exp == 0) 
-//         val = ldexp(mant, -24);
-//     else if (exp != 31) 
-//         val = ldexp(mant + 1024, exp - 25);
-//     else 
-//         val = mant == 0 ? INFINITY : NAN;
-//     return h & 0x8000 ? -val : val;
-// }
+double half_to_double_direct(uint16_t h) 
+{
+    unsigned exp = (h >> 10) & 0x1f;
+    unsigned mant = h & 0x3ff;
+    double val;
+    if (exp == 0) 
+        val = ldexp(mant, -24);
+    else if (exp != 31) 
+        val = ldexp(mant + 1024, exp - 25);
+    else 
+        val = mant == 0 ? INFINITY : NAN;
+    return h & 0x8000 ? -val : val;
+}
 
 }

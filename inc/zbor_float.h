@@ -25,6 +25,7 @@ uint32_t half_to_float(uint16_t h);
 uint16_t half_from_float(uint32_t f);
 uint64_t half_to_double(uint16_t h);
 uint16_t half_from_double(uint64_t d);
+double half_to_double_direct(uint16_t h);
 
 };
 

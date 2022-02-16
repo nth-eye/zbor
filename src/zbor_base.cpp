@@ -134,7 +134,7 @@ Err Map::push(CBOR *key, CBOR *val)
     tail = val;
     tail->next = nullptr;
     
-    ++len;
+    len += 2;
 
     return NO_ERR;
 }
@@ -157,7 +157,7 @@ Err Map::pop(CBOR *key)
 
         if (it == key) {
 
-            --len;
+            len -= 2;
 
             if (prev)
                 prev->next = next;

@@ -75,13 +75,13 @@ enum Err {
     ERR_EMPTY,
     ERR_NOT_FOUND,
     ERR_NO_VALUE_FOR_KEY,
-//     ERR_INVALID_PARAM,
-//     ERR_INVALID_DATA,
+    ERR_INVALID_PARAM,
+    ERR_INVALID_DATA,
     ERR_INVALID_TYPE,
     ERR_INVALID_SIMPLE,
     ERR_INVALID_FLOAT_TYPE,
     ERR_OUT_OF_MEM,
-//     ERR_OUT_OF_DATA,
+    ERR_OUT_OF_DATA,
 };
 
 struct CBOR;
@@ -150,11 +150,14 @@ private:
  * 
  */
 struct Array {
+    void init()         { head = tail = 0; len = 0; }
     size_t size() const { return len; }
-    Iter begin()        { return head; }
-    Iter end()          { return NULL; }
     CBOR* front()       { return head; }
     CBOR* back()        { return tail; }
+    Iter begin()        { return head; }
+    Iter end()          { return NULL; }
+    const Iter begin() const    { return head; }
+    const Iter end() const      { return NULL; }
     Err push(CBOR *val);
     Err pop(CBOR *val);
 protected:
@@ -169,8 +172,11 @@ protected:
  * 
  */
 struct Map : Array {
-    MapIter begin()    { return head; }
-    MapIter end()      { return NULL; }
+    size_t size() const { return len >> 1; }
+    MapIter begin()     { return head; }
+    MapIter end()       { return NULL; }
+    const MapIter begin() const { return head; }
+    const MapIter end() const   { return NULL; }
     CBOR* front() = delete;
     CBOR* back() = delete;
     Err push(CBOR *key, CBOR *val);
@@ -195,8 +201,8 @@ struct Tag {
 struct Sequence {
     Iter begin()    { return root; }
     Iter end()      { return NULL; }
-    CBOR *root = nullptr;
-    size_t size = 0;
+    CBOR *root;
+    size_t size;
     Err err;
 };
 
