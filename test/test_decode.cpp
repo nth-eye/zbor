@@ -398,15 +398,33 @@ TEST(Decode, IndefMap)
 
 TEST(Decode, IndefString)
 {
+    Pool<2> pool;
+
+    CBOR str_0 = {(uint8_t*) "\x01\x02", 2};
+    CBOR str_1 = {"strea", strlen("strea")};
+
+    str_0.str.append(pool.make((uint8_t*) "\x03\x04\x05", 3));
+    str_1.str.append(pool.make("ming", strlen("ming")));
+
     const uint8_t encoded[] = {
         0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff,
         0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, 
     };
     const CBOR exp[] = {
-        {(uint8_t*) "\x01\x02", 2},
-        {(uint8_t*) "\x03\x04\x05", 3},
-        {"strea", strlen("strea")},
-        {"ming", strlen("ming")}
+        str_0,
+        str_1,
     };
     decode_check(encoded, exp);
+    
+    // const uint8_t encoded[] = {
+    //     0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff,
+    //     0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, 
+    // };
+    // const CBOR exp[] = {
+    //     {(uint8_t*) "\x01\x02", 2},
+    //     {(uint8_t*) "\x03\x04\x05", 3},
+    //     {"strea", strlen("strea")},
+    //     {"ming", strlen("ming")}
+    // };
+    // decode_check(encoded, exp);
 }

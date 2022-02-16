@@ -13,6 +13,5 @@ allocated from static pool templated by number of tokens.
 
 ## TODO
 
-- [ ] Decoder
-    - [ ] more tests
-    - [ ] more precise errors
+- [ ] support string chunks
+- [ ] more precise errors in decoder

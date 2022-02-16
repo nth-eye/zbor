@@ -6,6 +6,22 @@
 
 namespace zbor {
 
+/**
+ * @brief Decode data into CBOR objects, allocated from
+ * static pool. IMPORTANT: Indefinite string (data/text) 
+ * support is seriously limited. Although their presence 
+ * doesn't immediately break decoding, chunks are parsed 
+ * as separate objects and not concatenated afterwards.
+ * This can break indefinite strings nested in a map 
+ * (which is almost always root object).
+ * 
+ * @tparam N Pool size
+ * @tparam D Maximum depth, by default equals N
+ * @param pool CBOR object pool
+ * @param buf Input data to parse
+ * @param len Data length
+ * @return Top level object sequence if ok, if not - error is stored
+ */
 template<size_t N, size_t D = N>
 Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
 {

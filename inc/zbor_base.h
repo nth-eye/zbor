@@ -5,6 +5,8 @@
 
 namespace zbor {
 
+struct CBOR;
+
 /**
  * @brief CBOR major type (3 bits).
  * 
@@ -85,8 +87,6 @@ enum Err {
     ERR_DEPTH_EXCEEDED,
 };
 
-struct CBOR;
-
 /**
  * @brief Pair of pointers to CBOR key and value.
  * 
@@ -104,11 +104,13 @@ struct String {
     String() = default;
     String(const uint8_t *dat, size_t len) : dat{dat}, len{len} {}
     String(const char *txt, size_t len) : txt{txt}, len{len} {}
+    void append(CBOR *str) { next = str; }
     union {
         const uint8_t *dat;
         const char *txt;
     };
     size_t len;
+    CBOR *next;
 };
 
 /**
@@ -253,22 +255,3 @@ using Pool = StaticPool<CBOR, N>;
 };
 
 #endif
-
-// inline const char* err_str(Err err)
-// {
-//     constexpr const char *str[] = {
-//         "NO_ERR",
-//         "ERR_NULLPTR",
-//         "ERR_INVALID_PARAM",
-//         "ERR_INVALID_DATA",
-//         "ERR_INVALID_TYPE",
-//         "ERR_INVALID_SIMPLE",
-//         "ERR_INVALID_FLOAT_TYPE",
-//         "ERR_OUT_OF_MEM",
-//         "ERR_OUT_OF_DATA",
-//         "ERR_ALREADY_EMPTY",
-//         "ERR_NOT_FOUND",
-//         "ERR_NO_VALUE_FOR_KEY",
-//     };
-//     return str[err];
-// }
