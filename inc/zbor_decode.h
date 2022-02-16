@@ -31,6 +31,18 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
 
     while (p < end) {
 
+        if (*p == 0xff) {
+            if (!parent.item)
+                return ret(ERR_INVALID_DATA);
+            item = parent.item;
+            // if (item->type == TYPE_DATA ||
+            //     item->type == TYPE_TEXT)
+            //     pool.free(item);
+            stack.pop(parent);
+            ++p;
+            continue;
+        }
+
         item = pool.make();
 
         if (!item)
@@ -44,6 +56,14 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
                 case TYPE_ARRAY:
                 case TYPE_MAP: parent.item->arr.push(item); break;
                 case TYPE_TAG: parent.item->tag.content = item; break;
+                // case TYPE_DATA:
+                // case TYPE_TEXT:
+                // cnt++; 
+                // if (prev) {
+                //     prev->next = item;
+                //     item->prev = prev;
+                // }
+                // break;
                 default: return ret(ERR_INVALID_DATA);
             }
             parent.cnt--;
@@ -66,32 +86,43 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
         case AI_1:
         case AI_2:
         case AI_4:
-        case AI_8: {
+        case AI_8: 
+        {
             size_t len = bit(ai - AI_1);
             if (p + len > end)
                 return ret(ERR_OUT_OF_DATA);
             val = 0;
             for (int i = 8 * len - 8; i >= 0; i -= 8)
                 val |= ((uint64_t) *p++) << i;
-            break;
         }
+        break;
         case 28:
         case 29:
         case 30:
             return ret(ERR_INVALID_DATA);
-            break;
+        break;
         case AI_INDEF:
-            return ret(ERR_INVALID_DATA);
-            break;
+            if (mt == MT_DATA || mt == MT_TEXT) {
+                // cnt--;
+                // stack.push(parent);
+                // parent = {item, -1};
+                // continue;
+                return ret(ERR_INVALID_DATA);
+            } else if (mt == MT_ARRAY || mt == MT_MAP) {
+                val = -1;
+            } else {
+                return ret(ERR_INVALID_DATA);
+            }
+        break;
         }
 
         switch (mt) {
         case MT_UINT:
             item->uint = val;
-            break;
+        break;
         case MT_NINT:
             item->sint = ~val;
-            break;
+        break;
         case MT_DATA:
         case MT_TEXT:
             if (p + val > end)
@@ -99,44 +130,48 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
             item->str.dat = p;
             item->str.len = val;
             p += val;
-            break;
+        break;
         case MT_MAP:
             val <<= 1;
         case MT_ARRAY:
             stack.push(parent);
             item->arr.init();
             parent = {item, val};
-            break;
+        break;
         case MT_TAG:
             stack.push(parent);
             item->tag.val = val;
             parent = {item, 1};
-            break;
+        break;
         case MT_SIMPLE:
             switch (ai) {
             case PRIM_FLOAT_16:
                 fp.u32      = half_to_float(val);
                 item->dbl   = fp.f32; // half_to_double_direct(val);
                 item->type  = TYPE_DOUBLE;
-                break;
+            break;
             case PRIM_FLOAT_32:
                 fp.u32      = val;
                 item->dbl   = fp.f32;
                 item->type  = TYPE_DOUBLE;
-                break;
+            break;
             case PRIM_FLOAT_64:
                 fp.u64      = val;
                 item->dbl   = fp.f64;
                 item->type  = TYPE_DOUBLE;
-                break;
+            break;
+            case AI_INDEF:
+                item = parent.item;
+                stack.pop(parent);
+            break;
             default:
                 item->prim = Prim(val);
                 if (val >= 24 &&
                     val <= 31)
                     return ret(ERR_INVALID_DATA);
-                break;
-            }
             break;
+            }
+        break;
         default:
             return ret(ERR_INVALID_DATA);
         }
@@ -147,6 +182,8 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
         }
         prev = item;
     }
+    if (parent.item)
+        return ret(ERR_INVALID_DATA);
     return ret(NO_ERR);
 }
 

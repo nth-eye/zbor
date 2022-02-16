@@ -351,3 +351,62 @@ TEST(Decode, Float)
     };
     decode_check(encoded, exp);
 }
+
+TEST(Decode, IndefArray)
+{
+    Pool<7> pool;
+
+    Array arr_0, arr_1;
+
+    arr_1.push(pool.make(1));
+    Array arr_1_1;
+    arr_1_1.push(pool.make(2));
+    arr_1_1.push(pool.make(3));
+    arr_1.push(pool.make(arr_1_1));
+    Array arr_1_2;
+    arr_1_2.push(pool.make(4));
+    arr_1_2.push(pool.make(5));
+    arr_1.push(pool.make(arr_1_2));
+
+    const CBOR exp[] = {
+        arr_0,
+        arr_1,
+    };
+    const uint8_t encoded[] = {
+        0x9f, 0xff,
+        0x9f, 0x01, 0x82, 0x02, 0x03, 0x9f, 0x04, 0x05, 0xff, 0xff,
+    };
+    decode_check<12, 2, 16>(encoded, exp);
+}
+
+TEST(Decode, IndefMap)
+{
+    Pool<4> pool;
+    Map map;
+
+    map.push(pool.make("Fun", 3), pool.make(true));
+    map.push(pool.make("Amt", 3), pool.make(-2));
+
+    const CBOR exp[] = {
+        map,
+    };
+    const uint8_t encoded[] = {
+        0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff,
+    };
+    decode_check<12, 1, 5>(encoded, exp);
+}
+
+// TEST(Decode, IndefString)
+// {
+//     const uint8_t encoded[] = {
+//         0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff,
+//         // 0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, 
+//     };
+//     const CBOR exp[] = {
+//         {(uint8_t*) "\x01\x02", 2},
+//         {(uint8_t*) "\x03\x04\x05", 3},
+//         // {"strea", strlen("strea")},
+//         // {"ming", strlen("ming")}
+//     };
+//     decode_check<9, 2, 16>(encoded, exp);
+// }
