@@ -64,6 +64,8 @@ enum Type {
     TYPE_TAG,
     TYPE_PRIM,
     TYPE_DOUBLE,
+    TYPE_DATA_CHUNKS,
+    TYPE_TEXT_CHUNKS,
     TYPE_INVALID,
 };
 
@@ -104,13 +106,11 @@ struct String {
     String() = default;
     String(const uint8_t *dat, size_t len) : dat{dat}, len{len} {}
     String(const char *txt, size_t len) : txt{txt}, len{len} {}
-    void append(CBOR *str) { next = str; }
     union {
         const uint8_t *dat;
         const char *txt;
     };
     size_t len;
-    CBOR *next;
 };
 
 /**
@@ -187,6 +187,16 @@ struct Map : Array {
 };
 
 /**
+ * @brief Strong type to provide CBOR object constructor for 
+ * chunks of data and text.
+ * 
+ */
+template<Type T>
+struct Chunks : Array {
+    static_assert(T == TYPE_DATA || T == TYPE_TEXT, "only data or text");
+};
+
+/**
  * @brief CBOR tag, stores integer tag value and pointer 
  * to CBOR content object. 
  * 
@@ -228,6 +238,8 @@ struct CBOR {
     CBOR(Prim val);
     CBOR(bool val);
     CBOR(double val);
+    CBOR(Chunks<TYPE_DATA> val);
+    CBOR(Chunks<TYPE_TEXT> val);
 
     CBOR *next  = nullptr;
     CBOR *prev  = nullptr;
@@ -241,6 +253,8 @@ struct CBOR {
         Tag tag;
         Prim prim;
         double dbl;
+        Chunks<TYPE_DATA> chunk_dat;
+        Chunks<TYPE_TEXT> chunk_txt;
     };
 };
 

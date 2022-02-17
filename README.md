@@ -13,5 +13,5 @@ allocated from static pool templated by number of tokens.
 
 ## TODO
 
-- [ ] support string chunks
-- [ ] more precise errors in decoder
+- [x] support string chunks
+- [ ] test_cbor: array, map, tag and chunks

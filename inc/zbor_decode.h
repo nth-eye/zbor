@@ -11,9 +11,9 @@ namespace zbor {
  * static pool. IMPORTANT: Indefinite string (data/text) 
  * support is seriously limited. Although their presence 
  * doesn't immediately break decoding, chunks are parsed 
- * as separate objects and not concatenated afterwards.
- * This can break indefinite strings nested in a map 
- * (which is almost always root object).
+ * as separate objects, stored in array member and not 
+ * concatenated afterwards. Special types are made for 
+ * these: TYPE_DATA_CHUNKS and TYPE_TEXT_CHUNKS.
  * 
  * @tparam N Pool size
  * @tparam D Maximum depth, by default equals N
@@ -50,14 +50,12 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
 
         if (*p == 0xff) {
             ++p;
-            if (indef) {
-                indef = false;
-                continue;
-            } 
+            indef = false;
             if (!parent.item)
                 return ret(ERR_INVALID_DATA);
             item = parent.item;
             stack.pop(parent);
+            prev = item;
             continue;
         }
 
@@ -69,8 +67,23 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
         if (!root)
             root = item;
 
+        uint8_t mt = *p & 0xe0;
+        uint8_t ai = *p++ & 0x1f;
+        uint64_t val = ai;
+        
+        if (indef) {
+            if (ai == AI_INDEF)
+                return ret(ERR_INVALID_DATA);
+            if ((mt >> 5) != parent.item->type - TYPE_DATA_CHUNKS + TYPE_DATA) {
+                pool.free(item);
+                return ret(ERR_INVALID_DATA);
+            }
+        }
+
         if (parent.item) {
             switch (parent.item->type) {
+                case TYPE_DATA_CHUNKS:
+                case TYPE_TEXT_CHUNKS:
                 case TYPE_ARRAY:
                 case TYPE_MAP: parent.item->arr.push(item); break;
                 case TYPE_TAG: parent.item->tag.content = item; break;
@@ -87,23 +100,7 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
             prev->next = item;
             item->prev = prev;
         }
-
-        uint8_t mt = *p & 0xe0;
-        uint8_t ai = *p++ & 0x1f;
-        uint64_t val = ai;
-
         item->type = Type(mt >> 5);
-
-        if (indef) {
-            if (ai == AI_INDEF)
-                return ret(ERR_INVALID_DATA);
-            if (mt != MT_DATA && 
-                mt != MT_TEXT)
-            {
-                pool.free(item);
-                return ret(ERR_INVALID_DATA);
-            }
-        }
 
         switch (ai) {
         case AI_1:
@@ -126,13 +123,13 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
         break;
         case AI_INDEF:
             if (mt == MT_DATA || mt == MT_TEXT) {
-                cnt--;
+                if (!stack.push(parent))
+                    ret(ERR_DEPTH_EXCEEDED);
+                item->type = Type(item->type + TYPE_DATA_CHUNKS - TYPE_DATA);
+                item->arr.init();
+                val = -1;
+                parent = {item, val};
                 indef = true;
-                if (prev)
-                    prev->next = nullptr;
-                if (root == item)
-                    root = nullptr;
-                pool.free(item);
                 continue;
             } else if (mt == MT_ARRAY || mt == MT_MAP) {
                 val = -1;

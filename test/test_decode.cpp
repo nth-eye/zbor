@@ -61,17 +61,41 @@ void decode_compare(const CBOR &exp, const CBOR &res)
                 ASSERT_FLOAT_EQ(exp.dbl, res.dbl);
             }
         break;
+        case TYPE_DATA_CHUNKS:
+        {
+            ASSERT_EQ(exp.arr.size(), res.arr.size());
+            auto exp_iter = exp.arr.begin();
+            for (auto it : res.arr) {
+                ASSERT_EQ(it.type, TYPE_DATA);
+                ASSERT_EQ((*exp_iter).type, TYPE_DATA);
+                decode_compare(*exp_iter, it);
+                ++exp_iter;
+            }
+        }
+        break;
+        case TYPE_TEXT_CHUNKS:
+        {
+            ASSERT_EQ(exp.arr.size(), res.arr.size());
+            auto exp_iter = exp.arr.begin();
+            for (auto it : res.arr) {
+                ASSERT_EQ(it.type, TYPE_TEXT);
+                ASSERT_EQ((*exp_iter).type, TYPE_TEXT);
+                decode_compare(*exp_iter, it);
+                ++exp_iter;
+            }
+        }
+        break;
         default:
             ASSERT_TRUE(false);
     }
 }
 
 template<size_t N, size_t M, size_t P = M>
-void decode_check(const uint8_t (&encoded)[N], const CBOR (&exp)[M])
+void decode_check(const uint8_t (&enc)[N], const CBOR (&exp)[M])
 {
     Pool<P> pool; 
 
-    auto ret = decode(pool, encoded, sizeof(encoded));
+    auto ret = decode(pool, enc, sizeof(enc));
 
     ASSERT_EQ(ret.err, NO_ERR);
     ASSERT_EQ(ret.size, M);
@@ -106,7 +130,7 @@ TEST(Decode, Nullptr)
 
 TEST(Decode, Uint)
 {
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0x00,
         0x01,
         0x0a,
@@ -130,7 +154,7 @@ TEST(Decode, Uint)
         1000000000000,
         18446744073709551615ul,
     };
-    decode_check(encoded, exp);
+    decode_check(enc, exp);
 }
 
 TEST(Decode, Sint)
@@ -141,13 +165,13 @@ TEST(Decode, Sint)
         -100,
         -1000,
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0x20,
         0x29,
         0x38, 0x63,
         0x39, 0x03, 0xe7,
     };
-    decode_check(encoded, exp);
+    decode_check(enc, exp);
 }
 
 TEST(Decode, Data)
@@ -156,11 +180,11 @@ TEST(Decode, Data)
         {(uint8_t*) nullptr, 0},
         {(uint8_t*) "\x01\x02\x03\x04", 4},
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0x40,
         0x44, 0x01, 0x02, 0x03, 0x04,
     };
-    decode_check(encoded, exp);
+    decode_check(enc, exp);
 }
 
 TEST(Decode, Text)
@@ -175,7 +199,7 @@ TEST(Decode, Text)
         {"\u6c34", strlen("\u6c34")},
         {(char*) test, sizeof(test)},  
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0x60,
         0x61, 0x61,
         0x64, 0x49, 0x45, 0x54, 0x46,
@@ -184,7 +208,7 @@ TEST(Decode, Text)
         0x63, 0xe6, 0xb0, 0xb4,
         0x64, 0xf0, 0x90, 0x85, 0x91,
     };
-    decode_check(encoded, exp);
+    decode_check(enc, exp);
 }
 
 TEST(Decode, Array)
@@ -217,12 +241,12 @@ TEST(Decode, Array)
         arr_1,
         arr_2,
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0x80,
         0x83, 0x01, 0x02, 0x03,
         0x83, 0x01, 0x82, 0x02, 0x03, 0x82, 0x04, 0x05,
     };
-    decode_check<13, 3, 13>(encoded, exp);
+    decode_check<sizeof(enc), 3, 13>(enc, exp);
 }
 
 TEST(Decode, Map)
@@ -254,13 +278,13 @@ TEST(Decode, Map)
         map_2,
         map_3,
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0xa0,
         0xa2, 0x01, 0x02, 0x03, 0x04,
         0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x82, 0x02, 0x03,
         0xa5, 0x61, 0x61, 0x61, 0x41, 0x61, 0x62, 0x61, 0x42, 0x61, 0x63, 0x61, 0x43, 0x61, 0x64, 0x61, 0x44, 0x61, 0x65, 0x61, 0x45,
     };
-    decode_check<36, 4, 24>(encoded, exp);
+    decode_check<sizeof(enc), 4, 24>(enc, exp);
 }
 
 TEST(Decode, Tag)
@@ -275,7 +299,7 @@ TEST(Decode, Tag)
         Tag{24, pool.make((uint8_t*) "\x64\x49\x45\x54\x46", 5)},
         Tag{32, pool.make("http://www.example.com", strlen("http://www.example.com"))},
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0xc0, 0x74, 0x32, 0x30, 0x31, 0x33, 0x2d, 0x30, 0x33, 0x2d, 0x32, 0x31, 0x54, 0x32, 0x30, 0x3a, 0x30, 0x34, 0x3a, 0x30, 0x30, 0x5a,
         0xc1, 0x1a, 0x51, 0x4b, 0x67, 0xb0,
         0xc1, 0xfb, 0x41, 0xd4, 0x52, 0xd9, 0xec, 0x20, 0x00, 0x00,
@@ -283,7 +307,7 @@ TEST(Decode, Tag)
         0xd8, 0x18, 0x45, 0x64, 0x49, 0x45, 0x54, 0x46,
         0xd8, 0x20, 0x76, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d,
     };
-    decode_check<77, 6, 12>(encoded, exp);
+    decode_check<sizeof(enc), 6, 12>(enc, exp);
 }
 
 TEST(Decode, Simple)
@@ -298,7 +322,7 @@ TEST(Decode, Simple)
         Prim(16),
         Prim(255),
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0xf4,
         0xf5,
         0xf4,
@@ -308,7 +332,7 @@ TEST(Decode, Simple)
         0xf0,
         0xf8, 0xff,
     };
-    decode_check(encoded, exp);
+    decode_check(enc, exp);
 }
 
 TEST(Decode, Float)
@@ -331,7 +355,7 @@ TEST(Decode, Float)
         (double) NAN,
         (double) -INFINITY,
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0xf9, 0x00, 0x00,
         0xf9, 0x80, 0x00,
         0xf9, 0x3c, 0x00,
@@ -349,7 +373,7 @@ TEST(Decode, Float)
         0xf9, 0x7e, 0x00,
         0xf9, 0xfc, 0x00,
     };
-    decode_check(encoded, exp);
+    decode_check(enc, exp);
 }
 
 TEST(Decode, IndefArray)
@@ -372,16 +396,17 @@ TEST(Decode, IndefArray)
         arr_0,
         arr_1,
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0x9f, 0xff,
         0x9f, 0x01, 0x82, 0x02, 0x03, 0x9f, 0x04, 0x05, 0xff, 0xff,
     };
-    decode_check<12, 2, 16>(encoded, exp);
+    decode_check<sizeof(enc), 2, 16>(enc, exp);
 }
 
 TEST(Decode, IndefMap)
 {
     Pool<4> pool;
+
     Map map;
 
     map.push(pool.make("Fun", 3), pool.make(true));
@@ -390,41 +415,37 @@ TEST(Decode, IndefMap)
     const CBOR exp[] = {
         map,
     };
-    const uint8_t encoded[] = {
+    const uint8_t enc[] = {
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff,
     };
-    decode_check<12, 1, 5>(encoded, exp);
+    decode_check<sizeof(enc), 1, 5>(enc, exp);
 }
 
 TEST(Decode, IndefString)
 {
-    Pool<2> pool;
+    Pool<4> pool;
 
-    CBOR str_0 = {(uint8_t*) "\x01\x02", 2};
-    CBOR str_1 = {"strea", strlen("strea")};
+    Chunks<TYPE_DATA> chunks_0;
+    Chunks<TYPE_TEXT> chunks_1;
 
-    str_0.str.append(pool.make((uint8_t*) "\x03\x04\x05", 3));
-    str_1.str.append(pool.make("ming", strlen("ming")));
+    chunks_0.push(pool.make((uint8_t*) "\x01\x02", 2));
+    chunks_0.push(pool.make((uint8_t*) "\x03\x04\x05", 3));
 
-    const uint8_t encoded[] = {
+    chunks_1.push(pool.make("strea", strlen("strea")));
+    chunks_1.push(pool.make("ming", strlen("ming")));
+
+    const uint8_t enc[] = {
         0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff,
         0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, 
     };
     const CBOR exp[] = {
-        str_0,
-        str_1,
+        chunks_0,
+        chunks_1,
     };
-    decode_check(encoded, exp);
+    decode_check<sizeof(enc), 2, 6>(enc, exp);
+}
+
+TEST(Decode, Complex)
+{
     
-    // const uint8_t encoded[] = {
-    //     0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff,
-    //     0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, 
-    // };
-    // const CBOR exp[] = {
-    //     {(uint8_t*) "\x01\x02", 2},
-    //     {(uint8_t*) "\x03\x04\x05", 3},
-    //     {"strea", strlen("strea")},
-    //     {"ming", strlen("ming")}
-    // };
-    // decode_check(encoded, exp);
 }
