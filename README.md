@@ -1,6 +1,6 @@
 # zbor
 
-Small C++11 CBOR encoder/decoder library without dynamic memory allocation. CBOR tokens can either be allocated from static object pool templated by maximum number of tokens.
+Small C++11 CBOR encoder/decoder library without dynamic memory allocation. CBOR tokens can be allocated from static object pool templated by maximum number of tokens.
 
 ## Examples
 
