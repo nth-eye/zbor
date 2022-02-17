@@ -9,11 +9,11 @@ namespace zbor {
 /**
  * @brief Decode data into CBOR objects, allocated from
  * static pool. IMPORTANT: Indefinite string (data/text) 
- * support is seriously limited. Although their presence 
- * doesn't immediately break decoding, chunks are parsed 
- * as separate objects, stored in array member and not 
- * concatenated afterwards. Special types are made for 
- * these: TYPE_DATA_CHUNKS and TYPE_TEXT_CHUNKS.
+ * support is limited. Although their presence doesn't 
+ * break decoding, chunks are parsed as separate objects, 
+ * stored in special ChunkData/ChunkText members and not 
+ * concatenated afterwards. Special zbor::Type are made 
+ * for these: TYPE_DATA_CHUNKS and TYPE_TEXT_CHUNKS.
  * 
  * @tparam N Pool size
  * @tparam D Maximum depth, by default equals N
