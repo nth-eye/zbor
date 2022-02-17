@@ -104,10 +104,10 @@ TEST_F(ArrayTest, Iterator)
 
     auto it = arr.begin();
 
-    EXPECT_EQ((*it).type, TYPE_INVALID);
+    EXPECT_EQ((*it)->type, TYPE_INVALID);
 
     ++it;
 
-    EXPECT_EQ((*it).type, TYPE_UINT);
-    EXPECT_EQ((*it).uint, 42);
+    EXPECT_EQ((*it)->type, TYPE_UINT);
+    EXPECT_EQ((*it)->uint, 42);
 }

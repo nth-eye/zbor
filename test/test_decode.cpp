@@ -29,7 +29,7 @@ void decode_compare(const CBOR &exp, const CBOR &res)
             ASSERT_EQ(exp.arr.size(), res.arr.size());
             auto exp_iter = exp.arr.begin();
             for (auto it : res.arr) {
-                decode_compare(*exp_iter, it);
+                decode_compare(**exp_iter, *it);
                 ++exp_iter;
             }
         }
@@ -39,8 +39,8 @@ void decode_compare(const CBOR &exp, const CBOR &res)
             ASSERT_EQ(exp.map.size(), res.map.size());
             auto exp_iter = exp.map.begin();
             for (auto it : res.map) {
-                decode_compare((*exp_iter).key, it.key);
-                decode_compare((*exp_iter).val, it.val);
+                decode_compare(*(*exp_iter).key, *it.key);
+                decode_compare(*(*exp_iter).val, *it.val);
                 ++exp_iter;
             }
         }
@@ -66,9 +66,9 @@ void decode_compare(const CBOR &exp, const CBOR &res)
             ASSERT_EQ(exp.arr.size(), res.arr.size());
             auto exp_iter = exp.arr.begin();
             for (auto it : res.arr) {
-                ASSERT_EQ(it.type, TYPE_DATA);
-                ASSERT_EQ((*exp_iter).type, TYPE_DATA);
-                decode_compare(*exp_iter, it);
+                ASSERT_EQ(it->type, TYPE_DATA);
+                ASSERT_EQ((*exp_iter)->type, TYPE_DATA);
+                decode_compare(**exp_iter, *it);
                 ++exp_iter;
             }
         }
@@ -78,9 +78,9 @@ void decode_compare(const CBOR &exp, const CBOR &res)
             ASSERT_EQ(exp.arr.size(), res.arr.size());
             auto exp_iter = exp.arr.begin();
             for (auto it : res.arr) {
-                ASSERT_EQ(it.type, TYPE_TEXT);
-                ASSERT_EQ((*exp_iter).type, TYPE_TEXT);
-                decode_compare(*exp_iter, it);
+                ASSERT_EQ(it->type, TYPE_TEXT);
+                ASSERT_EQ((*exp_iter)->type, TYPE_TEXT);
+                decode_compare(**exp_iter, *it);
                 ++exp_iter;
             }
         }
@@ -104,7 +104,7 @@ void decode_check(const uint8_t (&enc)[N], const CBOR (&exp)[M])
     int i = 0;
 
     for (auto it : ret) {
-        decode_compare(exp[i], it);
+        decode_compare(exp[i], *it);
         ++i;
     }
 }
@@ -425,8 +425,8 @@ TEST(Decode, IndefString)
 {
     Pool<4> pool;
 
-    Chunks<TYPE_DATA> chunks_0;
-    Chunks<TYPE_TEXT> chunks_1;
+    ChunkData chunks_0;
+    ChunkText chunks_1;
 
     chunks_0.push(pool.make((uint8_t*) "\x01\x02", 2));
     chunks_0.push(pool.make((uint8_t*) "\x03\x04\x05", 3));
@@ -443,9 +443,4 @@ TEST(Decode, IndefString)
         chunks_1,
     };
     decode_check<sizeof(enc), 2, 6>(enc, exp);
-}
-
-TEST(Decode, Complex)
-{
-    
 }

@@ -122,7 +122,8 @@ struct Iter {
     Iter(CBOR *p) : p(p) {}
 
     bool    operator!=(const Iter &other)   { return p != other.p; }
-    CBOR&   operator*()                     { return *p; }
+    CBOR*   operator*()                     { return p; }
+    // CBOR*   operator->()                    { return p; }
     void    operator++();
 private:
     CBOR *p;
@@ -194,7 +195,10 @@ struct Map : Array {
 template<Type T>
 struct Chunks : Array {
     static_assert(T == TYPE_DATA || T == TYPE_TEXT, "only data or text");
+    Err push(CBOR *val);
 };
+using ChunkData = Chunks<TYPE_DATA>;
+using ChunkText = Chunks<TYPE_TEXT>;
 
 /**
  * @brief CBOR tag, stores integer tag value and pointer 
@@ -238,8 +242,8 @@ struct CBOR {
     CBOR(Prim val);
     CBOR(bool val);
     CBOR(double val);
-    CBOR(Chunks<TYPE_DATA> val);
-    CBOR(Chunks<TYPE_TEXT> val);
+    CBOR(ChunkData val);
+    CBOR(ChunkText val);
 
     CBOR *next  = nullptr;
     CBOR *prev  = nullptr;
@@ -253,8 +257,8 @@ struct CBOR {
         Tag tag;
         Prim prim;
         double dbl;
-        Chunks<TYPE_DATA> chunk_dat;
-        Chunks<TYPE_TEXT> chunk_txt;
+        ChunkData chunk_dat;
+        ChunkText chunk_txt;
     };
 };
 
@@ -265,6 +269,14 @@ struct CBOR {
  */
 template<size_t N>
 using Pool = StaticPool<CBOR, N>;
+
+template<Type T>
+Err Chunks<T>::push(CBOR *val)
+{
+    if (val && val->type != T)
+        return ERR_INVALID_TYPE;
+    return Array::push(val);
+}
 
 };
 

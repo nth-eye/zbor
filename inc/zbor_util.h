@@ -106,6 +106,12 @@ struct StaticPool {
             return;
         clr_bit(taken[n >> 3], n & 7);
     }
+
+    void clear()
+    {
+        for (auto &it : taken)
+            it = 0;
+    }
 private:
     T       arr[N];
     uint8_t taken[Bytes] = {};

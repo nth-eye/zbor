@@ -203,7 +203,7 @@ Err Encoder<N>::encode(Array arr)
         return err;
 
     for (auto it : arr) {
-        if ((err = encode(&it)) != NO_ERR)
+        if ((err = encode(it)) != NO_ERR)
             return err;
     }
     return NO_ERR;

@@ -48,10 +48,10 @@ CBOR::CBOR(bool val) : CBOR(val ? PRIM_TRUE : PRIM_FALSE)
 CBOR::CBOR(double val) : type{TYPE_DOUBLE}, dbl{val}
 {}
 
-CBOR::CBOR(Chunks<TYPE_DATA> val) : type{TYPE_DATA_CHUNKS}, chunk_dat{val}
+CBOR::CBOR(ChunkData val) : type{TYPE_DATA_CHUNKS}, chunk_dat{val}
 {}
 
-CBOR::CBOR(Chunks<TYPE_TEXT> val) : type{TYPE_TEXT_CHUNKS}, chunk_txt{val}
+CBOR::CBOR(ChunkText val) : type{TYPE_TEXT_CHUNKS}, chunk_txt{val}
 {}
 
 void Iter::operator++()

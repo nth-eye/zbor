@@ -22,9 +22,9 @@ void pretty_cbor(CBOR &obj)
             break;
         case TYPE_ARRAY:
             printf("[");
-            for (auto &child : obj.arr) {
-                pretty_cbor(child);
-                if (child.next)
+            for (auto child : obj.arr) {
+                pretty_cbor(*child);
+                if (child->next)
                     printf(", ");
             }
             printf("]");
@@ -86,39 +86,73 @@ int main(int, char**)
     printf("sizeof Sequence: %lu \n", sizeof(zbor::Sequence));
     printf("sizeof CBOR: %lu \n", sizeof(zbor::CBOR));
 
-    Pool<32> pool;
-    Array arr;
-    Map map;
+    // ANCHOR: Example pool
 
-    const uint8_t data[] = { 0xde, 0xad, 0xbe, 0xef };
-    const char *text = "test";
+    // zbor::Pool<4> pool;
+    // zbor::Array arr;
+    // zbor::CBOR *ptr;
 
-    arr.push(pool.make(0));
-    arr.push(pool.make(-99));
-    arr.push(pool.make(text, strlen(text)));
-    map.push(pool.make("arr", 3), pool.make(arr));
-    map.push(pool.make("err", 3), pool.make(777));
+    // arr.push(pool.make(true));
+    // arr.push(pool.make(false));
+    // arr.push(pool.make(Prim(69)));
 
-    CBOR cbors[] = {
-        666,
-        -44,
-        { data, sizeof(data) },
-        { text, strlen(text) },
-        arr,
-        map,
-        Tag{ 2, pool.make(false) },
-        true,
-        PRIM_NULL,
-        0.0f,
-        0.0,
-        13.37,
-    };
+    // ptr = pool.make(PRIM_NULL);
+    // pool.free(ptr);
 
-    int i = 0;
+    // ptr = pool.make(arr);
+    // pool.free(ptr); // NOTE: Doesn't automatically free elements
 
-    for (auto &obj : cbors) {
-        printf("%d) ", ++i);
-        pretty_cbor(obj);
-        printf("\n");
-    }
+    // ptr = pool.make(arr);
+    // for (auto it : ptr->arr) // Free elements (non recursive)
+    //     pool.free(it);
+    // pool.free(ptr);
+
+    // ANCHOR: Example Encoding
+
+    // zbor::Pool<1> pool;
+    // zbor::Encoder<9> enc;
+
+    // enc.encode(pool.make(0xfffffffffffffffful));
+
+    // for (size_t i = 0; i < enc.size(); ++i)
+    //     printf("%02x ", enc[i]);
+    // printf("\n");
+
+    // ANCHOR: Example General
+    
+    // Pool<32> pool;
+    // Array arr;
+    // Map map;
+
+    // const uint8_t data[] = { 0xde, 0xad, 0xbe, 0xef };
+    // const char *text = "test";
+
+    // arr.push(pool.make(0));
+    // arr.push(pool.make(-99));
+    // arr.push(pool.make(text, strlen(text)));
+    // map.push(pool.make("arr", 3), pool.make(arr));
+    // map.push(pool.make("err", 3), pool.make(777));
+
+    // CBOR cbors[] = {
+    //     666,
+    //     -44,
+    //     { data, sizeof(data) },
+    //     { text, strlen(text) },
+    //     arr,
+    //     map,
+    //     Tag{ 2, pool.make(false) },
+    //     true,
+    //     PRIM_NULL,
+    //     0.0f,
+    //     0.0,
+    //     13.37,
+    // };
+
+    // int i = 0;
+
+    // for (auto &obj : cbors) {
+    //     printf("%d) ", ++i);
+    //     pretty_cbor(obj);
+    //     printf("\n");
+    // }
 }
