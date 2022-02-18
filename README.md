@@ -67,7 +67,7 @@ zbor::Encoder<9> enc;
 
 Err err = enc.encode(pool.make(0xfffffffffffffffful));
 
-if (err != NO_ERR) {
+if (err != zbor::NO_ERR) {
     printf("encode failure: %d \n", err);
     return;
 }
