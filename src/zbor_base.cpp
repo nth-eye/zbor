@@ -54,14 +54,16 @@ CBOR::CBOR(ChunkData val) : type{TYPE_DATA_CHUNKS}, chunk_dat{val}
 CBOR::CBOR(ChunkText val) : type{TYPE_TEXT_CHUNKS}, chunk_txt{val}
 {}
 
-void Iter::operator++()
+Iter& Iter::operator++()
 { 
-    p = p->next; 
+    p = p->next;
+    return *this;
 }
 
-void MapIter::operator++()
+MapIter& MapIter::operator++()
 {
     p = p->next ? p->next->next : nullptr;
+    return *this;
 }
 
 Pair MapIter::operator*()

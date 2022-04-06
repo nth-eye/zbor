@@ -121,10 +121,10 @@ struct Iter {
 
     Iter(CBOR *p) : p(p) {}
 
-    bool    operator!=(const Iter &other)   { return p != other.p; }
-    CBOR*   operator*()                     { return p; }
-    // CBOR*   operator->()                    { return p; }
-    void    operator++();
+    bool    operator!=(const Iter &other) const { return p != other.p; }
+    bool    operator==(const Iter &other) const { return !operator!=(other); }
+    CBOR*   operator*()                         { return p; }
+    Iter&   operator++();
 private:
     CBOR *p;
 };
@@ -136,11 +136,12 @@ private:
  */
 struct MapIter {
 
-    MapIter(CBOR *p) : p(p) {}
+    MapIter(CBOR *p) : p{p} {}
 
-    bool    operator!=(const MapIter &other)   { return p != other.p; }
-    Pair    operator*();
-    void    operator++();
+    bool     operator!=(const MapIter &other) const  { return p != other.p; }
+    bool     operator==(const MapIter &other) const  { return !operator!=(other);  }
+    Pair     operator*();
+    MapIter& operator++();
 private:
     CBOR *p;
 };
