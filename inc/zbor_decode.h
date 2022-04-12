@@ -172,7 +172,7 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
             switch (ai) {
             case PRIM_FLOAT_16:
                 fp.u32      = half_to_float(val);
-                item->dbl   = fp.f32; // half_to_double_direct(val);
+                item->dbl   = fp.f32;
                 item->type  = TYPE_DOUBLE;
             break;
             case PRIM_FLOAT_32:
