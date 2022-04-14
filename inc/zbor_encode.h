@@ -30,6 +30,7 @@ struct Encoder {
     const uint8_t& operator[](size_t i) const { return buf[i]; }
     const uint8_t* data() const { return buf; }
     size_t size() const         { return idx; }
+    void clear()                { idx = 0; }
 private:
     uint8_t buf[N];
     size_t idx = 0;

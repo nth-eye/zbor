@@ -2,6 +2,7 @@
 #define ZBOR_BASE_H
 
 #include "zbor_util.h"
+#include <cstring>
 
 namespace zbor {
 
@@ -237,6 +238,7 @@ struct CBOR {
     CBOR(uint64_t val);
     CBOR(const uint8_t *data, size_t len);
     CBOR(const char *text, size_t len);
+    CBOR(const char *text);
     CBOR(Array arr);
     CBOR(Map map);
     CBOR(Tag tag);
@@ -292,6 +294,9 @@ inline CBOR::CBOR(const uint8_t *data, size_t len) : type{TYPE_DATA}, str{data, 
 {}
 
 inline CBOR::CBOR(const char *text, size_t len) : type{TYPE_TEXT}, str{text, len}
+{}
+
+inline CBOR::CBOR(const char *text) : type{TYPE_TEXT}, str{text, strlen(text)}
 {}
 
 inline CBOR::CBOR(Array arr) : type{TYPE_ARRAY}, arr{arr}
