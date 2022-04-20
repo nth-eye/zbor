@@ -125,19 +125,8 @@ private:
  */
 template<class T, size_t N>
 struct Stack {
-    
-    bool push(T item) 
-    { 
-        if (size >= N)
-            return false;
-        stack[size++] = item;
-        return true;
-    }
-
-    void pop(T &item) 
-    {
-        item = stack[--size];
-    }
+    bool push(T item) { return size < N ? stack[size++] = item, true : false; }
+    void pop(T &item) { item = stack[--size]; }
 private:
     T stack[N];
     size_t size = 0;

@@ -6,10 +6,10 @@
 
 namespace zbor {
 
-struct CBOR;
+struct Obj;
 
 /**
- * @brief CBOR major type (3 bits).
+ * @brief Obj major type (3 bits).
  * 
  */
 enum MT {
@@ -24,7 +24,7 @@ enum MT {
 };
 
 /**
- * @brief CBOR additional info (5 bits).
+ * @brief Obj additional info (5 bits).
  * 
  */
 enum AI {
@@ -52,7 +52,7 @@ enum Prim {
 };
 
 /**
- * @brief Type for CBOR objects (not major type).
+ * @brief Type for Obj objects (not major type).
  * 
  */
 enum Type {
@@ -75,7 +75,7 @@ enum Type {
  * 
  */
 enum Err {
-    NO_ERR,
+    ERR_OK,
     ERR_NULLPTR,
     ERR_EMPTY,
     ERR_NOT_FOUND,
@@ -91,12 +91,12 @@ enum Err {
 };
 
 /**
- * @brief Pair of pointers to CBOR key and value.
+ * @brief Pair of pointers to Obj key and value.
  * 
  */
 struct Pair {
-    CBOR *key;
-    CBOR *val;
+    Obj *key;
+    Obj *val;
 };
 
 /**
@@ -107,6 +107,7 @@ struct String {
     String() = default;
     String(const uint8_t *dat, size_t len) : dat{dat}, len{len} {}
     String(const char *txt, size_t len) : txt{txt}, len{len} {}
+    String(const char *txt) : txt{txt}, len{strlen(txt)} {}
     union {
         const uint8_t *dat;
         const char *txt;
@@ -120,14 +121,14 @@ struct String {
  */
 struct Iter {
 
-    Iter(CBOR *p) : p(p) {}
+    Iter(Obj *p) : p(p) {}
 
     bool    operator!=(const Iter &other) const { return p != other.p; }
     bool    operator==(const Iter &other) const { return !operator!=(other); }
-    CBOR*   operator*()                         { return p; }
+    Obj*    operator*()                         { return p; }
     Iter&   operator++();
 private:
-    CBOR *p;
+    Obj *p;
 };
 
 /**
@@ -137,18 +138,18 @@ private:
  */
 struct MapIter {
 
-    MapIter(CBOR *p) : p{p} {}
+    MapIter(Obj *p) : p{p} {}
 
     bool     operator!=(const MapIter &other) const  { return p != other.p; }
     bool     operator==(const MapIter &other) const  { return !operator!=(other);  }
     Pair     operator*();
     MapIter& operator++();
 private:
-    CBOR *p;
+    Obj *p;
 };
 
 /**
- * @brief Array for storing CBOR elements. Actually uses linked list
+ * @brief Array for storing Obj elements. Actually uses linked list
  * implementation under the hood, to efficiently add and remove elements 
  * on the fly and to not rely on memory allocation. Provides range-based 
  * for loop support and doesn't provide operator[], to not confuse users 
@@ -158,22 +159,22 @@ private:
 struct Array {
     void init()         { head = tail = 0; len = 0; }
     size_t size() const { return len; }
-    CBOR* front()       { return head; }
-    CBOR* back()        { return tail; }
+    Obj* front()        { return head; }
+    Obj* back()         { return tail; }
     Iter begin()        { return head; }
     Iter end()          { return NULL; }
     const Iter begin() const    { return head; }
     const Iter end() const      { return NULL; }
-    Err push(CBOR *val);
-    Err pop(CBOR *val);
+    Err push(Obj *val);
+    Err pop(Obj *val);
 protected:
-    CBOR *head = nullptr;
-    CBOR *tail = nullptr;
+    Obj *head = nullptr;
+    Obj *tail = nullptr;
     size_t len = 0;
 };
 
 /**
- * @brief Map for storing CBOR key-value pairs. Same as Array, but
+ * @brief Map for storing Obj key-value pairs. Same as Array, but
  * uses MapIter and doesn't have front() and back().
  * 
  */
@@ -183,33 +184,33 @@ struct Map : Array {
     MapIter end()       { return NULL; }
     const MapIter begin() const { return head; }
     const MapIter end() const   { return NULL; }
-    CBOR* front() = delete;
-    CBOR* back() = delete;
-    Err push(CBOR *key, CBOR *val);
-    Err pop(CBOR *key);
+    Obj* front() = delete;
+    Obj* back() = delete;
+    Err push(Obj *key, Obj *val);
+    Err pop(Obj *key);
 };
 
 /**
- * @brief Strong type to provide CBOR object constructor for 
+ * @brief Strong type to provide Obj object constructor for 
  * chunks of data and text.
  * 
  */
 template<Type T>
 struct Chunks : Array {
     static_assert(T == TYPE_DATA || T == TYPE_TEXT, "only data or text");
-    Err push(CBOR *val);
+    Err push(Obj *val);
 };
 using ChunkData = Chunks<TYPE_DATA>;
 using ChunkText = Chunks<TYPE_TEXT>;
 
 /**
- * @brief CBOR tag, stores integer tag value and pointer 
- * to CBOR content object. 
+ * @brief Obj tag, stores integer tag value and pointer 
+ * to Obj content object. 
  * 
  */
 struct Tag {
     uint64_t val;
-    CBOR *content;
+    Obj *content;
 };
 
 /**
@@ -220,36 +221,36 @@ struct Tag {
 struct Sequence {
     Iter begin()    { return root; }
     Iter end()      { return NULL; }
-    CBOR *root;
+    Obj *root;
     size_t size;
     Err err;
 };
 
 /**
- * @brief General CBOR element, which can store any type. 
+ * @brief General Obj element, which can store any type. 
  * Includes appropriate constructors.
  * 
  */
-struct CBOR {
+struct Obj {
 
-    CBOR() {}
-    CBOR(int val);
-    CBOR(int64_t val);
-    CBOR(uint64_t val);
-    CBOR(const uint8_t *data, size_t len);
-    CBOR(const char *text, size_t len);
-    CBOR(const char *text);
-    CBOR(Array arr);
-    CBOR(Map map);
-    CBOR(Tag tag);
-    CBOR(Prim val);
-    CBOR(bool val);
-    CBOR(double val);
-    CBOR(ChunkData val);
-    CBOR(ChunkText val);
+    Obj() {}
+    Obj(int val);
+    Obj(int64_t val);
+    Obj(uint64_t val);
+    Obj(const uint8_t *data, size_t len);
+    Obj(const char *text, size_t len);
+    Obj(const char *text);
+    Obj(Array arr);
+    Obj(Map map);
+    Obj(Tag tag);
+    Obj(Prim val);
+    Obj(bool val);
+    Obj(double val);
+    Obj(ChunkData val);
+    Obj(ChunkText val);
 
-    CBOR *next  = nullptr;
-    CBOR *prev  = nullptr;
+    Obj *next   = nullptr;
+    Obj *prev   = nullptr;
     Type type   = TYPE_INVALID;
     union {
         uint64_t uint;
@@ -266,17 +267,17 @@ struct CBOR {
 };
 
 /**
- * @brief Object pool for CBOR elements with static allocation.
+ * @brief Object pool for Obj elements with static allocation.
  * 
  * @tparam N Number of elements
  */
 template<size_t N>
-using Pool = StaticPool<CBOR, N>;
+using Pool = StaticPool<Obj, N>;
 
-inline CBOR::CBOR(int val) : CBOR(int64_t(val))
+inline Obj::Obj(int val) : Obj(int64_t(val))
 {}
 
-inline CBOR::CBOR(int64_t val)
+inline Obj::Obj(int64_t val)
 {
     if (val < 0) {
         type = TYPE_SINT;
@@ -287,28 +288,28 @@ inline CBOR::CBOR(int64_t val)
     }
 }
 
-inline CBOR::CBOR(uint64_t val) : type{TYPE_UINT}, uint{val}
+inline Obj::Obj(uint64_t val) : type{TYPE_UINT}, uint{val}
 {}
 
-inline CBOR::CBOR(const uint8_t *data, size_t len) : type{TYPE_DATA}, str{data, len}
+inline Obj::Obj(const uint8_t *data, size_t len) : type{TYPE_DATA}, str{data, len}
 {}
 
-inline CBOR::CBOR(const char *text, size_t len) : type{TYPE_TEXT}, str{text, len}
+inline Obj::Obj(const char *text, size_t len) : type{TYPE_TEXT}, str{text, len}
 {}
 
-inline CBOR::CBOR(const char *text) : type{TYPE_TEXT}, str{text, strlen(text)}
+inline Obj::Obj(const char *text) : type{TYPE_TEXT}, str{text}
 {}
 
-inline CBOR::CBOR(Array arr) : type{TYPE_ARRAY}, arr{arr}
+inline Obj::Obj(Array arr) : type{TYPE_ARRAY}, arr{arr}
 {}
 
-inline CBOR::CBOR(Map map) : type{TYPE_MAP}, map{map}
+inline Obj::Obj(Map map) : type{TYPE_MAP}, map{map}
 {}
 
-inline CBOR::CBOR(Tag tag) : type{TYPE_TAG}, tag{tag}
+inline Obj::Obj(Tag tag) : type{TYPE_TAG}, tag{tag}
 {}
 
-inline CBOR::CBOR(Prim val) 
+inline Obj::Obj(Prim val) 
 {
     if (val < 24 || (val > 31 && val < 256)) {
         type = TYPE_PRIM;
@@ -316,16 +317,16 @@ inline CBOR::CBOR(Prim val)
     }
 }
 
-inline CBOR::CBOR(bool val) : CBOR(val ? PRIM_TRUE : PRIM_FALSE)
+inline Obj::Obj(bool val) : Obj(val ? PRIM_TRUE : PRIM_FALSE)
 {}
 
-inline CBOR::CBOR(double val) : type{TYPE_DOUBLE}, dbl{val}
+inline Obj::Obj(double val) : type{TYPE_DOUBLE}, dbl{val}
 {}
 
-inline CBOR::CBOR(ChunkData val) : type{TYPE_DATA_CHUNKS}, chunk_dat{val}
+inline Obj::Obj(ChunkData val) : type{TYPE_DATA_CHUNKS}, chunk_dat{val}
 {}
 
-inline CBOR::CBOR(ChunkText val) : type{TYPE_TEXT_CHUNKS}, chunk_txt{val}
+inline Obj::Obj(ChunkText val) : type{TYPE_TEXT_CHUNKS}, chunk_txt{val}
 {}
 
 inline Iter& Iter::operator++()
@@ -345,7 +346,7 @@ inline Pair MapIter::operator*()
     return {p, p ? p->next : nullptr};
 }
 
-inline Err Array::push(CBOR *val)
+inline Err Array::push(Obj *val)
 {
     if (!val)
         return ERR_NULLPTR;
@@ -362,10 +363,10 @@ inline Err Array::push(CBOR *val)
 
     ++len;
 
-    return NO_ERR;
+    return ERR_OK;
 }
 
-inline Err Array::pop(CBOR *val)
+inline Err Array::pop(Obj *val)
 {
     if (!val)
         return ERR_NULLPTR;
@@ -392,14 +393,14 @@ inline Err Array::pop(CBOR *val)
             else
                 tail = prev;
 
-            return NO_ERR;
+            return ERR_OK;
         }
         it = next;
     }
     return ERR_NOT_FOUND;
 }
 
-inline Err Map::push(CBOR *key, CBOR *val)
+inline Err Map::push(Obj *key, Obj *val)
 {
     if (!key || !val)
         return ERR_NULLPTR;
@@ -418,10 +419,10 @@ inline Err Map::push(CBOR *key, CBOR *val)
     
     len += 2;
 
-    return NO_ERR;
+    return ERR_OK;
 }
 
-inline Err Map::pop(CBOR *key)
+inline Err Map::pop(Obj *key)
 {
     if (!key)
         return ERR_NULLPTR;
@@ -451,7 +452,7 @@ inline Err Map::pop(CBOR *key)
             else
                 tail = prev;
 
-            return NO_ERR;
+            return ERR_OK;
         }
         it = next;
     }
@@ -459,7 +460,7 @@ inline Err Map::pop(CBOR *key)
 }
 
 template<Type T>
-Err Chunks<T>::push(CBOR *val)
+Err Chunks<T>::push(Obj *val)
 {
     if (val && val->type != T)
         return ERR_INVALID_TYPE;

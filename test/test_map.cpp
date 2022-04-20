@@ -19,10 +19,10 @@ TEST_F(MapTest, Default)
 
 TEST_F(MapTest, PushOne)
 {
-    CBOR key = 1;
-    CBOR val = 2;
+    Obj key = 1;
+    Obj val = 2;
 
-    ASSERT_EQ(map.push(&key, &val), NO_ERR);
+    ASSERT_EQ(map.push(&key, &val), ERR_OK);
     ASSERT_EQ(map.size(), 1);
     ASSERT_NE(map.begin(), map.end());
 
@@ -35,7 +35,7 @@ TEST_F(MapTest, PushOne)
 
 TEST_F(MapTest, PushNullptrValue)
 {
-    CBOR key;
+    Obj key;
 
     ASSERT_EQ(map.push(&key, nullptr), ERR_NULLPTR);
     ASSERT_EQ(map.size(), 0);
@@ -44,7 +44,7 @@ TEST_F(MapTest, PushNullptrValue)
 
 TEST_F(MapTest, PushNullptrKey)
 {
-    CBOR val;
+    Obj val;
 
     ASSERT_EQ(map.push(nullptr, &val), ERR_NULLPTR);
     ASSERT_EQ(map.size(), 0);
@@ -60,21 +60,21 @@ TEST_F(MapTest, PushNullptrKeyAndValue)
 
 TEST_F(MapTest, PushAndPop)
 {
-    CBOR key = 42;
-    CBOR val = 44;
+    Obj key = 42;
+    Obj val = 44;
 
-    ASSERT_EQ(map.push(&key, &val), NO_ERR);
-    ASSERT_EQ(map.pop(&key), NO_ERR);
+    ASSERT_EQ(map.push(&key, &val), ERR_OK);
+    ASSERT_EQ(map.pop(&key), ERR_OK);
     ASSERT_EQ(map.size(), 0);
     ASSERT_EQ(map.begin(), map.end());
 }
 
 TEST_F(MapTest, PushAndPopNullptr)
 {
-    CBOR key = 42;
-    CBOR val = 44;
+    Obj key = 42;
+    Obj val = 44;
 
-    ASSERT_EQ(map.push(&key, &val), NO_ERR);
+    ASSERT_EQ(map.push(&key, &val), ERR_OK);
     ASSERT_EQ(map.pop(nullptr), ERR_NULLPTR);
     ASSERT_EQ(map.size(), 1);
     ASSERT_NE(map.begin(), map.end());
@@ -88,11 +88,11 @@ TEST_F(MapTest, PushAndPopNullptr)
 
 TEST_F(MapTest, PushAndPopWrong)
 {
-    CBOR key = 42;
-    CBOR val = 44;
-    CBOR wrong = 43;
+    Obj key = 42;
+    Obj val = 44;
+    Obj wrong = 43;
     
-    ASSERT_EQ(map.push(&key, &val), NO_ERR);
+    ASSERT_EQ(map.push(&key, &val), ERR_OK);
     ASSERT_EQ(map.pop(&wrong), ERR_NOT_FOUND);
     ASSERT_EQ(map.size(), 1);
     ASSERT_NE(map.begin(), map.end());
@@ -106,7 +106,7 @@ TEST_F(MapTest, PushAndPopWrong)
 
 TEST_F(MapTest, PopWhenAlreadyEmpty)
 {
-    CBOR wrong = 43;
+    Obj wrong = 43;
     
     ASSERT_EQ(map.pop(&wrong), ERR_EMPTY);
     ASSERT_EQ(map.size(), 0);

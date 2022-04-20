@@ -6,12 +6,12 @@
 
 namespace zbor {
 
-template<size_t N>
-struct Encoder {
+struct EncoderBuf {
 
-    static_assert(N, "encoder size must be > 0");
-
-    Err encode(CBOR *val);
+    EncoderBuf() = delete;
+    EncoderBuf(uint8_t *buf, size_t len) : buf{buf}, max{len} {}
+    
+    Err encode(Obj *val);
     Err encode(int val);
     Err encode(int64_t val);
     Err encode(uint64_t val);
@@ -24,15 +24,20 @@ struct Encoder {
     Err encode(bool val);
     Err encode(float val);
     Err encode(double val);
+
     Err encode_start_indef(MT mt);
     Err encode_break();
+    Err encode_array(size_t size);
+    Err encode_map(size_t size);
 
     const uint8_t& operator[](size_t i) const { return buf[i]; }
     const uint8_t* data() const { return buf; }
+    size_t capacity() const     { return max; }
     size_t size() const         { return idx; }
     void clear()                { idx = 0; }
 private:
-    uint8_t buf[N];
+    uint8_t *buf;
+    size_t max;
     size_t idx = 0;
 
     Err encode_byte(uint8_t byte);
@@ -42,32 +47,36 @@ private:
     Err encode_float(Prim type, Float val);
 };
 
+template<size_t N>
+struct Encoder : EncoderBuf {
+
+    static_assert(N, "encoder size must be > 0");
+
+    Encoder() : EncoderBuf{buf, N} {}
+private:
+    uint8_t buf[N];
+};
+
 // SECTION: Private
 
-template<size_t N>
-Err Encoder<N>::encode_byte(uint8_t byte)
+inline Err EncoderBuf::encode_byte(uint8_t byte)
 {
-    if (idx >= N)
-        return ERR_OUT_OF_MEM;
-    buf[idx++] = byte;
-    return NO_ERR;
+    return idx < max ? buf[idx++] = byte, ERR_OK : ERR_OUT_OF_MEM;
 }
 
-template<size_t N>
-Err Encoder<N>::encode_base(uint8_t start, uint64_t val, size_t ai_len, size_t add_len)
+inline Err EncoderBuf::encode_base(uint8_t start, uint64_t val, size_t ai_len, size_t add_len)
 {
-    if (idx + ai_len + add_len + 1 > N)
+    if (idx + ai_len + add_len + 1 > max)
         return ERR_OUT_OF_MEM;
 
     buf[idx++] = start;
     for (int i = 8 * ai_len - 8; i >= 0; i -= 8)
         buf[idx++] = val >> i;
 
-    return NO_ERR;
+    return ERR_OK;
 }
 
-template<size_t N>
-Err Encoder<N>::encode_int(MT mt, uint64_t val, size_t add_len)
+inline Err EncoderBuf::encode_int(MT mt, uint64_t val, size_t add_len)
 {
     uint8_t ai;
 
@@ -87,19 +96,17 @@ Err Encoder<N>::encode_int(MT mt, uint64_t val, size_t add_len)
     return encode_base(mt | ai, val, ai_len, add_len);
 }
 
-template<size_t N>
-Err Encoder<N>::encode_bytes(MT mt, const void *data, size_t len)
+inline Err EncoderBuf::encode_bytes(MT mt, const void *data, size_t len)
 {
     Err err = encode_int(mt, len, len);
-    if (err == NO_ERR && data && len) {
+    if (err == ERR_OK && data && len) {
         memcpy(&buf[idx], data, len);
         idx += len;
     }
     return err;
 }
 
-template<size_t N>
-Err Encoder<N>::encode_float(Prim type, Float val)
+inline Err EncoderBuf::encode_float(Prim type, Float val)
 {
     switch (type) {
 
@@ -110,7 +117,7 @@ Err Encoder<N>::encode_float(Prim type, Float val)
 
             float f32 = val.f64;
             if (val.f64 != f32) // Else we can fallthrough to FLOAT_32
-                return encode_base(MT_SIMPLE | PRIM_FLOAT_64, val.u64, 8);
+                return encode_base(MT_SIMPLE | uint8_t(PRIM_FLOAT_64), val.u64, 8);
             val.f32 = f32;
         }
 
@@ -122,21 +129,21 @@ Err Encoder<N>::encode_float(Prim type, Float val)
             uint16_t u16 = half_from_float(val.u32);
             Float tmp = half_to_float(u16);
             if (val.f32 != tmp.f32)
-                return encode_base(MT_SIMPLE | PRIM_FLOAT_32, val.u32, 4);
+                return encode_base(MT_SIMPLE | uint8_t(PRIM_FLOAT_32), val.u32, 4);
             val.u16 = u16;
 #else
-            return encode_base(MT_SIMPLE | PRIM_FLOAT_32, val.u32, 4);
+            return encode_base(MT_SIMPLE | uint8_t(PRIM_FLOAT_32), val.u32, 4);
         if_nan: 
-            return encode_base(MT_SIMPLE | PRIM_FLOAT_32, 0x7fc00000, 4);
+            return encode_base(MT_SIMPLE | uint8_t(PRIM_FLOAT_32), 0x7fc00000, 4);
 #endif
         }
 #if (ZBOR_USE_FP16)
         case PRIM_FLOAT_16:
             if ((val.u16 & 0x7fff) > 0x7c00)
                 goto if_nan;
-            return encode_base(MT_SIMPLE | PRIM_FLOAT_16, val.u16, 2);
+            return encode_base(MT_SIMPLE | uint8_t(PRIM_FLOAT_16), val.u16, 2);
         if_nan: 
-            return encode_base(MT_SIMPLE | PRIM_FLOAT_16, 0x7e00, 2);
+            return encode_base(MT_SIMPLE | uint8_t(PRIM_FLOAT_16), 0x7e00, 2);
 #endif
         default:
             return ERR_INVALID_FLOAT_TYPE;
@@ -145,8 +152,7 @@ Err Encoder<N>::encode_float(Prim type, Float val)
 
 // !SECTION: Private
 
-template<size_t N>
-Err Encoder<N>::encode(CBOR *val)
+inline Err EncoderBuf::encode(Obj *val)
 {
     if (!val)
         return ERR_NULLPTR;
@@ -165,116 +171,112 @@ Err Encoder<N>::encode(CBOR *val)
     }
 }
 
-template<size_t N>
-Err Encoder<N>::encode(int val)
+inline Err EncoderBuf::encode(int val)
 {
     return encode(int64_t(val));
 }
 
-template<size_t N>
-Err Encoder<N>::encode(uint64_t val)
+inline Err EncoderBuf::encode(uint64_t val)
 {
     return encode_int(MT_UINT, val);
 }
 
-template<size_t N>
-Err Encoder<N>::encode(int64_t val)
+inline Err EncoderBuf::encode(int64_t val)
 {
     uint64_t ui = val >> 63;
     return encode_int(MT(ui & 0x20), ui ^ val);
 }
 
-template<size_t N>
-Err Encoder<N>::encode(const uint8_t *data, size_t len)
+inline Err EncoderBuf::encode(const uint8_t *data, size_t len)
 {
     return encode_bytes(MT_DATA, data, len);
 }
 
-template<size_t N>
-Err Encoder<N>::encode(const char *text, size_t len)
+inline Err EncoderBuf::encode(const char *text, size_t len)
 {
     return encode_bytes(MT_TEXT, text, len);
 }
 
-template<size_t N>
-Err Encoder<N>::encode(Array arr)
+inline Err EncoderBuf::encode(Array arr)
 {
     Err err = encode_int(MT_ARRAY, arr.size());
-    if (err != NO_ERR)
+    if (err != ERR_OK)
         return err;
 
     for (auto it : arr) {
-        if ((err = encode(it)) != NO_ERR)
+        if ((err = encode(it)) != ERR_OK)
             return err;
     }
-    return NO_ERR;
+    return ERR_OK;
 }
 
-template<size_t N>
-Err Encoder<N>::encode(Map map)
+inline Err EncoderBuf::encode(Map map)
 {
     Err err = encode_int(MT_MAP, map.size());
-    if (err != NO_ERR)
+    if (err != ERR_OK)
         return err;
 
     for (auto it : map) {
-        if ((err = encode(it.key)) != NO_ERR ||
-            (err = encode(it.val)) != NO_ERR)
+        if ((err = encode(it.key)) != ERR_OK ||
+            (err = encode(it.val)) != ERR_OK)
             return err;
     }
-    return NO_ERR;
+    return ERR_OK;
 }
 
-template<size_t N>
-Err Encoder<N>::encode(Tag tag)
+inline Err EncoderBuf::encode(Tag tag)
 {
     Err err = encode_int(MT_TAG, tag.val, 0);
-    if (err != NO_ERR)
+    if (err != ERR_OK)
         return err; 
     return encode(tag.content);
 }
 
-template<size_t N>
-Err Encoder<N>::encode(Prim val)
+inline Err EncoderBuf::encode(Prim val)
 {
     if (val >= 24 && val <= 31)
         return ERR_INVALID_SIMPLE;
     return encode_int(MT_SIMPLE, val);
 }
 
-template<size_t N>
-Err Encoder<N>::encode(bool val)
+inline Err EncoderBuf::encode(bool val)
 {
     return encode(val ? PRIM_TRUE : PRIM_FALSE);
 }
 
-template<size_t N>
-Err Encoder<N>::encode(float val)
+inline Err EncoderBuf::encode(float val)
 {
     return encode_float(PRIM_FLOAT_32, val);
 }
 
-template<size_t N>
-Err Encoder<N>::encode(double val)
+inline Err EncoderBuf::encode(double val)
 {
     return encode_float(PRIM_FLOAT_64, val);
 }
 
-template<size_t N>
-Err Encoder<N>::encode_start_indef(MT mt)
+inline Err EncoderBuf::encode_start_indef(MT mt)
 {
     if (mt != MT_MAP    &&
         mt != MT_ARRAY  &&
         mt != MT_TEXT   &&
         mt != MT_DATA)
         return ERR_INVALID_TYPE;
-    return encode_byte(mt | AI_INDEF);
+    return encode_byte(mt | uint8_t(AI_INDEF));
 }
 
-template<size_t N>
-Err Encoder<N>::encode_break()
+inline Err EncoderBuf::encode_break()
 {
     return encode_byte(0xff);
+}
+
+inline Err EncoderBuf::encode_array(size_t size)
+{
+    return encode_int(MT_ARRAY, size);
+}
+
+inline Err EncoderBuf::encode_map(size_t size)
+{
+    return encode_int(MT_MAP, size);
 }
 
 }

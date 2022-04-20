@@ -1,21 +1,21 @@
 # zbor
 
-Small C++11 CBOR encoder/decoder library without dynamic memory allocation. CBOR tokens can be allocated from static object pool templated by maximum number of tokens.
+Small C++14 Obj encoder/decoder library without dynamic memory allocation. Obj tokens can be allocated from static object pool templated by maximum number of tokens.
 
 ## Examples
 
 ### Array
 
 ```cpp
-zbor::CBOR el_0 = 1;
-zbor::CBOR el_1 = -42;
+zbor::Obj el_0 = 1;
+zbor::Obj el_1 = -42;
 
 zbor::Array as_arr;
 
 as_arr.push(&el_0);
 as_arr.push(&el_1);
 
-zbor::CBOR as_obj = zbor::Array();
+zbor::Obj as_obj = zbor::Array();
 
 as_obj.arr.push(&el_0);
 as_obj.arr.push(&el_1);
@@ -24,14 +24,14 @@ as_obj.arr.push(&el_1);
 ### Map
 
 ```cpp
-zbor::CBOR key = {"key", 3};
-zbor::CBOR val = {(uint8_t*) "\xde\xad\xc0\xde", 4};
+zbor::Obj key = {"key", 3};
+zbor::Obj val = {(uint8_t*) "\xde\xad\xc0\xde", 4};
 
 zbor::Map as_map;
 
 as_map.push(&key, &val);
 
-zbor::CBOR as_obj = zbor::Map();
+zbor::Obj as_obj = zbor::Map();
 
 as_obj.map.push(&key, &val);
 ```
@@ -41,7 +41,7 @@ as_obj.map.push(&key, &val);
 ```cpp
 zbor::Pool<4> pool;
 zbor::Array arr;
-zbor::CBOR *ptr;
+zbor::Obj *ptr;
 
 arr.push(pool.make(true));
 arr.push(pool.make(false));

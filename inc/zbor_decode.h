@@ -7,7 +7,7 @@
 namespace zbor {
 
 /**
- * @brief Decode data into CBOR objects, allocated from
+ * @brief Decode data into Obj objects, allocated from
  * static pool. IMPORTANT: Indefinite string (data/text) 
  * support is limited. Although their presence doesn't 
  * break decoding, chunks are parsed as separate objects, 
@@ -17,7 +17,7 @@ namespace zbor {
  * 
  * @tparam N Pool size
  * @tparam D Maximum depth, by default equals N
- * @param pool CBOR object pool
+ * @param pool Obj object pool
  * @param buf Input data to parse
  * @param len Data length
  * @return Top level object sequence if ok, if not - error is stored
@@ -26,12 +26,12 @@ template<size_t N, size_t D = N>
 Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
 {
     struct Item {
-        CBOR *item;
+        Obj *item;
         size_t cnt;
     };
-    CBOR *root  = nullptr;
-    CBOR *prev  = nullptr;
-    CBOR *item  = nullptr;
+    Obj *root   = nullptr;
+    Obj *prev   = nullptr;
+    Obj *item   = nullptr;
     size_t cnt  = 0;
     bool indef  = false;
 
@@ -205,7 +205,7 @@ Sequence decode(Pool<N> &pool, const uint8_t *buf, size_t len)
     }
     if (parent.item || indef)
         return ret(ERR_INVALID_DATA);
-    return ret(NO_ERR);
+    return ret(ERR_OK);
 }
 
 }

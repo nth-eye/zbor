@@ -4,7 +4,7 @@
 
 using namespace zbor;
 
-void decode_compare(const CBOR &exp, const CBOR &res)
+void decode_compare(const Obj &exp, const Obj &res)
 {
     ASSERT_EQ(exp.type, res.type);
     switch (exp.type) {
@@ -91,13 +91,13 @@ void decode_compare(const CBOR &exp, const CBOR &res)
 }
 
 template<size_t N, size_t M, size_t P = M>
-void decode_check(const uint8_t (&enc)[N], const CBOR (&exp)[M])
+void decode_check(const uint8_t (&enc)[N], const Obj (&exp)[M])
 {
     Pool<P> pool; 
 
     auto ret = decode(pool, enc, sizeof(enc));
 
-    ASSERT_EQ(ret.err, NO_ERR);
+    ASSERT_EQ(ret.err, ERR_OK);
     ASSERT_EQ(ret.size, M);
     ASSERT_NE(ret.root, nullptr);
 
@@ -142,7 +142,7 @@ TEST(Decode, Uint)
         0x1b, 0x00, 0x00, 0x00, 0xe8, 0xd4, 0xa5, 0x10, 0x00,
         0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     };
-    const CBOR exp[] = {
+    const Obj exp[] = {
         0,
         1,
         10,
@@ -159,7 +159,7 @@ TEST(Decode, Uint)
 
 TEST(Decode, Sint)
 {
-    const CBOR exp[] = {
+    const Obj exp[] = {
         -1,
         -10,
         -100,
@@ -176,7 +176,7 @@ TEST(Decode, Sint)
 
 TEST(Decode, Data)
 {
-    const CBOR exp[] = {
+    const Obj exp[] = {
         {(uint8_t*) nullptr, 0},
         {(uint8_t*) "\x01\x02\x03\x04", 4},
     };
@@ -190,7 +190,7 @@ TEST(Decode, Data)
 TEST(Decode, Text)
 {
     const unsigned char test[] = { 0xf0, 0x90, 0x85, 0x91 };
-    const CBOR exp[] = {
+    const Obj exp[] = {
         {(char*) nullptr, 0},
         {"a", strlen("a")},
         {"IETF", strlen("IETF")},
@@ -236,7 +236,7 @@ TEST(Decode, Array)
     arr_2.push(pool.make(arr_2_1));
     arr_2.push(pool.make(arr_2_2));
 
-    const CBOR exp[] = {
+    const Obj exp[] = {
         arr_0,
         arr_1,
         arr_2,
@@ -272,7 +272,7 @@ TEST(Decode, Map)
     map_3.push(pool.make("d", 1), pool.make("D", 1));
     map_3.push(pool.make("e", 1), pool.make("E", 1));
 
-    const CBOR exp[] = {
+    const Obj exp[] = {
         map_0,
         map_1,
         map_2,
@@ -291,7 +291,7 @@ TEST(Decode, Tag)
 {
     Pool<6> pool;
 
-    const CBOR exp[] = {
+    const Obj exp[] = {
         Tag{0, pool.make("2013-03-21T20:04:00Z", strlen("2013-03-21T20:04:00Z"))},
         Tag{1, pool.make(1363896240)},
         Tag{1, pool.make(1363896240.5)},
@@ -312,7 +312,7 @@ TEST(Decode, Tag)
 
 TEST(Decode, Simple)
 {
-    const CBOR exp[] = {
+    const Obj exp[] = {
         false,
         true,
         PRIM_FALSE,
@@ -337,7 +337,7 @@ TEST(Decode, Simple)
 
 TEST(Decode, Float)
 {
-    const CBOR exp[] = {
+    const Obj exp[] = {
         0.0,
         -0.0,
         1.0,
@@ -392,7 +392,7 @@ TEST(Decode, IndefArray)
     arr_1_2.push(pool.make(5));
     arr_1.push(pool.make(arr_1_2));
 
-    const CBOR exp[] = {
+    const Obj exp[] = {
         arr_0,
         arr_1,
     };
@@ -412,7 +412,7 @@ TEST(Decode, IndefMap)
     map.push(pool.make("Fun", 3), pool.make(true));
     map.push(pool.make("Amt", 3), pool.make(-2));
 
-    const CBOR exp[] = {
+    const Obj exp[] = {
         map,
     };
     const uint8_t enc[] = {
@@ -438,7 +438,7 @@ TEST(Decode, IndefString)
         0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff,
         0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, 
     };
-    const CBOR exp[] = {
+    const Obj exp[] = {
         chunks_0,
         chunks_1,
     };

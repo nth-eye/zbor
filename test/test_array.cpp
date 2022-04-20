@@ -20,9 +20,9 @@ TEST_F(ArrayTest, Default)
 
 TEST_F(ArrayTest, Push)
 {
-    CBOR obj;
+    Obj obj;
 
-    ASSERT_EQ(arr.push(&obj), NO_ERR);
+    ASSERT_EQ(arr.push(&obj), ERR_OK);
     ASSERT_EQ(arr.front(), &obj);
     ASSERT_EQ(arr.back(), &obj);
     ASSERT_EQ(arr.size(), 1);
@@ -30,10 +30,10 @@ TEST_F(ArrayTest, Push)
 
 TEST_F(ArrayTest, PushAndPop)
 {
-    CBOR obj;
+    Obj obj;
 
-    ASSERT_EQ(arr.push(&obj), NO_ERR);
-    ASSERT_EQ(arr.pop(&obj), NO_ERR);
+    ASSERT_EQ(arr.push(&obj), ERR_OK);
+    ASSERT_EQ(arr.pop(&obj), ERR_OK);
     ASSERT_EQ(arr.front(), nullptr);
     ASSERT_EQ(arr.back(), nullptr);
     ASSERT_EQ(arr.size(), 0);
@@ -41,10 +41,10 @@ TEST_F(ArrayTest, PushAndPop)
 
 TEST_F(ArrayTest, PushAndPopWrongObject)
 {
-    CBOR obj;
-    CBOR wrong;
+    Obj obj;
+    Obj wrong;
 
-    ASSERT_EQ(arr.push(&obj), NO_ERR);
+    ASSERT_EQ(arr.push(&obj), ERR_OK);
     ASSERT_EQ(arr.pop(&wrong), ERR_NOT_FOUND);
     ASSERT_EQ(arr.front(), &obj);
     ASSERT_EQ(arr.back(), &obj);
@@ -69,7 +69,7 @@ TEST_F(ArrayTest, PopNullptr)
 
 TEST_F(ArrayTest, PopAlreadyEmpty)
 {
-    CBOR obj;
+    Obj obj;
 
     ASSERT_EQ(arr.pop(&obj), ERR_EMPTY);
     ASSERT_EQ(arr.front(), nullptr);
@@ -79,10 +79,10 @@ TEST_F(ArrayTest, PopAlreadyEmpty)
 
 TEST_F(ArrayTest, DoublePop)
 {
-    CBOR obj;
+    Obj obj;
 
-    ASSERT_EQ(arr.push(&obj), NO_ERR);
-    ASSERT_EQ(arr.pop(&obj), NO_ERR);
+    ASSERT_EQ(arr.push(&obj), ERR_OK);
+    ASSERT_EQ(arr.pop(&obj), ERR_OK);
     ASSERT_EQ(arr.pop(&obj), ERR_EMPTY);
     ASSERT_EQ(arr.front(), nullptr);
     ASSERT_EQ(arr.back(), nullptr);
@@ -91,11 +91,11 @@ TEST_F(ArrayTest, DoublePop)
 
 TEST_F(ArrayTest, Iterator)
 {
-    CBOR obj_1;
-    CBOR obj_2 = 42;
+    Obj obj_1;
+    Obj obj_2 = 42;
 
-    ASSERT_EQ(arr.push(&obj_1), NO_ERR);
-    ASSERT_EQ(arr.push(&obj_2), NO_ERR);
+    ASSERT_EQ(arr.push(&obj_1), ERR_OK);
+    ASSERT_EQ(arr.push(&obj_2), ERR_OK);
     ASSERT_EQ(arr.size(), 2);
     ASSERT_NE(arr.begin(), arr.end());
 

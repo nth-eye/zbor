@@ -5,7 +5,7 @@ using namespace zbor;
 
 TEST(Cbor, Default)
 {
-    CBOR cbor;
+    Obj cbor;
 
     EXPECT_EQ(cbor.next, nullptr);
     EXPECT_EQ(cbor.prev, nullptr);
@@ -14,7 +14,7 @@ TEST(Cbor, Default)
 
 TEST(Cbor, Unsigned)
 {
-    CBOR cbor = 42;
+    Obj cbor = 42;
 
     EXPECT_EQ(cbor.type, TYPE_UINT);
     EXPECT_EQ(cbor.uint, 42);
@@ -22,7 +22,7 @@ TEST(Cbor, Unsigned)
 
 TEST(Cbor, Signed)
 {
-    CBOR cbor = -42;
+    Obj cbor = -42;
 
     EXPECT_EQ(cbor.type, TYPE_SINT);
     EXPECT_EQ(cbor.sint, -42);
@@ -31,7 +31,7 @@ TEST(Cbor, Signed)
 TEST(Cbor, MaxUnsigned)
 {
     uint64_t max_uint = 18446744073709551615ul;
-    CBOR cbor = max_uint;
+    Obj cbor = max_uint;
 
     EXPECT_EQ(cbor.type, TYPE_UINT);
     EXPECT_EQ(cbor.uint, max_uint);
@@ -40,7 +40,7 @@ TEST(Cbor, MaxUnsigned)
 TEST(Cbor, MinSigned)
 {
     int64_t min_sint = int64_t(-9223372036854775807 - 1);
-    CBOR cbor = min_sint;
+    Obj cbor = min_sint;
 
     EXPECT_EQ(cbor.type, TYPE_SINT);
     EXPECT_EQ(cbor.uint, min_sint);
@@ -49,7 +49,7 @@ TEST(Cbor, MinSigned)
 TEST(Cbor, DataString)
 {
     const uint8_t data[] = {0x00, 0x11, 0x22, 0x33};
-    CBOR cbor = {data, sizeof(data)};
+    Obj cbor = {data, sizeof(data)};
 
     EXPECT_EQ(cbor.type, TYPE_DATA);
     EXPECT_EQ(cbor.str.dat, data);
@@ -59,7 +59,7 @@ TEST(Cbor, DataString)
 TEST(Cbor, TextString)
 {
     const char *text = "hello";
-    CBOR cbor = {text, strlen(text)};
+    Obj cbor = {text, strlen(text)};
 
     EXPECT_EQ(cbor.type, TYPE_TEXT);
     EXPECT_EQ(cbor.str.txt, text);
@@ -68,7 +68,7 @@ TEST(Cbor, TextString)
 
 TEST(Cbor, ArrayEmpty)
 {
-    CBOR cbor = Array();
+    Obj cbor = Array();
 
     EXPECT_EQ(cbor.type, TYPE_ARRAY);
     EXPECT_EQ(cbor.arr.size(), 0);
@@ -76,10 +76,10 @@ TEST(Cbor, ArrayEmpty)
 
 TEST(Cbor, ArrayCreateThenPush)
 {
-    CBOR cbor = Array();
-    CBOR obj;
+    Obj cbor = Array();
+    Obj obj;
 
-    EXPECT_EQ(cbor.arr.push(&obj), NO_ERR);
+    EXPECT_EQ(cbor.arr.push(&obj), ERR_OK);
     EXPECT_EQ(cbor.arr.size(), 1);
     EXPECT_EQ(cbor.arr.front(), &obj);
 }
@@ -87,11 +87,11 @@ TEST(Cbor, ArrayCreateThenPush)
 TEST(Cbor, ArrayPushThenCreate)
 {
     auto arr = Array();
-    CBOR obj;
+    Obj obj;
 
-    EXPECT_EQ(arr.push(&obj), NO_ERR);
+    EXPECT_EQ(arr.push(&obj), ERR_OK);
 
-    CBOR cbor = arr;
+    Obj cbor = arr;
 
     EXPECT_EQ(cbor.type, TYPE_ARRAY);
     EXPECT_EQ(cbor.arr.size(), 1);
@@ -100,7 +100,7 @@ TEST(Cbor, ArrayPushThenCreate)
 
 TEST(Cbor, MapEmpty)
 {
-    CBOR cbor = Map();
+    Obj cbor = Map();
 
     EXPECT_EQ(cbor.type, TYPE_MAP);
     EXPECT_EQ(cbor.map.size(), 0);
@@ -108,11 +108,11 @@ TEST(Cbor, MapEmpty)
 
 TEST(Cbor, MapCreateThenPush)
 {
-    CBOR cbor = Map();
-    CBOR key;
-    CBOR val;
+    Obj cbor = Map();
+    Obj key;
+    Obj val;
 
-    EXPECT_EQ(cbor.map.push(&key, &val), NO_ERR);
+    EXPECT_EQ(cbor.map.push(&key, &val), ERR_OK);
     EXPECT_EQ(cbor.map.size(), 1);
 
     auto it = cbor.map.begin();
@@ -124,12 +124,12 @@ TEST(Cbor, MapCreateThenPush)
 TEST(Cbor, MapPushThenCreate)
 {
     auto map = Map();
-    CBOR key;
-    CBOR val;
+    Obj key;
+    Obj val;
 
-    EXPECT_EQ(map.push(&key, &val), NO_ERR);
+    EXPECT_EQ(map.push(&key, &val), ERR_OK);
 
-    CBOR cbor = map;
+    Obj cbor = map;
 
     EXPECT_EQ(cbor.type, TYPE_MAP);
     EXPECT_EQ(cbor.map.size(), 1);
@@ -142,8 +142,8 @@ TEST(Cbor, MapPushThenCreate)
 
 TEST(Cbor, Tag)
 {
-    CBOR content = 42;
-    CBOR cbor = Tag{777, &content};
+    Obj content = 42;
+    Obj cbor = Tag{777, &content};
 
     EXPECT_EQ(cbor.tag.val, 777);
     EXPECT_EQ(cbor.tag.content, &content);
@@ -151,7 +151,7 @@ TEST(Cbor, Tag)
 
 TEST(Cbor, BoolFalse)
 {
-    CBOR cbor = false;
+    Obj cbor = false;
 
     EXPECT_EQ(cbor.type, TYPE_PRIM);
     EXPECT_EQ(cbor.prim, PRIM_FALSE);
@@ -159,7 +159,7 @@ TEST(Cbor, BoolFalse)
 
 TEST(Cbor, BoolTrue)
 {
-    CBOR cbor = true;
+    Obj cbor = true;
 
     EXPECT_EQ(cbor.type, TYPE_PRIM);
     EXPECT_EQ(cbor.prim, PRIM_TRUE);
@@ -167,7 +167,7 @@ TEST(Cbor, BoolTrue)
 
 TEST(Cbor, PrimitiveFalse)
 {
-    CBOR cbor = PRIM_FALSE;
+    Obj cbor = PRIM_FALSE;
 
     EXPECT_EQ(cbor.type, TYPE_PRIM);
     EXPECT_EQ(cbor.prim, PRIM_FALSE);
@@ -175,7 +175,7 @@ TEST(Cbor, PrimitiveFalse)
 
 TEST(Cbor, PrimitiveTrue)
 {
-    CBOR cbor = PRIM_TRUE;
+    Obj cbor = PRIM_TRUE;
 
     EXPECT_EQ(cbor.type, TYPE_PRIM);
     EXPECT_EQ(cbor.prim, PRIM_TRUE);
@@ -183,7 +183,7 @@ TEST(Cbor, PrimitiveTrue)
 
 TEST(Cbor, PrimitiveNull)
 {
-    CBOR cbor = PRIM_NULL;
+    Obj cbor = PRIM_NULL;
 
     EXPECT_EQ(cbor.type, TYPE_PRIM);
     EXPECT_EQ(cbor.prim, PRIM_NULL);
@@ -191,7 +191,7 @@ TEST(Cbor, PrimitiveNull)
 
 TEST(Cbor, PrimitiveUndefined)
 {
-    CBOR cbor = PRIM_UNDEFINED;
+    Obj cbor = PRIM_UNDEFINED;
 
     EXPECT_EQ(cbor.type, TYPE_PRIM);
     EXPECT_EQ(cbor.prim, PRIM_UNDEFINED);
@@ -199,21 +199,21 @@ TEST(Cbor, PrimitiveUndefined)
 
 TEST(Cbor, PrimitiveReserved)
 {
-    CBOR cbor = PRIM_FLOAT_16;
+    Obj cbor = PRIM_FLOAT_16;
 
     EXPECT_EQ(cbor.type, TYPE_INVALID);
 }
 
 TEST(Cbor, PrimitiveInvalid)
 {
-    CBOR cbor = Prim(31);
+    Obj cbor = Prim(31);
 
     EXPECT_EQ(cbor.type, TYPE_INVALID);
 }
 
 TEST(Cbor, PrimitiveValid)
 {
-    CBOR cbor = Prim(32);
+    Obj cbor = Prim(32);
 
     EXPECT_EQ(cbor.type, TYPE_PRIM);
     EXPECT_EQ(cbor.prim, Prim(32));
@@ -221,14 +221,14 @@ TEST(Cbor, PrimitiveValid)
 
 TEST(Cbor, PrimitiveGreaterThanMax)
 {
-    CBOR cbor = Prim(512);
+    Obj cbor = Prim(512);
 
     EXPECT_EQ(cbor.type, TYPE_INVALID);
 }
 
 TEST(Cbor, Float)
 {
-    CBOR cbor = 1.0f;
+    Obj cbor = 1.0f;
 
     EXPECT_EQ(cbor.type, TYPE_DOUBLE);
     EXPECT_EQ(cbor.dbl, 1.0f);
@@ -236,7 +236,7 @@ TEST(Cbor, Float)
 
 TEST(Cbor, Double)
 {
-    CBOR cbor = 1.0;
+    Obj cbor = 1.0;
 
     EXPECT_EQ(cbor.type, TYPE_DOUBLE);
     EXPECT_EQ(cbor.dbl, 1.0);

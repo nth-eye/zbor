@@ -5,7 +5,7 @@
 
 using namespace zbor;
 
-void pretty_cbor(CBOR &obj)
+void pretty_cbor(Obj &obj)
 {
     switch (obj.type) {
 
@@ -84,13 +84,13 @@ int main(int, char**)
     printf("sizeof Map: %lu \n", sizeof(zbor::Map));
     printf("sizeof Tag: %lu \n", sizeof(zbor::Tag));
     printf("sizeof Sequence: %lu \n", sizeof(zbor::Sequence));
-    printf("sizeof CBOR: %lu \n", sizeof(zbor::CBOR));
+    printf("sizeof Obj: %lu \n", sizeof(zbor::Obj));
 
     // ANCHOR: Example pool
 
     // zbor::Pool<4> pool;
     // zbor::Array arr;
-    // zbor::CBOR *ptr;
+    // zbor::Obj *ptr;
 
     // arr.push(pool.make(true));
     // arr.push(pool.make(false));
@@ -133,7 +133,7 @@ int main(int, char**)
     // map.push(pool.make("arr", 3), pool.make(arr));
     // map.push(pool.make("err", 3), pool.make(777));
 
-    // CBOR cbors[] = {
+    // Obj cbors[] = {
     //     666,
     //     -44,
     //     { data, sizeof(data) },
