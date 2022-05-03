@@ -1,7 +1,7 @@
 #ifndef ZBOR_BASE_H
 #define ZBOR_BASE_H
 
-#include "zbor_util.h"
+#include "zbor/util.h"
 #include <cstring>
 
 namespace zbor {
@@ -249,9 +249,9 @@ struct Obj {
     Obj(ChunkData val);
     Obj(ChunkText val);
 
-    Obj *next   = nullptr;
-    Obj *prev   = nullptr;
-    Type type   = TYPE_INVALID;
+    Obj *next = nullptr;
+    Obj *prev = nullptr;
+    Type type = TYPE_INVALID;
     union {
         uint64_t uint;
         int64_t sint;

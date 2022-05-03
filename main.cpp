@@ -1,7 +1,7 @@
 #include <cstdio>
-#include <cstring>
 #include <ctime>
-#include "zbor.h"
+#include "zbor/encode.h"
+#include "zbor/decode.h"
 
 using namespace zbor;
 

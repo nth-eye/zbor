@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "zbor_encode.h"
+#include "zbor/encode.h"
 #include <cmath>
 
 using namespace zbor;

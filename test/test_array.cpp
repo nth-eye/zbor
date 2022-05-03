@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "zbor_base.h"
+#include "zbor/base.h"
 
 using namespace zbor;
 

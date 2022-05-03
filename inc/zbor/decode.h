@@ -1,8 +1,8 @@
 #ifndef ZBOR_DECODE_H
 #define ZBOR_DECODE_H
 
-#include "zbor_base.h"
-#include "zbor_float.h"
+#include "zbor/base.h"
+#include "zbor/float.h"
 
 namespace zbor {
 
