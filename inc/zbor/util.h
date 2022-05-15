@@ -7,14 +7,16 @@
 namespace zbor {
 
 /**
- * @brief Get number of bytes required to store N bits.
+ * @brief Helper to get number of elements in array. 
  * 
- * @param n Number of bits to store
- * @return Number of bytes
+ * @tparam T Auto-deduced element type
+ * @tparam N Auto-deduced number of elements
+ * @return Array size
  */
-constexpr size_t bytes_in_bits(size_t n)
+template<class T, size_t N>
+constexpr size_t countof(T(&)[N]) 
 { 
-    return (n >> 3) + !!(n & 7); 
+    return N; 
 }
 
 /**
@@ -29,108 +31,95 @@ constexpr unsigned bit(unsigned n)
 }
 
 /**
- * @brief Get n-th bit of a byte.
+ * @brief Convert string with hexadecimal characters ('0'...'F') to array of bytes.
+ * All non-hex chars will be mapped as 0. String with odd length will be interpeted
+ * as with prepended '0', e.g. "fff" --> "0fff". Works with both upper and lower cases.
+ * If output array is too small, as much as possible will be processed.
  * 
- * @param b Byte
- * @param n Bit position from LSB
- * @return Bit value
+ * @param str Input string
+ * @param str_len Input string length
+ * @param bin Output array
+ * @param max_bin_len Output array max size 
+ * @return Length of resulting array, 0 if failed
  */
-constexpr bool get_bit(uint8_t b, unsigned n)
-{ 
-    return (b >> n) & 1; 
+constexpr size_t str_to_bin(const char *str, size_t str_len, uint8_t *bin, size_t max_bin_len)
+{
+    if (!str || !bin)
+        return 0;
+
+    // Mapping of ASCII characters to bin values
+    const uint8_t map[256] = {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //  !"#$%&'()*+,-./
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0123456789:;<=>?
+        0x00, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // @ABCDEFGHIJKLMNO
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // PQRSTUVWXYZ[\]^_
+        0x00, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // `abcdefghijklmno
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pqrstuvwxyz{|}~.
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ................
+    };
+    size_t i = 0; 
+    size_t j = 0;
+    size_t bin_len = (str_len + 1) >> 1; // The output array size is half the str length (rounded up)
+
+    if (bin_len > max_bin_len) {
+        bin_len = max_bin_len;
+        str_len = max_bin_len << 1;
+    }
+    if (str_len & 1) {
+        int idx = str[0];
+        bin[0] = map[idx];
+        i = j = 1;
+    }
+    for (; i < str_len; i += 2, j++) {
+        int i0 = str[i];
+        int i1 = str[i + 1];
+        bin[j] = (map[i0] << 4) | map[i1];
+    }
+    return bin_len;
 }
 
 /**
- * @brief Set n-th bit of a byte.
+ * @brief Convert byte array to hexadecimal null-terminated string (lowercase).
+ * If input is too large for output, as much bytes as possible will be processed.
  * 
- * @param b Byte
- * @param n Bit position from LSB
+ * @param bin Input array
+ * @param bin_len Input array length
+ * @param str Output string
+ * @param max_str_len Output string maximum length, including 0-terminator
+ * @return Resulting string length, 0 if failed
  */
-inline void set_bit(uint8_t &b, unsigned n)
-{ 
-    b |= 1 << n; 
+constexpr size_t bin_to_str(const uint8_t *bin, size_t bin_len, char *str, size_t max_str_len)
+{
+    const char map[]= "0123456789abcdef";
+
+    if (!str || !bin || !bin_len || !max_str_len)
+        return 0;
+
+    size_t str_len = bin_len << 1;
+
+    if (str_len >= max_str_len) {
+        str_len = (max_str_len - 1) & ~1;
+        bin_len = str_len >> 1;
+    }
+
+    for (size_t i = 0; i < bin_len; ++i) {
+        *str++ = map[bin[i] >> 4];
+        *str++ = map[bin[i] & 0xf];
+    }
+    *str = 0;
+
+    return str_len;
 }
 
-/**
- * @brief Clear n-th bit of a byte.
- * 
- * @param b Byte
- * @param n Bit position from LSB
- */
-inline void clr_bit(uint8_t &b, unsigned n)
-{ 
-    b &= ~(1 << n); 
-}
-
-/**
- * @brief Static object pool. Uses individual bits to indicate if element is free.
- * 
- * @tparam T Type of elements
- * @tparam N Number of elements
- */
-template<class T, size_t N>
-struct StaticPool {
-
-    static_assert(N, "pool size must be > 0");
-    static constexpr size_t Bytes = bytes_in_bits(N);
-
-    template<typename... Args>
-    T* make(Args... args)
-    {
-        constexpr auto last_byte = Bytes - 1;
-        constexpr auto last_byte_bit = N & 7 ? N & 7 : 8;
-
-        size_t byte = last_byte;
-
-        for (size_t i = 0; i < last_byte; ++i) {
-            if (taken[i] != 0xff) {
-                byte = i;
-                break;
-            }
-        }
-        const auto last_bit = byte == last_byte ? last_byte_bit : 8;
-
-        for (unsigned bit = 0; bit < last_bit; ++bit) {
-            if (get_bit(taken[byte], bit) == false) {
-                set_bit(taken[byte], bit);
-                return &(arr[(byte << 3) + bit] = T(args...));
-            }
-        }
-        return nullptr;
-    }
-
-    void free(const T *p)
-    {
-        const size_t n = p - arr;
-        if (n >= N)
-            return;
-        clr_bit(taken[n >> 3], n & 7);
-    }
-
-    void clear()
-    {
-        for (auto &it : taken)
-            it = 0;
-    }
-private:
-    T       arr[N];
-    uint8_t taken[Bytes] = {};
-};
-
-/**
- * @brief Static stack without memory allocation.
- * 
- * @tparam T Type of elements
- * @tparam N Number of elements (stack depth)
- */
-template<class T, size_t N>
-struct Stack {
-    bool push(T item) { return size < N ? stack[size++] = item, true : false; }
-    void pop(T &item) { item = stack[--size]; }
-private:
-    T stack[N];
-    size_t size = 0;
-};
 
 }
 

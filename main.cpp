@@ -1,158 +1,118 @@
 #include <cstdio>
 #include <ctime>
-#include "zbor/encode.h"
-#include "zbor/decode.h"
+#include "zbor/codec.h"
+#include "zbor/log.h"
 
-using namespace zbor;
-
-void pretty_cbor(Obj &obj)
-{
-    switch (obj.type) {
-
-        case TYPE_UINT: printf("%lu", obj.uint); break;
-        case TYPE_SINT: printf("%ld", obj.sint); break;
-        case TYPE_DATA:
-            printf("h'");
-            for (size_t i = 0; i < obj.str.len; ++i)
-                printf("%02x", obj.str.dat[i]);
-            printf("'");
-            break;
-        case TYPE_TEXT:
-            printf("\"%.*s\"", (int) obj.str.len, obj.str.txt);
-            break;
-        case TYPE_ARRAY:
-            printf("[");
-            for (auto child : obj.arr) {
-                pretty_cbor(*child);
-                if (child->next)
-                    printf(", ");
-            }
-            printf("]");
-            break;
-        case TYPE_MAP:
-            printf("{");
-            for (auto child : obj.map) {
-                pretty_cbor(*child.key);
-                printf(": ");
-                pretty_cbor(*child.val);
-                if (child.val->next)
-                    printf(", ");
-            }
-            printf("}");
-            break;
-        case TYPE_TAG: 
-            printf("%lu(", obj.tag.val);
-            if (obj.tag.content)
-                pretty_cbor(*obj.tag.content);
-            printf(")");
-            break;
-        case TYPE_PRIM:
-            switch (obj.prim) {
-                case PRIM_FALSE: printf("false"); break;
-                case PRIM_TRUE: printf("true"); break;
-                case PRIM_NULL: printf("null"); break;
-                case PRIM_UNDEFINED: printf("undefined"); break;
-                default:
-                    if (obj.prim < 24 || obj.prim > 31)
-                        printf("simple(%u)", obj.prim);
-                    else
-                        printf("<illegal>");
-                    break;
-            }
-            break;
-        case TYPE_DOUBLE: printf("%f", obj.dbl); break;
-        default: printf("<unknown>");
-    }
-}
-
-template<size_t N = 1, class Fn, class Ptr, class ...Args>
-clock_t measure_time(Fn &&fn, Ptr *ptr, Args &&...args)
+template<size_t N = 1, class Fn, class ...Args>
+clock_t measure_time(Fn &&fn, Args &&...args)
 {
     clock_t begin = clock();
     for (size_t i = 0; i < N; ++i) 
-        (ptr->*fn)(args...);
+        fn(args...);
     clock_t end = clock();
 
-    return (end - begin);
+    return (end - begin); // / N;
 }
 
 int main(int, char**) 
 {
-    printf("sizeof Pair: %lu \n", sizeof(zbor::Pair));
-    printf("sizeof String: %lu \n", sizeof(zbor::String));
-    printf("sizeof Array: %lu \n", sizeof(zbor::Array));
-    printf("sizeof Map: %lu \n", sizeof(zbor::Map));
-    printf("sizeof Tag: %lu \n", sizeof(zbor::Tag));
-    printf("sizeof Sequence: %lu \n", sizeof(zbor::Sequence));
-    printf("sizeof Obj: %lu \n", sizeof(zbor::Obj));
+    printf("sizeof(zbor::Err): %lu \n", sizeof(zbor::Err));
+    printf("sizeof(zbor::Arr): %lu \n", sizeof(zbor::Arr));
+    printf("sizeof(zbor::Map): %lu \n", sizeof(zbor::Map));
+    printf("sizeof(zbor::Tag): %lu \n", sizeof(zbor::Map));
+    printf("sizeof(zbor::Obj): %lu \n", sizeof(zbor::Obj));
+    printf("sizeof(zbor::Gen): %lu \n", sizeof(zbor::Gen));
+    printf("sizeof(zbor::SeqIter): %lu \n", sizeof(zbor::SeqIter));
+    printf("sizeof(zbor::MapIter): %lu \n", sizeof(zbor::MapIter));
 
-    // ANCHOR: Example pool
+    const uint8_t example[] = { 
+        0x01, // 1
+        0x02, // 2
+        0x0a, // 10
+        0x17, // 23
+        0x18, 0x18, // 24
+        0x18, 0x19, // 25
+        0x18, 0x64, // 100
+        0x19, 0x03, 0xe8, // 1000
+        0x1a, 0x00, 0x0f, 0x42, 0x40, // 1000000
+        0x1b, 0x00, 0x00, 0x00, 0xe8, 0xd4, 0xa5, 0x10, 0x00, // 1000000000000
+        0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 18446744073709551615
+        0x20, // -1
+        0x29, // -10
+        0x38, 0x63, // -100
+        0x39, 0x03, 0xe7, // -1000
+        0x3b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // -18446744073709551616
+        0xf9, 0x00, 0x00, // 0.0
+        0xf9, 0x80, 0x00, // -0.0
+        0xf9, 0x3c, 0x00, // 1.0
+        0xfb, 0x3f, 0xf1, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9a, // 1.1
+        0xf9, 0x3e, 0x00, // 1.5
+        0xf9, 0x7b, 0xff, // 65504.0
+        0xfa, 0x47, 0xc3, 0x50, 0x00, // 100000.0
+        0xfa, 0x7f, 0x7f, 0xff, 0xff, // 3.4028234663852886e+38
+        0xfb, 0x7e, 0x37, 0xe4, 0x3c, 0x88, 0x00, 0x75, 0x9c, // 1.0e+300
+        0xf9, 0x00, 0x01, // 5.960464477539063e-8
+        0xf9, 0x04, 0x00, // 0.00006103515625
+        0xf9, 0xc4, 0x00, // -4.0
+        0xfb, 0xc0, 0x10, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, // -4.1
+        0xf9, 0x7c, 0x00, // Infinity
+        0xf9, 0x7e, 0x00, // NaN
+        0xf9, 0xfc, 0x00, // -Infinity
+        0xf4, // false
+        0xf5, // true
+        0xf6, // null
+        0xf7, // undefined
+        0xf0, // simple(16)
+        0xf8, 0xff, // simple(255)
+        0xc0, 0x74, 0x32, 0x30, 0x31, 0x33, 0x2d, 0x30, 0x33, 0x2d, 0x32, 0x31, 0x54, 0x32, 0x30, 0x3a, 0x30, 0x34, 0x3a, 0x30, 0x30, 0x5a, // 0("2013-03-21T20:04:00Z")
+        0xc1, 0x1a, 0x51, 0x4b, 0x67, 0xb0, // 1(1363896240)
+        0xc1, 0xfb, 0x41, 0xd4, 0x52, 0xd9, 0xec, 0x20, 0x00, 0x00, // 1(1363896240.5)
+        0xd7, 0x44, 0x01, 0x02, 0x03, 0x04, // 23(h'01020304')
+        0xd8, 0x18, 0x45, 0x64, 0x49, 0x45, 0x54, 0x46, // 24(h'6449455446')
+        0xd8, 0x20, 0x76, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d, // 32("http://www.example.com")
+        0x40, // h''
+        0x44, 0x01, 0x02, 0x03, 0x04, // h'01020304'
+        0x60, // ""
+        0x61, 0x61, // "a"
+        0x64, 0x49, 0x45, 0x54, 0x46, // "IETF"
+        0x62, 0x22, 0x5c, // "\"\\"
+        0x62, 0xc3, 0xbc, // "\u00fc"
+        0x63, 0xe6, 0xb0, 0xb4, // "\u6c34"
+        0x64, 0xf0, 0x90, 0x85, 0x91, // "\ud800\udd51"
+        0x80, // []
+        0x83, 0x01, 0x02, 0x03, // [1, 2, 3]
+        0x83, 0x01, 0x82, 0x02, 0x03, 0x82, 0x04, 0x05, // [1, [2, 3], [4, 5]]
+        0x98, 0x19, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x18, 0x18, 0x19, // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+        0xa0, // {}
+        0xa2, 0x01, 0x02, 0x03, 0x04, // {1: 2, 3: 4}
+        0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x82, 0x02, 0x03, // {"a": 1, "b": [2, 3]}
+        0x82, 0x61, 0x61, 0xa1, 0x61, 0x62, 0x61, 0x63, // ["a", {"b": "c"}]
+        0xa5, 0x61, 0x61, 0x61, 0x41, 0x61, 0x62, 0x61, 0x42, 0x61, 0x63, 0x61, 0x43, 0x61, 0x64, 0x61, 0x44, 0x61, 0x65, 0x61, 0x45, // {"a": "A", "b": "B", "c": "C", "d": "D", "e": "E"}
+        0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff, // (_ h'0102', h'030405')
+        0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, // (_ "strea", "ming")
+        0x9f, 0xff, // [_ ]
+        0x9f, 0x01, 0x82, 0x02, 0x03, 0x9f, 0x04, 0x05, 0xff, 0xff, // [_ 1, [2, 3], [_ 4, 5]]
+        0x9f, 0x01, 0x82, 0x02, 0x03, 0x82, 0x04, 0x05, 0xff, // [_ 1, [2, 3], [4, 5]]
+        0x83, 0x01, 0x82, 0x02, 0x03, 0x9f, 0x04, 0x05, 0xff, // [1, [2, 3], [_ 4, 5]]
+        0x83, 0x01, 0x9f, 0x02, 0x03, 0xff, 0x82, 0x04, 0x05, // [1, [_ 2, 3], [4, 5]]
+        0x9f, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x18, 0x18, 0x19, 0xff, // [_ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+        0xbf, 0x61, 0x61, 0x01, 0x61, 0x62, 0x9f, 0x02, 0x03, 0xff, 0xff, // {_ "a": 1, "b": [_ 2, 3]}
+        0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
+        0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
+    };
+    zbor::log_seq(zbor::Seq(example, sizeof(example)));
 
-    // zbor::Pool<4> pool;
-    // zbor::Array arr;
-    // zbor::Obj *ptr;
-
-    // arr.push(pool.make(true));
-    // arr.push(pool.make(false));
-    // arr.push(pool.make(Prim(69)));
-
-    // ptr = pool.make(PRIM_NULL);
-    // pool.free(ptr);
-
-    // ptr = pool.make(arr);
-    // pool.free(ptr); // NOTE: Doesn't automatically free elements
-
-    // ptr = pool.make(arr);
-    // for (auto it : ptr->arr) // Free elements (non recursive)
-    //     pool.free(it);
-    // pool.free(ptr);
-
-    // ANCHOR: Example Encoding
-
-    // zbor::Pool<1> pool;
-    // zbor::Encoder<9> enc;
-
-    // enc.encode(pool.make(0xfffffffffffffffful));
-
-    // for (size_t i = 0; i < enc.size(); ++i)
-    //     printf("%02x ", enc[i]);
-    // printf("\n");
-
-    // ANCHOR: Example General
-    
-    // Pool<32> pool;
-    // Array arr;
-    // Map map;
-
-    // const uint8_t data[] = { 0xde, 0xad, 0xbe, 0xef };
-    // const char *text = "test";
-
-    // arr.push(pool.make(0));
-    // arr.push(pool.make(-99));
-    // arr.push(pool.make(text, strlen(text)));
-    // map.push(pool.make("arr", 3), pool.make(arr));
-    // map.push(pool.make("err", 3), pool.make(777));
-
-    // Obj cbors[] = {
-    //     666,
-    //     -44,
-    //     { data, sizeof(data) },
-    //     { text, strlen(text) },
-    //     arr,
-    //     map,
-    //     Tag{ 2, pool.make(false) },
-    //     true,
-    //     PRIM_NULL,
-    //     0.0f,
-    //     0.0,
-    //     13.37,
+    // auto test_case_1 = [&, i = 0] () mutable
+    // {
+    //     for (auto it : zbor::Seq{example, sizeof(example)}) {
+    //         ++i;
+    //     }
+    //     return i;
     // };
 
-    // int i = 0;
+    // printf("1: %3ld clock_t\n", measure_time<10000000>(test_case_1));
+    // printf("1: %3ld clock_t\n", measure_time<10000000>(test_case_1));
+    // printf("1: %3ld clock_t\n", measure_time<10000000>(test_case_1));
 
-    // for (auto &obj : cbors) {
-    //     printf("%d) ", ++i);
-    //     pretty_cbor(obj);
-    //     printf("\n");
-    // }
+    // printf("1 ret %u \n", test_case_1());
 }

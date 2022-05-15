@@ -1,85 +1,55 @@
 # zbor
 
-Small C++14 Obj encoder/decoder library without dynamic memory allocation. Obj tokens can be allocated from static object pool templated by maximum number of tokens.
+Small C++17 CBOR stream codec. No dynamic memory allocation, all items are encoded/parsed on-the-fly in a given buffer. Decoding can be done manually with `zbor::decode()` or using `zbor::Seq` wrapper in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact `zbor::Err` you need to decode and check manually every item.
+
+__Half-float support included!__
 
 ## Examples
 
-### Array
+### Decode
+
+#### With range-based for loop
 
 ```cpp
-zbor::Obj el_0 = 1;
-zbor::Obj el_1 = -42;
+const uint8_t example[] = { 
+    0x01, // 1
+    0x64, 0x5a, 0x42, 0x4f, 0x52, // "ZBOR"
+    0x83, 0x01, 0x02, 0x03, // [1, 2, 3]
+};
 
-zbor::Array as_arr;
-
-as_arr.push(&el_0);
-as_arr.push(&el_1);
-
-zbor::Obj as_obj = zbor::Array();
-
-as_obj.arr.push(&el_0);
-as_obj.arr.push(&el_1);
-```
-
-### Map
-
-```cpp
-zbor::Obj key = {"key", 3};
-zbor::Obj val = {(uint8_t*) "\xde\xad\xc0\xde", 4};
-
-zbor::Map as_map;
-
-as_map.push(&key, &val);
-
-zbor::Obj as_obj = zbor::Map();
-
-as_obj.map.push(&key, &val);
-```
-
-### Pool
-
-```cpp
-zbor::Pool<4> pool;
-zbor::Array arr;
-zbor::Obj *ptr;
-
-arr.push(pool.make(true));
-arr.push(pool.make(false));
-arr.push(pool.make(Prim(69)));
-
-ptr = pool.make(PRIM_NULL);
-pool.free(ptr);
-
-ptr = pool.make(arr);
-pool.free(ptr); // NOTE: Doesn't automatically free elements
-
-ptr = pool.make(arr);
-for (auto it : ptr->arr) // Free elements (non recursive)
-    pool.free(it);
-pool.free(ptr);
-```
-
-### Encoding
-
-```cpp
-zbor::Pool<1> pool;
-zbor::Encoder<9> enc;
-
-Err err = enc.encode(pool.make(0xfffffffffffffffful));
-
-if (err != zbor::NO_ERR) {
-    printf("encode failure: %d \n", err);
-    return;
+for (auto it : zbor::Seq{example, sizeof(example)}) {
+    switch (it.type) {
+        case zbor::TYPE_UINT:
+            printf("got uint %u \n", it.uint); 
+        break;
+        case zbor::TYPE_TEXT:
+            printf("got text \"%.*s\" \n", int(it.str.len), it.str.txt); 
+        break;
+        case zbor::TYPE_ARRAY:
+            if (it.arr.indef())
+                printf("got indefinite array... \n");
+            else
+                printf("got array of size %d... \n", it.arr.size());
+            for (auto arr_it : it.arr)
+                printf("\t %s \n", zbor::str_type(arr_it.type));
+        break;
+        default:
+            printf("got unawaited \n");
+    }
 }
-
-for (size_t i = 0; i < enc.size(); ++i)
-    printf("%02x ", enc[i]);
-printf("\n");
-
-some_c_style_fn(enc.data(), enc.size());
 ```
 
-### Decoding
+#### Manually
 
 ```cpp
 ```
+
+### Encode
+
+```cpp
+```
+
+## TODO
+
+- [ ] encoder tests
+- [ ] examples in readme
