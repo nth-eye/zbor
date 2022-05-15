@@ -271,7 +271,7 @@ struct MapIter : Gen {
 
     bool operator!=(const MapIter&) const 
     { 
-        return key.valid();
+        return key.valid() && val.valid();
     }
     auto operator*() const 
     { 

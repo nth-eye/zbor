@@ -129,39 +129,39 @@ inline Err Buf::encode_bytes(Mt mt, const void *data, size_t len)
 
 inline Err Buf::encode_float(Prim type, Float val)
 {
-    switch (type) {
+    switch (type) 
+    {
+    case PRIM_FLOAT_64:
+    {
+        if (val.f64 != val.f64)
+            goto if_nan;
 
-        case PRIM_FLOAT_64:
-        {
-            if (val.f64 != val.f64)
-                goto if_nan;
+        float f32 = val.f64;
+        if (val.f64 != f32) // Else we can fallthrough to FLOAT_32
+            return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_64), val.u64, 8);
+        val.f32 = f32;
+        [[fallthrough]];
+    }
+    case PRIM_FLOAT_32:
+    {
+        if (val.f32 != val.f32)
+            goto if_nan;
 
-            float f32 = val.f64;
-            if (val.f64 != f32) // Else we can fallthrough to FLOAT_32
-                return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_64), val.u64, 8);
-            val.f32 = f32;
-            [[fallthrough]];
-        }
-        case PRIM_FLOAT_32:
-        {
-            if (val.f32 != val.f32)
-                goto if_nan;
+        uint16_t u16 = half_from_float(val.u32);
+        if (val.f32 != Float{half_to_float(u16)}.f32) // Else we can fallthrough to FLOAT_16
+            return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_32), val.u32, 4);
+        val.u16 = u16;
+        [[fallthrough]];
+    }
+    case PRIM_FLOAT_16:
+        if ((val.u16 & 0x7fff) > 0x7c00)
+            goto if_nan;
+        return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_16), val.u16, 2);
+    if_nan: 
+        return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_16), 0x7e00, 2);
 
-            uint16_t u16 = half_from_float(val.u32);
-            if (val.f32 != Float{half_to_float(u16)}.f32) // Else we can fallthrough to FLOAT_16
-                return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_32), val.u32, 4);
-            val.u16 = u16;
-            [[fallthrough]];
-        }
-        case PRIM_FLOAT_16:
-            if ((val.u16 & 0x7fff) > 0x7c00)
-                goto if_nan;
-            return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_16), val.u16, 2);
-        if_nan: 
-            return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_16), 0x7e00, 2);
-
-        default:
-            return ERR_INVALID_FLOAT_TYPE;
+    default:
+        return ERR_INVALID_FLOAT_TYPE;
     }
 }
 
