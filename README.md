@@ -57,7 +57,7 @@ while (1) {
     std::tie(obj, err, ptr) = zbor::decode(ptr, end);
     
     if (err != zbor::ERR_OK) {
-        printf("got error, %d -> %s", err, str_err(err));
+        printf("got error, %d -> %s", err, zbor::str_err(err));
         break;
     }
     switch (obj.type) {
