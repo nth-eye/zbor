@@ -7,7 +7,12 @@
 namespace zbor {
 
 /**
- * @brief 
+ * @brief Decode next adjacent CBOR item. Almost all validity checks always performed 
+ * throughout decoding process: out-of-bounds, reserved AI, invalid indef MT, nested 
+ * indefinite strings, break without start. What isn't checked is number of elements 
+ * within nested containers (if at least one of them is indefinite). For example, 0x9f82ff 
+ * will be first parsed as valid indefinite array, and then, only if user starts to traverse 
+ * over its elements, decoding of malformed nested array will report ERR_OUT_OF_BOUNDS.
  * 
  * @param p Begin pointer, must be valid pointer
  * @param end End pointer, must be valid pointer
@@ -126,7 +131,7 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
     while (skip || nest) {
 
         if (p >= end)
-            return {{}, ERR_OUT_OF_BOUNDS, p};
+            return {{}, ERR_OUT_OF_BOUNDS, end};
 
         mt  = *p & 0xe0;
         val = *p & 0x1f;
@@ -215,6 +220,11 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
     return {obj, ERR_OK, p};
 }
 
+/**
+ * @brief Generator which holds range (begin and end pointers) for byte sequence.
+ * Used as base for other iterators.
+ * 
+ */
 struct Gen {
 
     Gen() = default;
@@ -229,6 +239,12 @@ protected:
     const byte *tail;
 };
 
+/**
+ * @brief Sequence iterator, used to traverse CBOR sequence (RFC-8742), which
+ * is just series of adjacent objects. Used to traverse Array, IndefString or 
+ * any series of bytes as Objects one by one. Only exception is Map.
+ * 
+ */
 struct SeqIter : Gen {
     
     SeqIter() = default;
@@ -260,6 +276,11 @@ private:
     Obj o;
 };
 
+/**
+ * @brief Map iterator, same as SeqIter but parses two objects in a row and 
+ * returns them as pair.
+ * 
+ */
 struct MapIter : Gen {
 
     MapIter() = default;
@@ -313,11 +334,7 @@ inline SeqIter IndefString::begin() const   { return {head, tail}; }
 inline SeqIter IndefString::end() const     { return {}; }
 inline MapIter Map::begin() const           { return {head, tail}; }
 inline MapIter Map::end() const             { return {}; }
-
-inline Obj Tag::content() const
-{
-    return std::get<Obj>(decode(head, tail));
-}
+inline Obj Tag::content() const             { return std::get<Obj>(decode(head, tail)); }
 
 }
 

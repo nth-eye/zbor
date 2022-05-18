@@ -27,6 +27,22 @@ constexpr const char* str_type(Type t)
     }
 }
 
+constexpr const char* str_err(Err e)
+{
+    switch (e) {
+        case ERR_OK: return "ERR_OK";
+        case ERR_NO_MEMORY: return "ERR_NO_MEMORY";
+        case ERR_OUT_OF_BOUNDS: return "ERR_OUT_OF_BOUNDS";
+        case ERR_INVALID_SIMPLE: return "ERR_INVALID_SIMPLE";
+        case ERR_INVALID_FLOAT_TYPE: return "ERR_INVALID_FLOAT_TYPE";
+        case ERR_INVALID_INDEF_MT: return "ERR_INVALID_INDEF_MT";
+        case ERR_INVALID_INDEF_ITEM: return "ERR_INVALID_INDEF_ITEM";
+        case ERR_RESERVED_AI: return "ERR_RESERVED_AI";
+        case ERR_BREAK_WITHOUT_START: return "ERR_BREAK_WITHOUT_START";
+        default: return "<unknown>";
+    }
+}
+
 /**
  * @brief Print hex nicely with relevant ASCII representation.
  * 

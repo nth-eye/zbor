@@ -164,7 +164,7 @@ TEST(Decode, Sint)
     ASSERT_EQ(err, ERR_OK);
     ASSERT_EQ(ptr, test + 16);
     ASSERT_EQ(obj.type, TYPE_SINT);
-    ASSERT_EQ(obj.sint, -18446744073709551616);
+    ASSERT_EQ(obj.sint, 0); // -18446744073709551616
 
     ASSERT_EQ(ptr, end);
 }

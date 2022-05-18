@@ -7,7 +7,7 @@ target_compile_options(zborlib INTERFACE "-Wall" "-Wextra" "-Wpedantic")
 target_include_directories(zborlib INTERFACE inc)
 
 add_executable(zbor main.cpp)
-target_compile_features(zbor PUBLIC cxx_std_14)
+target_compile_features(zbor PUBLIC cxx_std_17)
 target_link_libraries(zbor PUBLIC zborlib)
 
 enable_testing()

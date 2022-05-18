@@ -208,6 +208,6 @@ constexpr uint16_t half_from_double(uint64_t d)
     return half_from_float(fp.f32);
 }
 
-};
+}
 
 #endif

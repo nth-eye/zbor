@@ -20,7 +20,7 @@ const uint8_t example[] = {
 for (auto it : zbor::Seq{example, sizeof(example)}) {
     switch (it.type) {
         case zbor::TYPE_UINT:
-            printf("got uint %u \n", it.uint); 
+            printf("got uint %lu \n", it.uint); 
         break;
         case zbor::TYPE_TEXT:
             printf("got text \"%.*s\" \n", int(it.str.len), it.str.txt); 
@@ -29,7 +29,7 @@ for (auto it : zbor::Seq{example, sizeof(example)}) {
             if (it.arr.indef())
                 printf("got indefinite array... \n");
             else
-                printf("got array of size %d... \n", it.arr.size());
+                printf("got array of size %lu... \n", it.arr.size());
             for (auto arr_it : it.arr)
                 printf("\t %s \n", zbor::str_type(arr_it.type));
         break;
@@ -42,6 +42,37 @@ for (auto it : zbor::Seq{example, sizeof(example)}) {
 #### Manually
 
 ```cpp
+const uint8_t illformed[] = {
+    0xbf, 0x81, 0x00, 0xf5, 0xff, // {_ [0]: true}
+    0xfe, // <invalid> - AI 30 is reserved
+};
+
+zbor::Obj obj;
+zbor::Err err;
+auto ptr = illformed;
+auto end = illformed + sizeof(illformed);
+
+while (1) {
+
+    std::tie(obj, err, ptr) = zbor::decode(ptr, end);
+    
+    if (err != zbor::ERR_OK) {
+        printf("got error, %d -> %s", err, str_err(err));
+        break;
+    }
+    switch (obj.type) {
+        case zbor::TYPE_MAP:
+            if (obj.map.indef())
+                printf("got indefinite map... \n");
+            else
+                printf("got map of size %lu... \n", obj.map.size());
+            for (auto [key, val] : obj.map)
+                printf("\t %s: %s\n", zbor::str_type(key.type), zbor::str_type(val.type));
+        break;
+        default:
+            printf("got unawaited \n");
+    }
+}
 ```
 
 ### Encode
