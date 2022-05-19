@@ -23,6 +23,7 @@ struct Buf {
     Err encode(std::span<byte> val);
     Err encode(std::span<char> val);
     Err encode(std::string_view val);
+    Err encode(const char *val);
     Err encode(Prim val);
     Err encode(bool val);
     Err encode(float val);
@@ -36,6 +37,7 @@ struct Buf {
     Err encode_arr(size_t size);
     Err encode_map(size_t size);
     Err encode_tag(uint64_t val);
+    Err encode_int(Mt mt, uint64_t val, size_t add_len = 0);
 
     template<class K, class V>
     Err encode(K key, V val)
@@ -63,7 +65,6 @@ private:
 
     Err encode_byte(byte b);
     Err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
-    Err encode_int(Mt mt, uint64_t val, size_t add_len = 0);
     Err encode_bytes(Mt mt, const void *data, size_t len);
     Err encode_float(Prim type, Float val);
 };
@@ -80,6 +81,20 @@ struct Codec : Buf {
 private:
     byte buf[N];
 };
+
+constexpr size_t ai_length(uint64_t val)
+{
+   if (val <= AI_0)
+        return 1;
+    else if (val <= 0xff)
+        return 2;
+    else if (val <= 0xffff)
+        return 3;
+    else if (val <= 0xffffffff)
+        return 5;
+    else
+        return 9; 
+} 
 
 // SECTION: Private
 
@@ -204,6 +219,11 @@ inline Err Buf::encode(std::span<char> val)
 inline Err Buf::encode(std::string_view val)
 {
     return encode_bytes(MT_TEXT, val.data(), val.size());
+}
+
+inline Err Buf::encode(const char *val)
+{
+    return encode_bytes(MT_TEXT, val, strlen(val));
 }
 
 inline Err Buf::encode(Prim val)
