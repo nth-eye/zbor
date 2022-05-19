@@ -26,15 +26,6 @@ struct Buf {
     Err encode(float val);
     Err encode(double val);
 
-    template<class K, class V>
-    Err encode(K key, V val)
-    {
-        Err err = encode(key);
-        if (err != ERR_OK)
-            return err;
-        return encode(val);
-    }
-
     Err encode_indef_dat();
     Err encode_indef_txt();
     Err encode_indef_arr();
@@ -44,6 +35,7 @@ struct Buf {
     Err encode_map(size_t size);
     Err encode_tag(uint64_t val);
 
+    operator Seq() const                    { return {buf, idx}; }
     SeqIter begin() const                   { return {buf, buf + idx}; }
     SeqIter end() const                     { return {}; }
     const byte& operator[](size_t i) const  { return buf[i]; }
