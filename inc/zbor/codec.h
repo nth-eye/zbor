@@ -1,6 +1,8 @@
 #ifndef ZBOR_CODEC_H
 #define ZBOR_CODEC_H
 
+#include <span>
+#include <string_view>
 #include "zbor/decode.h"
 
 namespace zbor {
@@ -18,9 +20,9 @@ struct Buf {
     Err encode(unsigned val);
     Err encode(int64_t val);
     Err encode(uint64_t val);
-    Err encode(const byte *data, size_t len);
-    Err encode(const char *text, size_t len);
-    Err encode(const char *text);
+    Err encode(std::span<byte> val);
+    Err encode(std::span<char> val);
+    Err encode(std::string_view val);
     Err encode(Prim val);
     Err encode(bool val);
     Err encode(float val);
@@ -34,6 +36,15 @@ struct Buf {
     Err encode_arr(size_t size);
     Err encode_map(size_t size);
     Err encode_tag(uint64_t val);
+
+    template<class K, class V>
+    Err encode(K key, V val)
+    {
+        Err err = encode(key);
+        if (err != ERR_OK)
+            return err;
+        return encode(val);
+    }
 
     operator Seq() const                    { return {buf, idx}; }
     SeqIter begin() const                   { return {buf, buf + idx}; }
@@ -180,19 +191,19 @@ inline Err Buf::encode(int64_t val)
     return encode_int(Mt(ui & 0x20), ui ^ val);
 }
 
-inline Err Buf::encode(const byte *data, size_t len)
+inline Err Buf::encode(std::span<byte> val)
 {
-    return encode_bytes(MT_DATA, data, len);
+    return encode_bytes(MT_DATA, val.data(), val.size());
 }
 
-inline Err Buf::encode(const char *text, size_t len)
+inline Err Buf::encode(std::span<char> val)
 {
-    return encode_bytes(MT_TEXT, text, len);
+    return encode_bytes(MT_TEXT, val.data(), val.size());
 }
 
-inline Err Buf::encode(const char *text)
+inline Err Buf::encode(std::string_view val)
 {
-    return encode_bytes(MT_TEXT, text, strlen(text));
+    return encode_bytes(MT_TEXT, val.data(), val.size());
 }
 
 inline Err Buf::encode(Prim val)
