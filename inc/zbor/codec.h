@@ -15,13 +15,14 @@ struct Buf {
 
     Buf() = delete;
     Buf(byte *buf, size_t max) : buf{buf}, max{max} {}
+    Buf(std::span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
     
     Err encode(int val);
     Err encode(unsigned val);
     Err encode(int64_t val);
     Err encode(uint64_t val);
-    Err encode(std::span<byte> val);
-    Err encode(std::span<char> val);
+    Err encode(std::span<const byte> val);
+    Err encode(std::span<const char> val);
     Err encode(std::string_view val);
     Err encode(const char *val);
     Err encode(Prim val);
@@ -37,7 +38,6 @@ struct Buf {
     Err encode_arr(size_t size);
     Err encode_map(size_t size);
     Err encode_tag(uint64_t val);
-    Err encode_int(Mt mt, uint64_t val, size_t add_len = 0);
 
     template<class K, class V>
     Err encode(K key, V val)
@@ -48,6 +48,7 @@ struct Buf {
         return encode(val);
     }
 
+    // operator std::span<const byte>() const  { return {buf, idx}; }
     operator Seq() const                    { return {buf, idx}; }
     SeqIter begin() const                   { return {buf, buf + idx}; }
     SeqIter end() const                     { return {}; }
@@ -65,6 +66,7 @@ private:
 
     Err encode_byte(byte b);
     Err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
+    Err encode_int(Mt mt, uint64_t val, size_t add_len = 0);
     Err encode_bytes(Mt mt, const void *data, size_t len);
     Err encode_float(Prim type, Float val);
 };
@@ -81,20 +83,6 @@ struct Codec : Buf {
 private:
     byte buf[N];
 };
-
-constexpr size_t ai_length(uint64_t val)
-{
-   if (val <= AI_0)
-        return 1;
-    else if (val <= 0xff)
-        return 2;
-    else if (val <= 0xffff)
-        return 3;
-    else if (val <= 0xffffffff)
-        return 5;
-    else
-        return 9; 
-} 
 
 // SECTION: Private
 
@@ -206,12 +194,12 @@ inline Err Buf::encode(int64_t val)
     return encode_int(Mt(ui & 0x20), ui ^ val);
 }
 
-inline Err Buf::encode(std::span<byte> val)
+inline Err Buf::encode(std::span<const byte> val)
 {
     return encode_bytes(MT_DATA, val.data(), val.size());
 }
 
-inline Err Buf::encode(std::span<char> val)
+inline Err Buf::encode(std::span<const char> val)
 {
     return encode_bytes(MT_TEXT, val.data(), val.size());
 }
