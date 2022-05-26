@@ -38,6 +38,7 @@ struct Buf {
     Err encode_arr(size_t size);
     Err encode_map(size_t size);
     Err encode_tag(uint64_t val);
+    Err encode_head(Mt mt, uint64_t val, size_t add_len = 0);
 
     template<class K, class V>
     Err encode(K key, V val)
@@ -66,7 +67,6 @@ private:
 
     Err encode_byte(byte b);
     Err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
-    Err encode_int(Mt mt, uint64_t val, size_t add_len = 0);
     Err encode_bytes(Mt mt, const void *data, size_t len);
     Err encode_float(Prim type, Float val);
 };
@@ -103,7 +103,7 @@ inline Err Buf::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_
     return ERR_OK;
 }
 
-inline Err Buf::encode_int(Mt mt, uint64_t val, size_t add_len)
+inline Err Buf::encode_head(Mt mt, uint64_t val, size_t add_len)
 {
     byte ai;
 
@@ -125,7 +125,7 @@ inline Err Buf::encode_int(Mt mt, uint64_t val, size_t add_len)
 
 inline Err Buf::encode_bytes(Mt mt, const void *data, size_t len)
 {
-    Err err = encode_int(mt, len, len);
+    Err err = encode_head(mt, len, len);
     if (err == ERR_OK && data && len) {
         memcpy(&buf[idx], data, len);
         idx += len;
@@ -185,13 +185,13 @@ inline Err Buf::encode(unsigned val)
 
 inline Err Buf::encode(uint64_t val)
 {
-    return encode_int(MT_UINT, val);
+    return encode_head(MT_UINT, val);
 }
 
 inline Err Buf::encode(int64_t val)
 {
     uint64_t ui = val >> 63;
-    return encode_int(Mt(ui & 0x20), ui ^ val);
+    return encode_head(Mt(ui & 0x20), ui ^ val);
 }
 
 inline Err Buf::encode(std::span<const byte> val)
@@ -218,7 +218,7 @@ inline Err Buf::encode(Prim val)
 {
     if (val >= 24 && val <= 31)
         return ERR_INVALID_SIMPLE;
-    return encode_int(MT_SIMPLE, val);
+    return encode_head(MT_SIMPLE, val);
 }
 
 inline Err Buf::encode(bool val)
@@ -263,17 +263,17 @@ inline Err Buf::encode_break()
 
 inline Err Buf::encode_arr(size_t size)
 {
-    return encode_int(MT_ARRAY, size);
+    return encode_head(MT_ARRAY, size);
 }
 
 inline Err Buf::encode_map(size_t size)
 {
-    return encode_int(MT_MAP, size);
+    return encode_head(MT_MAP, size);
 }
 
 inline Err Buf::encode_tag(uint64_t val)
 {
-    return encode_int(MT_TAG, val);
+    return encode_head(MT_TAG, val);
 }
 
 }
