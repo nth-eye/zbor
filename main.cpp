@@ -115,4 +115,15 @@ int main(int, char**)
     // printf("1: %3ld clock_t\n", measure_time<10000000>(test_case_1));
 
     // printf("1 ret %u \n", test_case_1());
+
+    auto seq = zbor::Seq(example, sizeof(example));
+
+    printf("+-----------HEX-----------+\n");
+    zbor::log_hex(seq.data(), seq.size());
+    printf("+--------DIAGNOSTIC-------+\n");
+    for (auto it : seq) {
+        zbor::log_obj_with_pad(it);
+        printf(",\n");
+    }
+    printf("+-------------------------+\n");
 }
