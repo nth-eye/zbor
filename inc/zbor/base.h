@@ -2,8 +2,8 @@
 #define ZBOR_BASE_H
 
 #include <cstring>
-#include "zbor/util.h"
-#include "zbor/float.h"
+#include "utl/bit.h"
+#include "utl/float.h"
 
 namespace zbor {
 

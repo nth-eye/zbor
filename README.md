@@ -2,7 +2,7 @@
 
 Small C++17 CBOR stream codec. No dynamic memory allocation, all items are encoded/parsed on-the-fly in a given buffer. Decoding can be done manually with `zbor::decode()` or using `zbor::Seq` wrapper in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact `zbor::Err` you need to decode and check manually every item.
 
-__Half-float support included!__
+__Half-float support included with [`utl::`][1]!__
 
 ## Examples
 
@@ -84,3 +84,5 @@ while (1) {
 
 - [ ] encoder tests
 - [ ] examples in readme
+
+[1]: https://github.com/nth-eye/utl

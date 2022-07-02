@@ -41,7 +41,7 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
     case AI_2:
     case AI_4:
     case AI_8: 
-        len = bit(ai - AI_1);
+        len = utl::bit(ai - AI_1);
         if (p + len > end)
             return {{}, ERR_OUT_OF_BOUNDS, p};
         val = 0;
@@ -109,15 +109,15 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
             switch (ai) 
             {
             case PRIM_FLOAT_16:
-                obj.dbl     = Float(half_to_float(val)).f32;
+                obj.dbl     = utl::Float(utl::half_to_float(val)).f32;
                 obj.type    = TYPE_DOUBLE;
             break;
             case PRIM_FLOAT_32:
-                obj.dbl     = Float(uint32_t(val)).f32;
+                obj.dbl     = utl::Float(uint32_t(val)).f32;
                 obj.type    = TYPE_DOUBLE;
             break;
             case PRIM_FLOAT_64:
-                obj.dbl     = Float(val).f64;
+                obj.dbl     = utl::Float(val).f64;
                 obj.type    = TYPE_DOUBLE;
             break;
             default:
@@ -151,7 +151,7 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
         case AI_2:
         case AI_4:
         case AI_8: 
-            len = bit(val - AI_1);
+            len = utl::bit(val - AI_1);
             if (p + len > end)
                 return {{}, ERR_OUT_OF_BOUNDS, p};
             val = 0;
