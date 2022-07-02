@@ -1,11 +1,36 @@
 #ifndef ZBOR_CODEC_H
 #define ZBOR_CODEC_H
 
+#if __cplusplus >= 202002L
 #include <span>
+#endif
 #include <string_view>
 #include "zbor/decode.h"
 
 namespace zbor {
+
+#if __cplusplus >= 202002L
+template<class T>
+using Span = std::span<T>;
+#else
+/**
+ * @brief Just wrapper for pointer and size, in case C++20 is not available.
+ * Could do without it, but it's more convenient to pass arrays as one argument 
+ * to encode(T, D) function while encoding key: pair for map.
+ * 
+ * @tparam T Data type.
+ */
+template<class T>
+struct Span {
+    Span() = default;
+    Span(const T *ptr, size_t len) : ptr{ptr}, len{len} {}
+    const T* data() const   { return ptr; }
+    size_t size() const     { return len; }
+private:
+    const T *ptr = nullptr;
+    size_t len = 9;
+};
+#endif
 
 /**
  * @brief CBOR buffer, basicaly codec with given external storage.
@@ -15,14 +40,15 @@ struct Buf {
 
     Buf() = delete;
     Buf(byte *buf, size_t max) : buf{buf}, max{max} {}
+#if __cplusplus >= 202002L
     Buf(std::span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
-    
+#endif
     Err encode(int val);
     Err encode(unsigned val);
     Err encode(int64_t val);
     Err encode(uint64_t val);
-    Err encode(std::span<const byte> val);
-    Err encode(std::span<const char> val);
+    Err encode(Span<const byte> val);
+    Err encode(Span<const char> val);
     Err encode(std::string_view val);
     Err encode(const char *val);
     Err encode(Prim val);
@@ -49,7 +75,6 @@ struct Buf {
         return encode(val);
     }
 
-    // operator std::span<const byte>() const  { return {buf, idx}; }
     operator Seq() const                    { return {buf, idx}; }
     SeqIter begin() const                   { return {buf, buf + idx}; }
     SeqIter end() const                     { return {}; }
@@ -68,7 +93,7 @@ private:
     Err encode_byte(byte b);
     Err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
     Err encode_bytes(Mt mt, const void *data, size_t len);
-    Err encode_float(Prim type, Float val);
+    Err encode_float(Prim type, utl::Float val);
 };
 
 /**
@@ -118,7 +143,7 @@ inline Err Buf::encode_head(Mt mt, uint64_t val, size_t add_len)
     else
         ai = AI_8;
 
-    size_t ai_len = (ai <= AI_0) ? 0 : bit(ai - AI_1);
+    size_t ai_len = (ai <= AI_0) ? 0 : utl::bit(ai - AI_1);
 
     return encode_base(mt | ai, val, ai_len, add_len);
 }
@@ -133,7 +158,7 @@ inline Err Buf::encode_bytes(Mt mt, const void *data, size_t len)
     return err;
 }
 
-inline Err Buf::encode_float(Prim type, Float val)
+inline Err Buf::encode_float(Prim type, utl::Float val)
 {
     switch (type) 
     {
@@ -153,8 +178,8 @@ inline Err Buf::encode_float(Prim type, Float val)
         if (val.f32 != val.f32)
             goto if_nan;
 
-        uint16_t u16 = half_from_float(val.u32);
-        if (val.f32 != Float{half_to_float(u16)}.f32) // Else we can fallthrough to FLOAT_16
+        uint16_t u16 = utl::float_to_half(val.u32);
+        if (val.f32 != utl::Float{utl::half_to_float(u16)}.f32) // Else we can fallthrough to FLOAT_16
             return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_32), val.u32, 4);
         val.u16 = u16;
         [[fallthrough]];
@@ -194,12 +219,12 @@ inline Err Buf::encode(int64_t val)
     return encode_head(Mt(ui & 0x20), ui ^ val);
 }
 
-inline Err Buf::encode(std::span<const byte> val)
+inline Err Buf::encode(Span<const byte> val)
 {
     return encode_bytes(MT_DATA, val.data(), val.size());
 }
 
-inline Err Buf::encode(std::span<const char> val)
+inline Err Buf::encode(Span<const char> val)
 {
     return encode_bytes(MT_TEXT, val.data(), val.size());
 }

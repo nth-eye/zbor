@@ -1,10 +1,9 @@
 #ifndef ZBOR_LOG_H
 #define ZBOR_LOG_H
 
-#include "zbor/decode.h"
-#include <cstdio>
-#include <cctype>
 #include <cmath>
+#include "zbor/decode.h"
+#include "utl/log.h"
 
 namespace zbor {
 
@@ -40,50 +39,6 @@ constexpr const char* str_err(Err e)
         case ERR_RESERVED_AI: return "ERR_RESERVED_AI";
         case ERR_BREAK_WITHOUT_START: return "ERR_BREAK_WITHOUT_START";
         default: return "<unknown>";
-    }
-}
-
-/**
- * @brief Print hex nicely with relevant ASCII representation.
- * 
- * @param data Data to print
- * @param len Length in bytes
- */
-inline void log_hex(const void *data, size_t len)
-{
-    if (!data)
-        return;
-    const uint8_t *p = static_cast<const uint8_t*>(data);
-
-    for (size_t i = 0; i < len; ++i) {
-
-        if (!(i & 15))
-            printf("| ");
-        printf("%02x ", p[i]);
-        
-        if ((i & 7) == 7)
-            printf(" ");
-
-        if ((i & 15) == 15) {
-            printf("|");
-            for (int j = 15; j >= 0; --j) {
-                char c = p[i - j];
-                printf("%c", isprint(c) ? c : '.');
-            }
-            printf("|\n");
-        }
-    }
-    int rem = len - ((len >> 4) << 4);
-
-    if (rem) {
-        printf("%*c |", (16 - rem) * 3 + ((~rem & 8) >> 3), ' ');
-        for (int j = rem; j; --j) {
-            char c = p[len - j];
-            printf("%c", isprint(c) ? c : '.');
-        }
-        for (int j = 0; j < 16 - rem; ++j)
-            printf(".");
-        printf("|\n");
     }
 }
 
@@ -223,7 +178,7 @@ inline void log_obj(const Obj &obj)
 inline void log_seq(const Seq &seq)
 {
     printf("+-----------HEX-----------+\n");
-    log_hex(seq.data(), seq.size());
+    utl::log_hex(seq.data(), seq.size());
     printf("+--------DIAGNOSTIC-------+\n");
     int i = 0; 
     for (auto it : seq) {

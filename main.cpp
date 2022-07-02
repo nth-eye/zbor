@@ -1,18 +1,6 @@
-#include <cstdio>
-#include <ctime>
 #include "zbor/codec.h"
 #include "zbor/log.h"
-
-template<size_t N = 1, class Fn, class ...Args>
-clock_t measure_time(Fn &&fn, Args &&...args)
-{
-    clock_t begin = clock();
-    for (size_t i = 0; i < N; ++i) 
-        fn(args...);
-    clock_t end = clock();
-
-    return (end - begin); // / N;
-}
+#include "utl/time.h"
 
 int main(int, char**) 
 {
@@ -119,7 +107,7 @@ int main(int, char**)
     auto seq = zbor::Seq(example, sizeof(example));
 
     printf("+-----------HEX-----------+\n");
-    zbor::log_hex(seq.data(), seq.size());
+    utl::log_hex(seq.data(), seq.size());
     printf("+--------DIAGNOSTIC-------+\n");
     for (auto it : seq) {
         zbor::log_obj_with_pad(it);
