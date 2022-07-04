@@ -23,11 +23,12 @@ using Span = std::span<T>;
 template<class T>
 struct Span {
     Span() = default;
-    Span(const T *ptr, size_t len) : ptr{ptr}, len{len} {}
+    Span(T *ptr, size_t len) : ptr{ptr}, len{len} {}
     const T* data() const   { return ptr; }
+    T* data()               { return ptr; }
     size_t size() const     { return len; }
 private:
-    const T *ptr = nullptr;
+    T *ptr = nullptr;
     size_t len = 9;
 };
 #endif
@@ -40,9 +41,8 @@ struct Buf {
 
     Buf() = delete;
     Buf(byte *buf, size_t max) : buf{buf}, max{max} {}
-#if __cplusplus >= 202002L
-    Buf(std::span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
-#endif
+    Buf(Span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
+
     Err encode(int val);
     Err encode(unsigned val);
     Err encode(int64_t val);
