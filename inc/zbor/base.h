@@ -17,14 +17,14 @@ struct Obj;
  * 
  */
 enum Mt {
-    MT_UINT     = 0 << 5,
-    MT_NINT     = 1 << 5,
-    MT_DATA     = 2 << 5,
-    MT_TEXT     = 3 << 5,
-    MT_ARRAY    = 4 << 5,
-    MT_MAP      = 5 << 5,
-    MT_TAG      = 6 << 5,
-    MT_SIMPLE   = 7 << 5,
+    mt_uint     = 0 << 5,
+    mt_nint     = 1 << 5,
+    mt_data     = 2 << 5,
+    mt_text     = 3 << 5,
+    mt_array    = 4 << 5,
+    mt_map      = 5 << 5,
+    mt_tag      = 6 << 5,
+    mt_simple   = 7 << 5,
 };
 
 /**
@@ -32,12 +32,12 @@ enum Mt {
  * 
  */
 enum Ai {
-    AI_0        = 23,
-    AI_1        = 24,
-    AI_2        = 25,
-    AI_4        = 26,
-    AI_8        = 27,
-    AI_INDEF    = 31,
+    ai_0        = 23,
+    ai_1        = 24,
+    ai_2        = 25,
+    ai_4        = 26,
+    ai_8        = 27,
+    ai_indef    = 31,
 };
 
 /**
@@ -46,13 +46,13 @@ enum Ai {
  * 
  */
 enum Prim : byte {
-    PRIM_FALSE      = 20,
-    PRIM_TRUE       = 21,
-    PRIM_NULL       = 22,
-    PRIM_UNDEFINED  = 23,
-    PRIM_FLOAT_16   = 25,
-    PRIM_FLOAT_32   = 26,
-    PRIM_FLOAT_64   = 27,
+    prim_false      = 20,
+    prim_true       = 21,
+    prim_null       = 22,
+    prim_undefined  = 23,
+    prim_float_16   = 25,
+    prim_float_32   = 26,
+    prim_float_64   = 27,
 };
 
 /**
@@ -60,18 +60,18 @@ enum Prim : byte {
  * 
  */
 enum Type {
-    TYPE_UINT,
-    TYPE_SINT,
-    TYPE_DATA,
-    TYPE_TEXT,
-    TYPE_ARRAY,
-    TYPE_MAP,
-    TYPE_TAG,
-    TYPE_PRIM,
-    TYPE_DOUBLE,
-    TYPE_INDEF_DATA,
-    TYPE_INDEF_TEXT,
-    TYPE_INVALID,
+    type_uint,
+    type_sint,
+    type_data,
+    type_text,
+    type_array,
+    type_map,
+    type_tag,
+    type_prim,
+    type_double,
+    type_indef_data,
+    type_indef_text,
+    type_invalid,
 };
 
 /**
@@ -79,15 +79,15 @@ enum Type {
  * 
  */
 enum Err {
-    ERR_OK,
-    ERR_NO_MEMORY,
-    ERR_OUT_OF_BOUNDS,
-    ERR_INVALID_SIMPLE,
-    ERR_INVALID_FLOAT_TYPE,
-    ERR_INVALID_INDEF_MT,
-    ERR_INVALID_INDEF_ITEM,
-    ERR_RESERVED_AI,
-    ERR_BREAK_WITHOUT_START,
+    err_ok,
+    err_no_memory,
+    err_out_of_bounds,
+    err_invalid_simple,
+    err_invalid_float_type,
+    err_invalid_indef_mt,
+    err_invalid_indef_item,
+    err_reserved_ai,
+    err_break_without_start,
 };
 
 /**
@@ -166,7 +166,7 @@ struct Obj {
 
     Obj() : uint{} {}
 
-    bool valid() const { return type != TYPE_INVALID; }
+    bool valid() const { return type != type_invalid; }
 
     union {
         uint64_t uint;
@@ -179,7 +179,7 @@ struct Obj {
         Prim prim;
         double dbl;
     };
-    Type type = TYPE_INVALID;
+    Type type = type_invalid;
 };
 
 }

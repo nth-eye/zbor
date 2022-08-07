@@ -5,6 +5,6 @@ using namespace zbor;
 
 TEST(Object, Default)
 {
-    ASSERT_EQ(Obj{}.type, TYPE_INVALID);
+    ASSERT_EQ(Obj{}.type, type_invalid);
     ASSERT_EQ(Obj{}.valid(), false);
 }

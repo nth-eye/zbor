@@ -89,29 +89,4 @@ int main(int, char**)
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
     };
     zbor::log_seq(zbor::Seq(example, sizeof(example)));
-
-    // auto test_case_1 = [&, i = 0] () mutable
-    // {
-    //     for (auto it : zbor::Seq{example, sizeof(example)}) {
-    //         ++i;
-    //     }
-    //     return i;
-    // };
-
-    // printf("1: %3ld clock_t\n", measure_time<10000000>(test_case_1));
-    // printf("1: %3ld clock_t\n", measure_time<10000000>(test_case_1));
-    // printf("1: %3ld clock_t\n", measure_time<10000000>(test_case_1));
-
-    // printf("1 ret %u \n", test_case_1());
-
-    auto seq = zbor::Seq(example, sizeof(example));
-
-    printf("+-----------HEX-----------+\n");
-    utl::log_hex(seq.data(), seq.size());
-    printf("+--------DIAGNOSTIC-------+\n");
-    for (auto it : seq) {
-        zbor::log_obj_with_pad(it);
-        printf(",\n");
-    }
-    printf("+-------------------------+\n");
 }

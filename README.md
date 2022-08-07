@@ -19,13 +19,13 @@ const uint8_t example[] = {
 
 for (auto it : zbor::Seq{example, sizeof(example)}) {
     switch (it.type) {
-        case zbor::TYPE_UINT:
+        case zbor::type_uint:
             printf("got uint %lu \n", it.uint); 
         break;
-        case zbor::TYPE_TEXT:
+        case zbor::type_text:
             printf("got text \"%.*s\" \n", int(it.str.len), it.str.txt); 
         break;
-        case zbor::TYPE_ARRAY:
+        case zbor::type_array:
             if (it.arr.indef())
                 printf("got indefinite array... \n");
             else
@@ -56,12 +56,12 @@ while (1) {
 
     std::tie(obj, err, ptr) = zbor::decode(ptr, end);
     
-    if (err != zbor::ERR_OK) {
+    if (err != zbor::err_ok) {
         printf("got error, %d -> %s", err, zbor::str_err(err));
         break;
     }
     switch (obj.type) {
-        case zbor::TYPE_MAP:
+        case zbor::type_map:
             if (obj.map.indef())
                 printf("got indefinite map... \n");
             else
@@ -77,14 +77,78 @@ while (1) {
 
 ### Encode
 
+#### With `Codec` wrapper
+
 ```cpp
+zbor::Codec<32> msg;
+
+const uint8_t data[] = {0x44, 0x45};
+
+msg.encode_arr(3);                  // start fixed size array
+msg.encode(-1);                     // negative int
+msg.encode(1);                      // positive int
+msg.encode(1u);                     // explicitly positive
+
+msg.encode_map(1);                  // start fixed size map
+msg.encode("text");                 // text string
+msg.encode({data, sizeof(data)});   // byte string
+
+msg.encode_tag(69);                 // tag number, next object will be content
+msg.encode_indef_arr();             // start indefinite size array (previously tagged)
+msg.encode(true);                   // simple bool
+msg.encode(zbor::prim_null);        // simple null
+msg.encode(zbor::Prim(42));         // another valid simple (primitive)
+msg.encode_break();                 // break, end of indefinite array
+
+msg.encode_indef_map();             // start indefinite size map
+msg.encode(42.0f);                  // float32, will be compressed to half-float if possible
+msg.encode(42.0);                   // float64, will be compressed to half-float if possible
+msg.encode_break();                 // break, end of indefinite map
+
+msg.encode_indef_txt();             // start indefinite size text string made from separate chunks
+msg.encode("Hello");                // first chunk
+msg.encode("World");                // second chunk
+msg.encode_break();                 // break, end of indefinite text string
+
+some_c_style_handler(msg.data(), msg.size());
+
+zbor::log_seq(msg); // expected result below
+
+msg.clear(); // to reuse codec
+```
+```
++-----------HEX-----------+
+| 83 20 01 01 a1 64 74 65  78 74 42 44 45 d8 45 9f  |. ...dtextBDE.E.|
+| f5 f6 f8 2a ff bf f9 51  40 f9 51 40 ff 7f 65 48  |...*...Q@.Q@..eH|
+| 65 6c 6c 6f 65 57 6f 72  6c 64 ff                 |elloeWorld......|
++--------DIAGNOSTIC-------+
+| 1) [-1, 1, 1]
+| 2) {"text": h'4445'}
+| 3) 69([_ true, null, simple(42)])
+| 4) {_ 42.0: 42.0}
+| 5) (_ "Hello", "World")
++-------------------------+
+```
+
+#### With provided buffer (e.g. dynamically allocated)
+
+```cpp
+auto buf = (uint8_t*) malloc(10);   // let's assume someone still uses malloc...
+auto msg = zbor::Buf{buf, 10};      // exactly as with Codec after this
+auto err = msg.encode("too long string");
+
+if (err == zbor::err_ok)
+    zbor::log_seq(msg);
+else
+    printf("error: %d -> %s", err, zbor::str_err(err));
 ```
 
 ## TODO
 
 - [ ] encoder tests
-- [ ] examples in readme
+- [x] examples in readme
 - [ ] maybe try to constexpr whole library ?
 - [ ] review naming conventions
+- [ ] forbid implicit const char* conversion to bool
 
 [1]: https://github.com/nth-eye/utl

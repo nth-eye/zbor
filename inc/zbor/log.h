@@ -10,18 +10,18 @@ namespace zbor {
 constexpr const char* str_type(Type t)
 {
     switch (t) {
-        case TYPE_UINT: return "unsigned ";
-        case TYPE_SINT: return "negative ";
-        case TYPE_DATA: return "byte string";
-        case TYPE_TEXT: return "text string ";
-        case TYPE_ARRAY: return "array";
-        case TYPE_MAP: return "map";
-        case TYPE_TAG: return "tag";
-        case TYPE_PRIM: return "simple";
-        case TYPE_DOUBLE: return "float";
-        case TYPE_INDEF_DATA: return "indefinite byte string";
-        case TYPE_INDEF_TEXT: return "indefinite text string";
-        case TYPE_INVALID: return "<invalid>";
+        case type_uint: return "unsigned";
+        case type_sint: return "negative";
+        case type_data: return "byte string";
+        case type_text: return "text string ";
+        case type_array: return "array";
+        case type_map: return "map";
+        case type_tag: return "tag";
+        case type_prim: return "simple";
+        case type_double: return "float";
+        case type_indef_data: return "indefinite byte string";
+        case type_indef_text: return "indefinite text string";
+        case type_invalid: return "<invalid>";
         default: return "<unknown>";
     }
 }
@@ -29,15 +29,15 @@ constexpr const char* str_type(Type t)
 constexpr const char* str_err(Err e)
 {
     switch (e) {
-        case ERR_OK: return "ERR_OK";
-        case ERR_NO_MEMORY: return "ERR_NO_MEMORY";
-        case ERR_OUT_OF_BOUNDS: return "ERR_OUT_OF_BOUNDS";
-        case ERR_INVALID_SIMPLE: return "ERR_INVALID_SIMPLE";
-        case ERR_INVALID_FLOAT_TYPE: return "ERR_INVALID_FLOAT_TYPE";
-        case ERR_INVALID_INDEF_MT: return "ERR_INVALID_INDEF_MT";
-        case ERR_INVALID_INDEF_ITEM: return "ERR_INVALID_INDEF_ITEM";
-        case ERR_RESERVED_AI: return "ERR_RESERVED_AI";
-        case ERR_BREAK_WITHOUT_START: return "ERR_BREAK_WITHOUT_START";
+        case err_ok: return "err_ok";
+        case err_no_memory: return "err_no_memory";
+        case err_out_of_bounds: return "err_out_of_bounds";
+        case err_invalid_simple: return "err_invalid_simple";
+        case err_invalid_float_type: return "err_invalid_float_type";
+        case err_invalid_indef_mt: return "err_invalid_indef_mt";
+        case err_invalid_indef_item: return "err_invalid_indef_item";
+        case err_reserved_ai: return "err_reserved_ai";
+        case err_break_without_start: return "err_break_without_start";
         default: return "<unknown>";
     }
 }
@@ -51,22 +51,22 @@ inline void log_obj(const Obj &obj)
 {
     switch (obj.type) 
     {
-    case TYPE_UINT: 
+    case type_uint: 
         printf("%lu", obj.uint); 
     break;
-    case TYPE_SINT: 
+    case type_sint: 
         printf("%ld", obj.sint); 
     break;
-    case TYPE_DATA:
+    case type_data:
         printf("h'");
         for (size_t i = 0; i < obj.str.len; ++i)
             printf("%02x", obj.str.dat[i]);
         printf("'");
     break;
-    case TYPE_TEXT:
+    case type_text:
         printf("\"%.*s\"", int(obj.str.len), obj.str.txt);
     break;
-    case TYPE_ARRAY:
+    case type_array:
     {
         printf("[");
 
@@ -84,7 +84,7 @@ inline void log_obj(const Obj &obj)
         printf("]");
     }
     break;
-    case TYPE_MAP:
+    case type_map:
     {
         printf("{");
 
@@ -108,24 +108,24 @@ inline void log_obj(const Obj &obj)
         printf("}");
     }
     break;
-    case TYPE_TAG: 
+    case type_tag: 
         printf("%lu(", obj.tag.num());
         log_obj(obj.tag.content());
         printf(")");
     break;
-    case TYPE_PRIM:
+    case type_prim:
         switch (obj.prim) 
         {
-        case PRIM_FALSE: 
+        case prim_false: 
             printf("false"); 
         break;
-        case PRIM_TRUE: 
+        case prim_true: 
             printf("true"); 
         break;
-        case PRIM_NULL: 
+        case prim_null: 
             printf("null"); 
         break;
-        case PRIM_UNDEFINED: 
+        case prim_undefined: 
             printf("undefined"); 
         break;
         default:
@@ -136,7 +136,7 @@ inline void log_obj(const Obj &obj)
         break;
         }
     break;
-    case TYPE_DOUBLE: 
+    case type_double: 
         if (int(obj.dbl * 10) % 10 == 0) {
             if (obj.dbl == 0 && std::signbit(obj.dbl))
                 printf("-0.0");
@@ -146,8 +146,8 @@ inline void log_obj(const Obj &obj)
             printf("%g", obj.dbl); 
         }
     break;
-    case TYPE_INDEF_DATA:
-    case TYPE_INDEF_TEXT:
+    case type_indef_data:
+    case type_indef_text:
     {
         printf("(_ ");
 
@@ -162,7 +162,7 @@ inline void log_obj(const Obj &obj)
         printf(")");
     } 
     break;
-    case TYPE_INVALID:
+    case type_invalid:
         printf("<invalid>");
     break;
     default: 
@@ -201,22 +201,22 @@ inline void log_obj_with_pad(const Obj &obj, int first_pad = 0, int pad = 0)
         printf(" ");
     switch (obj.type) 
     {
-    case TYPE_UINT: 
+    case type_uint: 
         printf("%lu", obj.uint); 
     break;
-    case TYPE_SINT: 
+    case type_sint: 
         printf("%ld", obj.sint); 
     break;
-    case TYPE_DATA:
+    case type_data:
         printf("h'");
         for (size_t i = 0; i < obj.str.len; ++i)
             printf("%02x", obj.str.dat[i]);
         printf("'");
     break;
-    case TYPE_TEXT:
+    case type_text:
         printf("\"%.*s\"", int(obj.str.len), obj.str.txt);
     break;
-    case TYPE_ARRAY:
+    case type_array:
     {
         printf("[");
 
@@ -238,7 +238,7 @@ inline void log_obj_with_pad(const Obj &obj, int first_pad = 0, int pad = 0)
         printf("]");
     }
     break;
-    case TYPE_MAP:
+    case type_map:
     {
         printf("{");
 
@@ -266,24 +266,24 @@ inline void log_obj_with_pad(const Obj &obj, int first_pad = 0, int pad = 0)
         printf("}");
     }
     break;
-    case TYPE_TAG: 
+    case type_tag: 
         printf("%lu(", obj.tag.num());
         log_obj_with_pad(obj.tag.content(), 0, 0);
         printf(")");
     break;
-    case TYPE_PRIM:
+    case type_prim:
         switch (obj.prim) 
         {
-        case PRIM_FALSE: 
+        case prim_false: 
             printf("false"); 
         break;
-        case PRIM_TRUE: 
+        case prim_true: 
             printf("true"); 
         break;
-        case PRIM_NULL: 
+        case prim_null: 
             printf("null"); 
         break;
-        case PRIM_UNDEFINED: 
+        case prim_undefined: 
             printf("undefined"); 
         break;
         default:
@@ -294,7 +294,7 @@ inline void log_obj_with_pad(const Obj &obj, int first_pad = 0, int pad = 0)
         break;
         }
     break;
-    case TYPE_DOUBLE: 
+    case type_double: 
         if (int(obj.dbl * 10) % 10 == 0) {
             if (obj.dbl == 0 && std::signbit(obj.dbl))
                 printf("-0.0");
@@ -304,8 +304,8 @@ inline void log_obj_with_pad(const Obj &obj, int first_pad = 0, int pad = 0)
             printf("%g", obj.dbl); 
         }
     break;
-    case TYPE_INDEF_DATA:
-    case TYPE_INDEF_TEXT:
+    case type_indef_data:
+    case type_indef_text:
     {
         printf("(_ ");
 
@@ -320,7 +320,7 @@ inline void log_obj_with_pad(const Obj &obj, int first_pad = 0, int pad = 0)
         printf(")");
     } 
     break;
-    case TYPE_INVALID:
+    case type_invalid:
         printf("<invalid>");
     break;
     default: 

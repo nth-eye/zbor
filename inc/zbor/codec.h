@@ -30,7 +30,7 @@ struct Span {
     size_t size() const     { return len; }
 private:
     T *ptr = nullptr;
-    size_t len = 9;
+    size_t len = 0;
 };
 #endif
 
@@ -49,8 +49,8 @@ struct Buf {
     Err encode(int64_t val);
     Err encode(uint64_t val);
     Err encode(Span<const byte> val);
-    Err encode(Span<const char> val);
     Err encode(std::string_view val);
+    Err encode(const char *val);
     Err encode(Prim val);
     Err encode(bool val);
     Err encode(float val);
@@ -70,7 +70,7 @@ struct Buf {
     Err encode(K key, V val)
     {
         Err err = encode(key);
-        if (err != ERR_OK)
+        if (err != err_ok)
             return err;
         return encode(val);
     }
@@ -113,37 +113,37 @@ private:
 
 inline Err Buf::encode_byte(byte b)
 {
-    return idx < max ? buf[idx++] = b, ERR_OK : ERR_NO_MEMORY;
+    return idx < max ? buf[idx++] = b, err_ok : err_no_memory;
 }
 
 inline Err Buf::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len)
 {
     if (idx + ai_len + add_len + 1 > max)
-        return ERR_NO_MEMORY;
+        return err_no_memory;
 
     buf[idx++] = start;
     for (int i = 8 * ai_len - 8; i >= 0; i -= 8)
         buf[idx++] = val >> i;
 
-    return ERR_OK;
+    return err_ok;
 }
 
 inline Err Buf::encode_head(Mt mt, uint64_t val, size_t add_len)
 {
     byte ai;
 
-    if (val <= AI_0)
+    if (val <= ai_0)
         ai = val;
     else if (val <= 0xff)
-        ai = AI_1;
+        ai = ai_1;
     else if (val <= 0xffff)
-        ai = AI_2;
+        ai = ai_2;
     else if (val <= 0xffffffff)
-        ai = AI_4;
+        ai = ai_4;
     else
-        ai = AI_8;
+        ai = ai_8;
 
-    size_t ai_len = (ai <= AI_0) ? 0 : utl::bit(ai - AI_1);
+    size_t ai_len = (ai <= ai_0) ? 0 : utl::bit(ai - ai_1);
 
     return encode_base(mt | ai, val, ai_len, add_len);
 }
@@ -151,7 +151,7 @@ inline Err Buf::encode_head(Mt mt, uint64_t val, size_t add_len)
 inline Err Buf::encode_bytes(Mt mt, const void *data, size_t len)
 {
     Err err = encode_head(mt, len, len);
-    if (err == ERR_OK && data && len) {
+    if (err == err_ok && data && len) {
         memcpy(&buf[idx], data, len);
         idx += len;
     }
@@ -162,37 +162,37 @@ inline Err Buf::encode_float(Prim type, utl::fp_bits val)
 {
     switch (type) 
     {
-    case PRIM_FLOAT_64:
+    case prim_float_64:
     {
         if (val.f64 != val.f64)
             goto if_nan;
 
         float f32 = val.f64;
         if (val.f64 != f32) // Else we can fallthrough to FLOAT_32
-            return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_64), val.u64, 8);
+            return encode_base(mt_simple | byte(prim_float_64), val.u64, 8);
         val.f32 = f32;
         [[fallthrough]];
     }
-    case PRIM_FLOAT_32:
+    case prim_float_32:
     {
         if (val.f32 != val.f32)
             goto if_nan;
 
         uint16_t u16 = utl::float_to_half(val.u32);
         if (val.f32 != utl::fp_bits{utl::half_to_float(u16)}.f32) // Else we can fallthrough to FLOAT_16
-            return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_32), val.u32, 4);
+            return encode_base(mt_simple | byte(prim_float_32), val.u32, 4);
         val.u16 = u16;
         [[fallthrough]];
     }
-    case PRIM_FLOAT_16:
+    case prim_float_16:
         if ((val.u16 & 0x7fff) > 0x7c00)
             goto if_nan;
-        return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_16), val.u16, 2);
+        return encode_base(mt_simple | byte(prim_float_16), val.u16, 2);
     if_nan: 
-        return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_16), 0x7e00, 2);
+        return encode_base(mt_simple | byte(prim_float_16), 0x7e00, 2);
 
     default:
-        return ERR_INVALID_FLOAT_TYPE;
+        return err_invalid_float_type;
     }
 }
 
@@ -210,7 +210,7 @@ inline Err Buf::encode(unsigned val)
 
 inline Err Buf::encode(uint64_t val)
 {
-    return encode_head(MT_UINT, val);
+    return encode_head(mt_uint, val);
 }
 
 inline Err Buf::encode(int64_t val)
@@ -221,59 +221,59 @@ inline Err Buf::encode(int64_t val)
 
 inline Err Buf::encode(Span<const byte> val)
 {
-    return encode_bytes(MT_DATA, val.data(), val.size());
-}
-
-inline Err Buf::encode(Span<const char> val)
-{
-    return encode_bytes(MT_TEXT, val.data(), val.size());
+    return encode_bytes(mt_data, val.data(), val.size());
 }
 
 inline Err Buf::encode(std::string_view val)
 {
-    return encode_bytes(MT_TEXT, val.data(), val.size());
+    return encode_bytes(mt_text, val.data(), val.size());
+}
+
+inline Err Buf::encode(const char *val)
+{
+    return encode_bytes(mt_text, val, strlen(val));
 }
 
 inline Err Buf::encode(Prim val)
 {
     if (val >= 24 && val <= 31)
-        return ERR_INVALID_SIMPLE;
-    return encode_head(MT_SIMPLE, val);
+        return err_invalid_simple;
+    return encode_head(mt_simple, val);
 }
 
 inline Err Buf::encode(bool val)
 {
-    return encode_byte(MT_SIMPLE | (PRIM_FALSE + val));
+    return encode_byte(mt_simple | (prim_false + val));
 }
 
 inline Err Buf::encode(float val)
 {
-    return encode_float(PRIM_FLOAT_32, val);
+    return encode_float(prim_float_32, val);
 }
 
 inline Err Buf::encode(double val)
 {
-    return encode_float(PRIM_FLOAT_64, val);
+    return encode_float(prim_float_64, val);
 }
 
 inline Err Buf::encode_indef_dat()
 {
-    return encode_byte(MT_DATA | byte(AI_INDEF));
+    return encode_byte(mt_data | byte(ai_indef));
 }
 
 inline Err Buf::encode_indef_txt()
 {
-    return encode_byte(MT_TEXT | byte(AI_INDEF));
+    return encode_byte(mt_text | byte(ai_indef));
 }
 
 inline Err Buf::encode_indef_arr()
 {
-    return encode_byte(MT_ARRAY | byte(AI_INDEF));
+    return encode_byte(mt_array | byte(ai_indef));
 }
 
 inline Err Buf::encode_indef_map()
 {
-    return encode_byte(MT_MAP | byte(AI_INDEF));
+    return encode_byte(mt_map | byte(ai_indef));
 }
 
 inline Err Buf::encode_break()
@@ -283,17 +283,17 @@ inline Err Buf::encode_break()
 
 inline Err Buf::encode_arr(size_t size)
 {
-    return encode_head(MT_ARRAY, size);
+    return encode_head(mt_array, size);
 }
 
 inline Err Buf::encode_map(size_t size)
 {
-    return encode_head(MT_MAP, size);
+    return encode_head(mt_map, size);
 }
 
 inline Err Buf::encode_tag(uint64_t val)
 {
-    return encode_head(MT_TAG, val);
+    return encode_head(mt_tag, val);
 }
 
 }

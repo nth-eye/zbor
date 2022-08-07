@@ -12,7 +12,7 @@ namespace zbor {
  * indefinite strings, break without start. What isn't checked is number of elements 
  * within nested containers (if at least one of them is indefinite). For example, 0x9f82ff 
  * will be first parsed as valid indefinite array, and then, only if user starts to traverse 
- * over its elements, decoding of malformed nested array will report ERR_OUT_OF_BOUNDS.
+ * over its elements, decoding of malformed nested array will report err_out_of_bounds.
  * 
  * @param p Begin pointer, must be valid pointer
  * @param end End pointer, must be valid pointer
@@ -21,7 +21,7 @@ namespace zbor {
 inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * const end)
 {
     if (p >= end)
-        return {{}, ERR_OUT_OF_BOUNDS, end};
+        return {{}, err_out_of_bounds, end};
 
     size_t nest = 0;
     size_t skip = 0;
@@ -37,13 +37,13 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
 
     switch (ai) 
     {
-    case AI_1:
-    case AI_2:
-    case AI_4:
-    case AI_8: 
-        len = utl::bit(ai - AI_1);
+    case ai_1:
+    case ai_2:
+    case ai_4:
+    case ai_8: 
+        len = utl::bit(ai - ai_1);
         if (p + len > end)
-            return {{}, ERR_OUT_OF_BOUNDS, p};
+            return {{}, err_out_of_bounds, p};
         val = 0;
         for (int i = 8 * len - 8; i >= 0; i -= 8)
             val |= uint64_t(*p++) << i;
@@ -51,74 +51,74 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
     case 28:
     case 29:
     case 30:
-        return {{}, ERR_RESERVED_AI, p};
-    case AI_INDEF:
+        return {{}, err_reserved_ai, p};
+    case ai_indef:
         switch (mt)
         {
-        case MT_DATA: 
+        case mt_data: 
             obj.istr = {p};
-            obj.type = TYPE_INDEF_DATA;
+            obj.type = type_indef_data;
             nest = 1;
         break;
-        case MT_TEXT:
+        case mt_text:
             obj.istr = {p};
-            obj.type = TYPE_INDEF_TEXT;
+            obj.type = type_indef_text;
             nest = 1;
         break;
-        case MT_ARRAY:
+        case mt_array:
             obj.arr = {p, size_t(-1)};
             nest = 1;
         break;
-        case MT_MAP:
+        case mt_map:
             obj.map = {p, size_t(-1)};
             nest = 1;
         break;
         default:
-            return {{}, ERR_INVALID_INDEF_MT, p};
+            return {{}, err_invalid_indef_mt, p};
         }
     }
 
-    if (ai != AI_INDEF) {
+    if (ai != ai_indef) {
         switch (mt) 
         {
-        case MT_UINT:
+        case mt_uint:
             obj.uint = val;
         break;
-        case MT_NINT:
+        case mt_nint:
             obj.sint = ~val;
         break;
-        case MT_DATA:
-        case MT_TEXT:
+        case mt_data:
+        case mt_text:
             obj.str.dat = p;
             obj.str.len = val;
             p += val;
         break;
-        case MT_MAP:
+        case mt_map:
             obj.map = {p, size_t(val)};
             skip = val << 1;
         break;
-        case MT_ARRAY:
+        case mt_array:
             obj.arr = {p, size_t(val)};
             skip = val;
         break;
-        case MT_TAG:
+        case mt_tag:
             obj.tag = {p, val};
             skip = 1;
         break;
-        case MT_SIMPLE:
+        case mt_simple:
             switch (ai) 
             {
-            case PRIM_FLOAT_16:
+            case prim_float_16:
                 obj.dbl     = utl::fp_bits(utl::half_to_float(val)).f32;
-                obj.type    = TYPE_DOUBLE;
+                obj.type    = type_double;
             break;
-            case PRIM_FLOAT_32:
+            case prim_float_32:
                 obj.dbl     = utl::fp_bits(uint32_t(val)).f32;
-                obj.type    = TYPE_DOUBLE;
+                obj.type    = type_double;
             break;
-            case PRIM_FLOAT_64:
+            case prim_float_64:
                 obj.dbl     = utl::fp_bits(val).f64;
-                obj.type    = TYPE_DOUBLE;
+                obj.type    = type_double;
             break;
             default:
                 obj.prim    = Prim(val);
@@ -131,29 +131,29 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
     while (skip || nest) {
 
         if (p >= end)
-            return {{}, ERR_OUT_OF_BOUNDS, end};
+            return {{}, err_out_of_bounds, end};
 
         mt  = *p & 0xe0;
         val = *p & 0x1f;
         
-        if (obj.type == TYPE_INDEF_DATA) {
-            if (!(mt == MT_DATA && val != AI_INDEF) && *p != 0xff)
-                return {{}, ERR_INVALID_INDEF_ITEM, p};
-        } else if (obj.type == TYPE_INDEF_TEXT) {
-            if (!(mt == MT_TEXT && val != AI_INDEF) && *p != 0xff)
-                return {{}, ERR_INVALID_INDEF_ITEM, p};
+        if (obj.type == type_indef_data) {
+            if (!(mt == mt_data && val != ai_indef) && *p != 0xff)
+                return {{}, err_invalid_indef_item, p};
+        } else if (obj.type == type_indef_text) {
+            if (!(mt == mt_text && val != ai_indef) && *p != 0xff)
+                return {{}, err_invalid_indef_item, p};
         }
         ++p;
 
         switch (val)
         {
-        case AI_1:
-        case AI_2:
-        case AI_4:
-        case AI_8: 
-            len = utl::bit(val - AI_1);
+        case ai_1:
+        case ai_2:
+        case ai_4:
+        case ai_8: 
+            len = utl::bit(val - ai_1);
             if (p + len > end)
-                return {{}, ERR_OUT_OF_BOUNDS, p};
+                return {{}, err_out_of_bounds, p};
             val = 0;
             for (int i = 8 * len - 8; i >= 0; i -= 8)
                 val |= uint64_t(*p++) << i;
@@ -161,44 +161,44 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
         case 28:
         case 29:
         case 30:
-            return {{}, ERR_RESERVED_AI, p};
-        case AI_INDEF:
+            return {{}, err_reserved_ai, p};
+        case ai_indef:
             switch (mt)
             {
-            case MT_ARRAY:
-            case MT_MAP:
+            case mt_array:
+            case mt_map:
                 ++nest;
             break;
-            case MT_SIMPLE:
+            case mt_simple:
                 if (nest)
                     nest--;
                 else
-                    return {{}, ERR_BREAK_WITHOUT_START, p};
+                    return {{}, err_break_without_start, p};
             break;
             default:
-                return {{}, ERR_INVALID_INDEF_MT, p};
+                return {{}, err_invalid_indef_mt, p};
             }
         }
 
         switch (mt)
         {
-        case MT_UINT:
-        case MT_NINT:
-        case MT_SIMPLE: 
+        case mt_uint:
+        case mt_nint:
+        case mt_simple: 
         break;
-        case MT_DATA:
-        case MT_TEXT:
+        case mt_data:
+        case mt_text:
             p += val;
         break;
-        case MT_ARRAY:
+        case mt_array:
             if (!nest)
                 skip += val;
         break;
-        case MT_MAP:
+        case mt_map:
             if (!nest)
                 skip += val << 1;
         break;
-        case MT_TAG:
+        case mt_tag:
             if (!nest)
                 skip += 1;
         break;
@@ -210,14 +210,14 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
 
     switch (obj.type) 
     {
-    case TYPE_ARRAY:
-    case TYPE_MAP:
-    case TYPE_TAG:
-    case TYPE_INDEF_DATA:
-    case TYPE_INDEF_TEXT: obj.istr.set_end(p); break;
+    case type_array:
+    case type_map:
+    case type_tag:
+    case type_indef_data:
+    case type_indef_text: obj.istr.set_end(p); break;
     default:;
     }
-    return {obj, ERR_OK, p};
+    return {obj, err_ok, p};
 }
 
 /**
