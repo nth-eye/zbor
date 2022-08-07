@@ -7,7 +7,7 @@ int main(int, char**)
     printf("sizeof(zbor::Err): %lu \n", sizeof(zbor::Err));
     printf("sizeof(zbor::Arr): %lu \n", sizeof(zbor::Arr));
     printf("sizeof(zbor::Map): %lu \n", sizeof(zbor::Map));
-    printf("sizeof(zbor::Tag): %lu \n", sizeof(zbor::Map));
+    printf("sizeof(zbor::Tag): %lu \n", sizeof(zbor::Tag));
     printf("sizeof(zbor::Obj): %lu \n", sizeof(zbor::Obj));
     printf("sizeof(zbor::Gen): %lu \n", sizeof(zbor::Gen));
     printf("sizeof(zbor::SeqIter): %lu \n", sizeof(zbor::SeqIter));

@@ -84,5 +84,7 @@ while (1) {
 
 - [ ] encoder tests
 - [ ] examples in readme
+- [ ] maybe try to constexpr whole library ?
+- [ ] review naming conventions
 
 [1]: https://github.com/nth-eye/utl

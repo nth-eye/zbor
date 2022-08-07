@@ -5,6 +5,7 @@
 #include <span>
 #endif
 #include <string_view>
+#include <cstring>
 #include "zbor/decode.h"
 
 namespace zbor {
@@ -50,7 +51,6 @@ struct Buf {
     Err encode(Span<const byte> val);
     Err encode(Span<const char> val);
     Err encode(std::string_view val);
-    Err encode(const char *val);
     Err encode(Prim val);
     Err encode(bool val);
     Err encode(float val);
@@ -93,7 +93,7 @@ private:
     Err encode_byte(byte b);
     Err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
     Err encode_bytes(Mt mt, const void *data, size_t len);
-    Err encode_float(Prim type, utl::Float val);
+    Err encode_float(Prim type, utl::fp_bits val);
 };
 
 /**
@@ -158,7 +158,7 @@ inline Err Buf::encode_bytes(Mt mt, const void *data, size_t len)
     return err;
 }
 
-inline Err Buf::encode_float(Prim type, utl::Float val)
+inline Err Buf::encode_float(Prim type, utl::fp_bits val)
 {
     switch (type) 
     {
@@ -179,7 +179,7 @@ inline Err Buf::encode_float(Prim type, utl::Float val)
             goto if_nan;
 
         uint16_t u16 = utl::float_to_half(val.u32);
-        if (val.f32 != utl::Float{utl::half_to_float(u16)}.f32) // Else we can fallthrough to FLOAT_16
+        if (val.f32 != utl::fp_bits{utl::half_to_float(u16)}.f32) // Else we can fallthrough to FLOAT_16
             return encode_base(MT_SIMPLE | byte(PRIM_FLOAT_32), val.u32, 4);
         val.u16 = u16;
         [[fallthrough]];
@@ -232,11 +232,6 @@ inline Err Buf::encode(Span<const char> val)
 inline Err Buf::encode(std::string_view val)
 {
     return encode_bytes(MT_TEXT, val.data(), val.size());
-}
-
-inline Err Buf::encode(const char *val)
-{
-    return encode_bytes(MT_TEXT, val, strlen(val));
 }
 
 inline Err Buf::encode(Prim val)

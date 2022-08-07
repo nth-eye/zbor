@@ -94,11 +94,11 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
             p += val;
         break;
         case MT_MAP:
-            obj.map = {p, val};
+            obj.map = {p, size_t(val)};
             skip = val << 1;
         break;
         case MT_ARRAY:
-            obj.arr = {p, val};
+            obj.arr = {p, size_t(val)};
             skip = val;
         break;
         case MT_TAG:
@@ -109,15 +109,15 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
             switch (ai) 
             {
             case PRIM_FLOAT_16:
-                obj.dbl     = utl::Float(utl::half_to_float(val)).f32;
+                obj.dbl     = utl::fp_bits(utl::half_to_float(val)).f32;
                 obj.type    = TYPE_DOUBLE;
             break;
             case PRIM_FLOAT_32:
-                obj.dbl     = utl::Float(uint32_t(val)).f32;
+                obj.dbl     = utl::fp_bits(uint32_t(val)).f32;
                 obj.type    = TYPE_DOUBLE;
             break;
             case PRIM_FLOAT_64:
-                obj.dbl     = utl::Float(val).f64;
+                obj.dbl     = utl::fp_bits(val).f64;
                 obj.type    = TYPE_DOUBLE;
             break;
             default:
@@ -210,11 +210,11 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
 
     switch (obj.type) 
     {
-    case TYPE_ARRAY:        obj.arr.set_end(p); break;
-    case TYPE_MAP:          obj.map.set_end(p); break;
-    case TYPE_TAG:          obj.tag.set_end(p); break;
+    case TYPE_ARRAY:
+    case TYPE_MAP:
+    case TYPE_TAG:
     case TYPE_INDEF_DATA:
-    case TYPE_INDEF_TEXT:   obj.istr.set_end(p); break;
+    case TYPE_INDEF_TEXT: obj.istr.set_end(p); break;
     default:;
     }
     return {obj, ERR_OK, p};
@@ -330,11 +330,11 @@ private:
     const byte *tail;
 };
 
-inline SeqIter IndefString::begin() const   { return {head, tail}; }
-inline SeqIter IndefString::end() const     { return {}; }
-inline MapIter Map::begin() const           { return {head, tail}; }
-inline MapIter Map::end() const             { return {}; }
-inline Obj Tag::content() const             { return std::get<Obj>(decode(head, tail)); }
+inline SeqIter Range::begin() const { return {head, tail}; }
+inline SeqIter Range::end() const   { return {}; }
+inline MapIter Map::begin() const   { return {head, tail}; }
+inline MapIter Map::end() const     { return {}; }
+inline Obj Tag::content() const     { return std::get<Obj>(decode(head, tail)); }
 
 }
 

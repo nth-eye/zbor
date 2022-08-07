@@ -169,7 +169,7 @@ TEST(Decode, Sint)
     ASSERT_EQ(ptr, end);
 }
 
-TEST(Decode, Float)
+TEST(Decode, fp_bits)
 {
     const byte test[] = {
         0xf9, 0x00, 0x00, // 0.0

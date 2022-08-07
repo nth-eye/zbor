@@ -1,7 +1,6 @@
 #ifndef ZBOR_BASE_H
 #define ZBOR_BASE_H
 
-#include <cstring>
 #include "utl/bit.h"
 #include "utl/float.h"
 
@@ -96,10 +95,6 @@ enum Err {
  * 
  */
 struct String {
-    String() = default;
-    String(const byte *dat, size_t len) : dat{dat}, len{len} {}
-    String(const char *txt, size_t len) : txt{txt}, len{len} {}
-    String(const char *txt) : txt{txt}, len{strlen(txt)} {}
     union {
         const byte *dat;
         const char *txt;
@@ -108,11 +103,11 @@ struct String {
 };
 
 /**
- * @brief Range wrapper for indefinite byte and text strings.
+ * @brief Begin and end wrapper for other CBOR iterable types.
  * 
  */
-struct IndefString {
-    IndefString(const byte *head) : head{head} {}
+struct Range {
+    Range(const byte *head) : head{head} {}
     SeqIter begin() const;
     SeqIter end() const;
     void set_end(const byte *end)   { tail = end; }
@@ -122,11 +117,19 @@ protected:
 };
 
 /**
+ * @brief Range wrapper for indefinite byte and text strings.
+ * 
+ */
+struct IndefString : Range {
+    IndefString(const byte *head) : Range{head} {}
+};
+
+/**
  * @brief Range wrapper for generic array.
  * 
  */
-struct Arr : IndefString {
-    Arr(const byte *head, size_t len) : IndefString{head}, len{len} {}
+struct Arr : Range {
+    Arr(const byte *head, size_t len) : Range{head}, len{len} {}
     size_t size() const { return len; }
     bool indef() const  { return len == size_t(-1); } 
 protected:
@@ -147,14 +150,11 @@ struct Map : Arr {
  * @brief Tag with number (stored) and content (decoded on-the-fly).
  * 
  */
-struct Tag {
-    Tag(const byte *head, uint64_t number) : head{head}, number{number} {}
-    uint64_t num() const            { return number; }
+struct Tag : Range {
+    Tag(const byte *head, uint64_t number) : Range{head}, number{number} {}
+    uint64_t num() const    { return number; }
     Obj content() const;
-    void set_end(const byte *end)   { tail = end; }   
 private:
-    const byte *head;
-    const byte *tail;
     uint64_t number;
 };
 
