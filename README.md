@@ -80,7 +80,7 @@ while (1) {
 #### With `Codec` wrapper
 
 ```cpp
-zbor::Codec<32> msg;
+zbor::Codec<64> msg;
 
 const uint8_t data[] = {0x44, 0x45};
 
