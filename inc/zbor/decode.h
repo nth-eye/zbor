@@ -26,7 +26,10 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
     size_t nest = 0;
     size_t skip = 0;
     size_t len;
-
+#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
+    uint64_t size = 0;
+    const byte* head = 0;
+#endif
     byte mt = *p   & 0xe0;
     byte ai = *p++ & 0x1f;
 
@@ -55,6 +58,24 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
     case ai_indef:
         switch (mt)
         {
+#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
+        case mt_data: 
+            head = p;
+            obj.type = type_indef_data;
+            nest = 1;
+        break;
+        case mt_text:
+            head = p;
+            obj.type = type_indef_text;
+            nest = 1;
+        break;
+        case mt_array:
+        case mt_map:
+            head = p;
+            size = size_t(-1);
+            nest = 1;
+        break;
+#else
         case mt_data: 
             obj.istr = {p};
             obj.type = type_indef_data;
@@ -73,6 +94,7 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
             obj.map = {p, size_t(-1)};
             nest = 1;
         break;
+#endif
         default:
             return {{}, err_invalid_indef_mt, p};
         }
@@ -95,6 +117,23 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
             obj.text = {(const char*) p, size_t(val)};
             p += val;
         break;
+#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
+        case mt_map:
+            head = p;
+            size = val;
+            skip = val << 1;
+        break;
+        case mt_array:
+            head = p;
+            size = val;
+            skip = val;
+        break;
+        case mt_tag:
+            head = p;
+            size = val;
+            skip = 1;
+        break;
+#else
         case mt_map:
             obj.map = {p, size_t(val)};
             skip = val << 1;
@@ -107,6 +146,7 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
             obj.tag = {p, val};
             skip = 1;
         break;
+#endif
         case mt_simple:
             switch (ai) 
             {
@@ -210,6 +250,17 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
             skip--;
     }
 
+#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
+    switch (obj.type) 
+    {
+    case type_array:        obj.arr  = {head, p, size}; break;
+    case type_map:          obj.map  = {head, p, size}; break;
+    case type_tag:          obj.tag  = {head, p, size}; break;
+    case type_indef_data:   obj.istr = {head, p}; break;
+    case type_indef_text:   obj.istr = {head, p}; break;
+    default:;
+    }
+#else
     switch (obj.type) 
     {
     case type_array:
@@ -219,6 +270,7 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
     case type_indef_text: obj.istr.set_end(p); break;
     default:;
     }
+#endif
     return {obj, err_ok, p};
 }
 
@@ -306,19 +358,11 @@ private:
     obj_t val;
 };
 
-#if (ZBOR_SEQ_SPAN)
 inline seq_iter seq_t::begin() const    { return {data(), data() + size()}; }
 inline seq_iter seq_t::end() const      { return {}; }
 inline map_iter map_t::begin() const    { return {data(), data() + seq_t::size()}; }
 inline map_iter map_t::end() const      { return {}; }
 inline obj_t tag_t::content() const     { return std::get<obj_t>(decode(data(), data() + size())); }
-#else
-inline seq_iter seq_t::begin() const    { return {head, tail}; }
-inline seq_iter seq_t::end() const      { return {}; }
-inline map_iter map_t::begin() const    { return {head, tail}; }
-inline map_iter map_t::end() const      { return {}; }
-inline obj_t tag_t::content() const     { return std::get<obj_t>(decode(head, tail)); }
-#endif
 
 }
 

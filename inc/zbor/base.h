@@ -1,8 +1,7 @@
 #ifndef ZBOR_BASE_H
 #define ZBOR_BASE_H
-#define ZBOR_SEQ_SPAN   true
+#define ZBOR_INITIALIZE_OBJ_AT_THE_END  false
 
-#include "utl/bit.h"
 #include "utl/float.h"
 #include <span>
 #include <string_view>
@@ -96,18 +95,17 @@ enum err_t {
     err_break_without_start,
 };
 
-#if (ZBOR_SEQ_SPAN)
-
 /**
  * @brief CBOR sequence, read-only wrapper for traversal on-the-fly.
  * 
  */
 struct seq_t : span_t {
-    using base = span_t;
-    using base::base;
+    using span_t::span_t;
     seq_iter begin() const;
     seq_iter end() const;
+#if !(ZBOR_INITIALIZE_OBJ_AT_THE_END)
     void set_end(const byte* end)   { *this = {data(), size_t(end - data())}; }
+#endif
 };
 
 /**
@@ -115,7 +113,11 @@ struct seq_t : span_t {
  * 
  */
 struct istr_r : seq_t {
+#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
+    using seq_t::seq_t;
+#else
     istr_r(const byte* head) : seq_t{head, 0} {}
+#endif
 };
 
 /**
@@ -123,7 +125,11 @@ struct istr_r : seq_t {
  * 
  */
 struct arr_t : seq_t {
+#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
+    arr_t(const byte* head, const byte* tail, size_t len) : seq_t{head, tail}, len{len} {}
+#else
     arr_t(const byte* head, size_t len) : seq_t{head, 0}, len{len} {}
+#endif
     size_t size() const { return len; }
     bool indef() const  { return len == size_t(-1); } 
 protected:
@@ -135,7 +141,11 @@ protected:
  * 
  */
 struct map_t : arr_t {
+#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
+    using arr_t::arr_t;
+#else
     map_t(const byte* head, size_t len) : arr_t{head, len} {}
+#endif
     map_iter begin() const;
     map_iter end() const;
 };
@@ -145,75 +155,16 @@ struct map_t : arr_t {
  * 
  */
 struct tag_t : seq_t {
-    tag_t(const byte* head, uint64_t number) : seq_t{head, 0}, number{number} {}
-    uint64_t num() const    { return number; }
-    obj_t content() const;
-private:
-    uint64_t number;
-};
-
+#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
+    tag_t(const byte* head, const byte* tail, uint64_t number) : seq_t{head, tail}, number{number} {}
 #else
-
-/**
- * @brief CBOR sequence, read-only wrapper for traversal on-the-fly.
- * 
- */
-struct seq_t {
-    seq_t(const byte* p) : head{p}, tail{p} {}
-    seq_t(const byte* p, size_t len) : head{p}, tail{p + len} {}
-    seq_iter begin() const;
-    seq_iter end() const;
-    size_t size() const             { return tail - head; }
-    auto data() const               { return head; }
-    void set_end(const byte* end)   { tail = end; }
-protected:
-    const byte* head;
-    const byte* tail;
-};
-
-/**
- * @brief Sequence wrapper for indefinite byte and text strings.
- * 
- */
-struct istr_r : seq_t {
-    istr_r(const byte* head) : seq_t{head} {}
-};
-
-/**
- * @brief Sequence wrapper for generic array.
- * 
- */
-struct arr_t : seq_t {
-    arr_t(const byte* head, size_t len) : seq_t{head}, len{len} {}
-    size_t size() const { return len; }
-    bool indef() const  { return len == size_t(-1); } 
-protected:
-    size_t len;
-};
-
-/**
- * @brief Sequence wrapper for generic map.
- * 
- */
-struct map_t : arr_t {
-    map_t(const byte* head, size_t len) : arr_t{head, len} {}
-    map_iter begin() const;
-    map_iter end() const;
-};
-
-/**
- * @brief tag_t with number (stored) and content (decoded on-the-fly).
- * 
- */
-struct tag_t : seq_t {
-    tag_t(const byte* head, uint64_t number) : seq_t{head}, number{number} {}
+    tag_t(const byte* head, uint64_t number) : seq_t{head, 0}, number{number} {}
+#endif
     uint64_t num() const    { return number; }
     obj_t content() const;
 private:
     uint64_t number;
 };
-
-#endif
 
 /**
  * @brief Generic CBOR object which can hold any type.
