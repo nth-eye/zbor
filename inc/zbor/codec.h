@@ -18,9 +18,9 @@ struct Buf {
     constexpr Buf(byte *buf, size_t max) : buf{buf}, max{max} {}
     constexpr Buf(std::span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
 
-    operator Seq() const                    { return {buf, idx}; }
-    SeqIter begin() const                   { return {buf, buf + idx}; }
-    SeqIter end() const                     { return {}; }
+    operator seq() const                    { return {buf, idx}; }
+    seq_iter begin() const                  { return {buf, buf + idx}; }
+    seq_iter end() const                    { return {}; }
     constexpr const byte& operator[](size_t i) const    { return buf[i]; }
     constexpr const byte* data() const                  { return buf; }
     constexpr byte* data()                              { return buf; }
@@ -49,7 +49,7 @@ struct Buf {
     Err encode_arr(size_t size);
     Err encode_map(size_t size);
     Err encode_tag(uint64_t val);
-    Err encode_head(Mt mt, uint64_t val, size_t add_len = 0);
+    Err encode_head(mt_t mt, uint64_t val, size_t add_len = 0);
 
     template<class K, class V>
     Err encode(K key, V val)
@@ -62,7 +62,7 @@ struct Buf {
 private:
     Err encode_byte(byte b);
     Err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
-    Err encode_bytes(Mt mt, const void* data, size_t len);
+    Err encode_bytes(mt_t mt, const void* data, size_t len);
     Err encode_float(Prim type, utl::fp_bits val);
 private:
     byte *buf;
@@ -102,7 +102,7 @@ inline Err Buf::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_
     return err_ok;
 }
 
-inline Err Buf::encode_head(Mt mt, uint64_t val, size_t add_len)
+inline Err Buf::encode_head(mt_t mt, uint64_t val, size_t add_len)
 {
     byte ai;
 
@@ -122,7 +122,7 @@ inline Err Buf::encode_head(Mt mt, uint64_t val, size_t add_len)
     return encode_base(mt | ai, val, ai_len, add_len);
 }
 
-inline Err Buf::encode_bytes(Mt mt, const void* data, size_t len)
+inline Err Buf::encode_bytes(mt_t mt, const void* data, size_t len)
 {
     Err err = encode_head(mt, len, len);
     if (err == err_ok && data && len) {
@@ -190,7 +190,7 @@ inline Err Buf::encode(uint64_t val)
 inline Err Buf::encode(int64_t val)
 {
     uint64_t ui = val >> 63;
-    return encode_head(Mt(ui & 0x20), ui ^ val);
+    return encode_head(mt_t(ui & 0x20), ui ^ val);
 }
 
 inline Err Buf::encode(std::span<const byte> val)

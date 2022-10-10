@@ -9,9 +9,9 @@ int main(int, char**)
     printf("sizeof(zbor::Map): %lu \n", sizeof(zbor::Map));
     printf("sizeof(zbor::Tag): %lu \n", sizeof(zbor::Tag));
     printf("sizeof(zbor::Obj): %lu \n", sizeof(zbor::Obj));
-    printf("sizeof(zbor::Gen): %lu \n", sizeof(zbor::Gen));
-    printf("sizeof(zbor::SeqIter): %lu \n", sizeof(zbor::SeqIter));
-    printf("sizeof(zbor::MapIter): %lu \n", sizeof(zbor::MapIter));
+    printf("sizeof(zbor::seq): %lu \n", sizeof(zbor::seq));
+    printf("sizeof(zbor::seq_iter): %lu \n", sizeof(zbor::seq_iter));
+    printf("sizeof(zbor::map_iter): %lu \n", sizeof(zbor::map_iter));
 
     const uint8_t example[] = { 
         0x01, // 1
@@ -88,5 +88,21 @@ int main(int, char**)
         0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
     };
-    zbor::log_seq(zbor::Seq(example, sizeof(example)));
+    zbor::log_seq(zbor::seq(example, sizeof(example)));
+
+    auto test_case_1 = [&, i = 0] () mutable
+    {
+        for (auto it : zbor::seq{example, sizeof(example)}) {
+            ++i;
+        }
+        return i;
+    };
+    static constexpr auto count = 10000000;
+
+    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+
+    // printf("1 ret %u \n", test_case_1());
 }

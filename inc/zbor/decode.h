@@ -18,7 +18,7 @@ namespace zbor {
  * @param end End pointer, must be valid pointer
  * @return Tuple with decoded object, error status and pointer to character past the last character interpreted
  */
-inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * const end)
+inline std::tuple<Obj, Err, const byte*> decode(const byte* p, const byte * const end)
 {
     if (p >= end)
         return {{}, err_out_of_bounds, end};
@@ -88,9 +88,11 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
             obj.sint = ~val;
         break;
         case mt_data:
+            obj.data = {p, size_t(val)};
+            p += val;
+        break;
         case mt_text:
-            obj.str.dat = p;
-            obj.str.len = val;
+            obj.text = {(const char*) p, size_t(val)};
             p += val;
         break;
         case mt_map:
@@ -221,76 +223,65 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte *p, const byte * cons
 }
 
 /**
- * @brief Generator which holds range (begin and end pointers) for byte sequence.
- * Used as base for other iterators.
+ * @brief Sequence iterator which holds range (begin and end pointers). Used 
+ * to traverse CBOR sequence (RFC-8742), which is just series of adjacent 
+ * objects. Used to traverse Array, IndefString or any series of bytes 
+ * as Objects one by one. Only exception is Map.
  * 
  */
-struct Gen {
-
-    Gen() = default;
-    Gen(const byte *head, const byte *tail) : head{head}, tail{tail} {}
-
-    void step(Obj &o) 
-    {
-        std::tie(o, std::ignore, head) = decode(head, tail); 
-    }
-protected:
-    const byte *head;
-    const byte *tail;
-};
-
-/**
- * @brief Sequence iterator, used to traverse CBOR sequence (RFC-8742), which
- * is just series of adjacent objects. Used to traverse Array, IndefString or 
- * any series of bytes as Objects one by one. Only exception is Map.
- * 
- */
-struct SeqIter : Gen {
+struct seq_iter {
     
-    SeqIter() = default;
-    SeqIter(const byte *head, const byte *tail) : Gen{head, tail}
+    seq_iter() = default;
+    seq_iter(const byte* head, const byte* tail) : head{head}, tail{tail}
     {
-        step(o);
+        step(key);
     }
 
-    bool operator!=(const SeqIter&) const 
+    bool operator!=(const seq_iter&) const 
     { 
-        return o.valid();
+        return key.valid();
     }
     auto& operator*() const 
     { 
-        return o; 
+        return key; 
     }
     auto& operator++()
     {
-        step(o);
+        step(key);
         return *this;
     }
     auto operator++(int) 
     { 
-        SeqIter tmp = *this; 
+        auto tmp = *this; 
         ++(*this); 
         return tmp; 
     }
-private:
-    Obj o;
+protected:
+    void step(Obj& o) 
+    {
+        std::tie(o, std::ignore, head) = decode(head, tail); 
+    }
+protected:
+    const byte* head;
+    const byte* tail;
+    Obj key;
 };
 
 /**
- * @brief Map iterator, same as SeqIter but parses two objects in a row and 
- * returns them as pair.
+ * @brief Map iterator, same as zbor::seq_iter, but parses two objects 
+ * in a row and returns them as pair.
  * 
  */
-struct MapIter : Gen {
+struct map_iter : seq_iter {
 
-    MapIter() = default;
-    MapIter(const byte *head, const byte *tail) : Gen{head, tail}
+    map_iter() = default;
+    map_iter(const byte* head, const byte* tail) : seq_iter{head, tail}
     {
-        step(key);
-        if (key.valid()) step(val);
+        if (key.valid()) 
+            step(val);
     }
 
-    bool operator!=(const MapIter&) const 
+    bool operator!=(const map_iter&) const 
     { 
         return key.valid() && val.valid();
     }
@@ -301,40 +292,33 @@ struct MapIter : Gen {
     auto& operator++()
     {
         step(key);
-        if (key.valid()) step(val);
+        if (key.valid()) 
+            step(val);
         return *this;
     }
     auto operator++(int) 
     { 
-        MapIter tmp = *this; 
+        auto tmp = *this; 
         ++(*this); 
         return tmp; 
     }
 private:
-    Obj key;
     Obj val;
 };
 
-/**
- * @brief CBOR sequence, read-only wrapper for traversal on-the-fly.
- * 
- */
-struct Seq {
-    Seq(const byte *p, size_t len) : head{p}, tail{p + len} {}
-    SeqIter begin() const   { return {head, tail}; }
-    SeqIter end() const     { return {}; }
-    size_t size() const     { return tail - head; }
-    auto data() const       { return head; }
-private:
-    const byte *head;
-    const byte *tail;
-};
-
-inline SeqIter Range::begin() const { return {head, tail}; }
-inline SeqIter Range::end() const   { return {}; }
-inline MapIter Map::begin() const   { return {head, tail}; }
-inline MapIter Map::end() const     { return {}; }
+#if (ZBOR_SEQ_SPAN)
+inline seq_iter seq::begin() const  { return {data(), data() + size()}; }
+inline seq_iter seq::end() const    { return {}; }
+inline map_iter Map::begin() const  { return {data(), data() + size()}; }
+inline map_iter Map::end() const    { return {}; }
+inline Obj Tag::content() const     { return std::get<Obj>(decode(data(), data() + size())); }
+#else
+inline seq_iter seq::begin() const  { return {head, tail}; }
+inline seq_iter seq::end() const    { return {}; }
+inline map_iter Map::begin() const  { return {head, tail}; }
+inline map_iter Map::end() const    { return {}; }
 inline Obj Tag::content() const     { return std::get<Obj>(decode(head, tail)); }
+#endif
 
 }
 

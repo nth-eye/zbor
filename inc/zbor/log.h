@@ -59,12 +59,12 @@ inline void log_obj(const Obj &obj)
     break;
     case type_data:
         printf("h'");
-        for (size_t i = 0; i < obj.str.len; ++i)
-            printf("%02x", obj.str.dat[i]);
+        for (auto c : obj.data)
+            printf("%02x", c);
         printf("'");
     break;
     case type_text:
-        printf("\"%.*s\"", int(obj.str.len), obj.str.txt);
+        printf("\"%.*s\"", int(obj.text.size()), obj.text.data());
     break;
     case type_array:
     {
@@ -173,15 +173,15 @@ inline void log_obj(const Obj &obj)
 /**
  * @brief Print CBOR sequence as raw bytes and diagnostic notation.
  * 
- * @param seq CBOR sequence
+ * @param s CBOR sequence
  */
-inline void log_seq(const Seq &seq)
+inline void log_seq(const seq& s)
 {
     printf("+-----------HEX-----------+\n");
-    utl::log_hex(seq.data(), seq.size());
+    utl::log_hex(s.data(), s.size());
     printf("+--------DIAGNOSTIC-------+\n");
     int i = 0; 
-    for (auto it : seq) {
+    for (auto it : s) {
         printf("| %d) ", ++i);
         log_obj(it);
         printf("\n");
@@ -195,7 +195,7 @@ inline void log_seq(const Seq &seq)
  * 
  * @param obj CBOR item
  */
-inline void log_obj_with_pad(const Obj &obj, int first_pad = 0, int pad = 0)
+inline void log_obj_with_pad(const Obj& obj, int first_pad = 0, int pad = 0)
 {
     for (int i = 0; i < first_pad; ++i)
         printf(" ");
@@ -209,12 +209,12 @@ inline void log_obj_with_pad(const Obj &obj, int first_pad = 0, int pad = 0)
     break;
     case type_data:
         printf("h'");
-        for (size_t i = 0; i < obj.str.len; ++i)
-            printf("%02x", obj.str.dat[i]);
+        for (auto c : obj.data)
+            printf("%02x", c);
         printf("'");
     break;
     case type_text:
-        printf("\"%.*s\"", int(obj.str.len), obj.str.txt);
+        printf("\"%.*s\"", int(obj.text.size()), obj.text.data());
     break;
     case type_array:
     {

@@ -390,16 +390,16 @@ TEST(Decode, Data)
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 1);
     ASSERT_EQ(obj.type, type_data);
-    ASSERT_EQ(obj.str.len, 0);
-    ASSERT_EQ(memcmp(first, obj.str.dat, obj.str.len), 0);
+    ASSERT_EQ(obj.data.size(), 0);
+    ASSERT_EQ(memcmp(first, obj.data.data(), obj.data.size()), 0);
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 6);
     ASSERT_EQ(obj.type, type_data);
-    ASSERT_EQ(obj.str.len, 4);
-    ASSERT_EQ(memcmp(second, obj.str.dat, obj.str.len), 0);
+    ASSERT_EQ(obj.data.size(), 4);
+    ASSERT_EQ(memcmp(second, obj.data.data(), obj.data.size()), 0);
 
     ASSERT_EQ(ptr, end);
 }
@@ -416,6 +416,7 @@ TEST(Decode, Text)
         0x64, 0xf0, 0x90, 0x85, 0x91, // "\ud800\udd51"
     };
     const byte garbage[] = { 0xf0, 0x90, 0x85, 0x91 };
+    const std::string_view garbage_sv = {(const char*) garbage, sizeof(garbage)};
 
     Obj obj;
     Err err;
@@ -427,56 +428,49 @@ TEST(Decode, Text)
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 1);
     ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.str.len, strlen(""));
-    ASSERT_EQ(strncmp("", obj.str.txt, obj.str.len), 0);
+    ASSERT_EQ(obj.text, "");
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 3);
     ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.str.len, strlen("a"));
-    ASSERT_EQ(strncmp("a", obj.str.txt, obj.str.len), 0);
+    ASSERT_EQ(obj.text, "a");
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 8);
     ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.str.len, strlen("IETF"));
-    ASSERT_EQ(strncmp("IETF", obj.str.txt, obj.str.len), 0);
+    ASSERT_EQ(obj.text, "IETF");
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 11);
     ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.str.len, strlen("\"\\"));
-    ASSERT_EQ(strncmp("\"\\", obj.str.txt, obj.str.len), 0);
+    ASSERT_EQ(obj.text, "\"\\");
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 14);
     ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.str.len, strlen("\u00fc"));
-    ASSERT_EQ(strncmp("\u00fc", obj.str.txt, obj.str.len), 0);
+    ASSERT_EQ(obj.text, "\u00fc");
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 18);
     ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.str.len, strlen("\u6c34"));
-    ASSERT_EQ(strncmp("\u6c34", obj.str.txt, obj.str.len), 0);
+    ASSERT_EQ(obj.text, "\u6c34");
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 23);
     ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.str.len, sizeof(garbage));
-    ASSERT_EQ(strncmp((char*) garbage, obj.str.txt, obj.str.len), 0);
+    ASSERT_EQ(obj.text, garbage_sv);
 
     ASSERT_EQ(ptr, end);
 }
@@ -509,8 +503,7 @@ TEST(Decode, Tag)
 
     content = obj.tag.content();
     ASSERT_EQ(content.type, type_text);
-    ASSERT_EQ(content.str.len, strlen("2013-03-21T20:04:00Z"));
-    ASSERT_EQ(strncmp("2013-03-21T20:04:00Z", content.str.txt, content.str.len), 0);
+    ASSERT_EQ(content.text, "2013-03-21T20:04:00Z");
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
@@ -543,8 +536,8 @@ TEST(Decode, Tag)
 
     content = obj.tag.content();
     ASSERT_EQ(content.type, type_data);
-    ASSERT_EQ(content.str.len, sizeof(data_1));
-    ASSERT_EQ(memcmp(data_1, content.str.dat, content.str.len), 0);
+    ASSERT_EQ(content.data.size(), sizeof(data_1));
+    ASSERT_EQ(memcmp(data_1, content.data.data(), content.data.size()), 0);
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
@@ -555,8 +548,8 @@ TEST(Decode, Tag)
 
     content = obj.tag.content();
     ASSERT_EQ(content.type, type_data);
-    ASSERT_EQ(content.str.len, sizeof(data_2));
-    ASSERT_EQ(memcmp(data_2, content.str.dat, content.str.len), 0);
+    ASSERT_EQ(content.data.size(), sizeof(data_2));
+    ASSERT_EQ(memcmp(data_2, content.data.data(), content.data.size()), 0);
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
@@ -567,8 +560,7 @@ TEST(Decode, Tag)
 
     content = obj.tag.content();
     ASSERT_EQ(content.type, type_text);
-    ASSERT_EQ(content.str.len, strlen("http://www.example.com"));
-    ASSERT_EQ(strncmp("http://www.example.com", content.str.txt, content.str.len), 0);
+    ASSERT_EQ(content.text, "http://www.example.com");
 
     ASSERT_EQ(ptr, end);
 }

@@ -1,6 +1,6 @@
 # zbor
 
-Small C++17 CBOR stream codec. No dynamic memory allocation, all items are encoded/parsed on-the-fly in a given buffer. Decoding can be done manually with `zbor::decode()` or using `zbor::Seq` wrapper in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact `zbor::Err` you need to decode and check manually every item.
+Small C++17 CBOR stream codec. No dynamic memory allocation, all items are encoded/parsed on-the-fly in a given buffer. Decoding can be done manually with `zbor::decode()` or using `zbor::seq` wrapper in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact `zbor::Err` you need to decode and check manually every item.
 
 __Half-float support included with [`utl::`][1]!__
 
@@ -17,7 +17,7 @@ const uint8_t example[] = {
     0x83, 0x01, 0x02, 0x03, // [1, 2, 3]
 };
 
-for (auto it : zbor::Seq{example, sizeof(example)}) {
+for (auto it : zbor::seq{example, sizeof(example)}) {
     switch (it.type) {
         case zbor::type_uint:
             printf("got uint %lu \n", it.uint); 
