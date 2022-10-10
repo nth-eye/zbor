@@ -1,10 +1,8 @@
 #ifndef ZBOR_CODEC_H
 #define ZBOR_CODEC_H
 
-#include <span>
-#include <string_view>
-#include <cstring>
 #include "zbor/decode.h"
+#include <cstring>
 
 namespace zbor {
 
@@ -12,15 +10,13 @@ namespace zbor {
  * @brief CBOR buffer, basicaly codec with given external storage.
  * 
  */
-struct Buf {
+struct codec_t {
 
-    constexpr Buf() = delete;
-    constexpr Buf(byte *buf, size_t max) : buf{buf}, max{max} {}
-    constexpr Buf(std::span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
+    constexpr codec_t() = delete;
+    constexpr codec_t(mbuf_t buf) : buf{buf.data()}, max{buf.size()} {}
 
-    operator seq_t() const                    { return {buf, idx}; }
-    seq_iter begin() const                  { return {buf, buf + idx}; }
-    seq_iter end() const                    { return {}; }
+    seq_iter begin() const                              { return {buf, buf + idx}; }
+    seq_iter end() const                                { return {}; }
     constexpr const byte& operator[](size_t i) const    { return buf[i]; }
     constexpr const byte* data() const                  { return buf; }
     constexpr byte* data()                              { return buf; }
@@ -33,9 +29,9 @@ struct Buf {
     err_t encode(unsigned val);
     err_t encode(int64_t val);
     err_t encode(uint64_t val);
-    err_t encode(std::span<const byte> val);
-    err_t encode(std::string_view val);
-    err_t encode(const char *val);
+    err_t encode(span_t val);
+    err_t encode(text_t val);
+    err_t encode(const char* val);
     err_t encode(prim_t val);
     err_t encode(bool val);
     err_t encode(float val);
@@ -65,32 +61,31 @@ private:
     err_t encode_bytes(mt_t mt, const void* data, size_t len);
     err_t encode_float(prim_t type, utl::fp_bits val);
 private:
-    byte *buf;
+    byte* buf;
     size_t max;
     size_t idx = 0;
 };
 
 /**
- * @brief Wrapper for Buf wit internal storage.
+ * @brief Wrapper for codec_t wit internal storage.
  * 
  * @tparam N Buffer size in bytes
  */
 template<size_t N>
-struct Codec : Buf {
-    static_assert(N, "codec size must be > 0");
-    Codec() : Buf{buf, N} {}
+struct buffer_t : codec_t {
+    buffer_t() : codec_t{buf} {}
 private:
     byte buf[N];
 };
 
 // SECTION: Private
 
-inline err_t Buf::encode_byte(byte b)
+inline err_t codec_t::encode_byte(byte b)
 {
     return idx < max ? buf[idx++] = b, err_ok : err_no_memory;
 }
 
-inline err_t Buf::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len)
+inline err_t codec_t::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len)
 {
     if (idx + ai_len + add_len + 1 > max)
         return err_no_memory;
@@ -102,7 +97,7 @@ inline err_t Buf::encode_base(byte start, uint64_t val, size_t ai_len, size_t ad
     return err_ok;
 }
 
-inline err_t Buf::encode_head(mt_t mt, uint64_t val, size_t add_len)
+inline err_t codec_t::encode_head(mt_t mt, uint64_t val, size_t add_len)
 {
     byte ai;
 
@@ -122,7 +117,7 @@ inline err_t Buf::encode_head(mt_t mt, uint64_t val, size_t add_len)
     return encode_base(mt | ai, val, ai_len, add_len);
 }
 
-inline err_t Buf::encode_bytes(mt_t mt, const void* data, size_t len)
+inline err_t codec_t::encode_bytes(mt_t mt, const void* data, size_t len)
 {
     err_t err = encode_head(mt, len, len);
     if (err == err_ok && data && len) {
@@ -132,7 +127,7 @@ inline err_t Buf::encode_bytes(mt_t mt, const void* data, size_t len)
     return err;
 }
 
-inline err_t Buf::encode_float(prim_t type, utl::fp_bits val)
+inline err_t codec_t::encode_float(prim_t type, utl::fp_bits val)
 {
     switch (type) 
     {
@@ -172,100 +167,100 @@ inline err_t Buf::encode_float(prim_t type, utl::fp_bits val)
 
 // !SECTION: Private
 
-inline err_t Buf::encode(int val)
+inline err_t codec_t::encode(int val)
 {
     return encode(int64_t(val));
 }
 
-inline err_t Buf::encode(unsigned val)
+inline err_t codec_t::encode(unsigned val)
 {
     return encode(uint64_t(val));
 }
 
-inline err_t Buf::encode(uint64_t val)
+inline err_t codec_t::encode(uint64_t val)
 {
     return encode_head(mt_uint, val);
 }
 
-inline err_t Buf::encode(int64_t val)
+inline err_t codec_t::encode(int64_t val)
 {
     uint64_t ui = val >> 63;
     return encode_head(mt_t(ui & 0x20), ui ^ val);
 }
 
-inline err_t Buf::encode(std::span<const byte> val)
+inline err_t codec_t::encode(span_t val)
 {
     return encode_bytes(mt_data, val.data(), val.size());
 }
 
-inline err_t Buf::encode(std::string_view val)
+inline err_t codec_t::encode(text_t val)
 {
     return encode_bytes(mt_text, val.data(), val.size());
 }
 
-inline err_t Buf::encode(const char *val)
+inline err_t codec_t::encode(const char* val)
 {
     return encode_bytes(mt_text, val, strlen(val));
 }
 
-inline err_t Buf::encode(prim_t val)
+inline err_t codec_t::encode(prim_t val)
 {
     if (val >= 24 && val <= 31)
         return err_invalid_simple;
     return encode_head(mt_simple, val);
 }
 
-inline err_t Buf::encode(bool val)
+inline err_t codec_t::encode(bool val)
 {
     return encode_byte(mt_simple | (prim_false + val));
 }
 
-inline err_t Buf::encode(float val)
+inline err_t codec_t::encode(float val)
 {
     return encode_float(prim_float_32, val);
 }
 
-inline err_t Buf::encode(double val)
+inline err_t codec_t::encode(double val)
 {
     return encode_float(prim_float_64, val);
 }
 
-inline err_t Buf::encode_indef_dat()
+inline err_t codec_t::encode_indef_dat()
 {
     return encode_byte(mt_data | byte(ai_indef));
 }
 
-inline err_t Buf::encode_indef_txt()
+inline err_t codec_t::encode_indef_txt()
 {
     return encode_byte(mt_text | byte(ai_indef));
 }
 
-inline err_t Buf::encode_indef_arr()
+inline err_t codec_t::encode_indef_arr()
 {
     return encode_byte(mt_array | byte(ai_indef));
 }
 
-inline err_t Buf::encode_indef_map()
+inline err_t codec_t::encode_indef_map()
 {
     return encode_byte(mt_map | byte(ai_indef));
 }
 
-inline err_t Buf::encode_break()
+inline err_t codec_t::encode_break()
 {
     return encode_byte(0xff);
 }
 
-inline err_t Buf::encode_arr(size_t size)
+inline err_t codec_t::encode_arr(size_t size)
 {
     return encode_head(mt_array, size);
 }
 
-inline err_t Buf::encode_map(size_t size)
+inline err_t codec_t::encode_map(size_t size)
 {
     return encode_head(mt_map, size);
 }
 
-inline err_t Buf::encode_tag(uint64_t val)
+inline err_t codec_t::encode_tag(uint64_t val)
 {
     return encode_head(mt_tag, val);
 }

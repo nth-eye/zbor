@@ -1,8 +1,8 @@
 #ifndef ZBOR_DECODE_H
 #define ZBOR_DECODE_H
 
-#include <tuple>
 #include "zbor/base.h"
+#include <tuple>
 
 namespace zbor {
 
@@ -225,8 +225,8 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
 /**
  * @brief Sequence iterator which holds range (begin and end pointers). Used 
  * to traverse CBOR sequence (RFC-8742), which is just series of adjacent 
- * objects. Used to traverse Array, istring_t or any series of bytes 
- * as Objects one by one. Only exception is map_t.
+ * objects. Used to traverse arr_t, istr_r or any series of bytes 
+ * as obj_t one by one. Only exception is map_t.
  * 
  */
 struct seq_iter {
@@ -268,7 +268,7 @@ protected:
 };
 
 /**
- * @brief map_t iterator, same as zbor::seq_iter, but parses two objects 
+ * @brief Map iterator, same as seq_iter, but parses two objects 
  * in a row and returns them as pair.
  * 
  */
@@ -306,11 +306,19 @@ private:
     obj_t val;
 };
 
+#if (ZBOR_SEQ_SPAN)
+inline seq_iter seq_t::begin() const    { return {data(), data() + size()}; }
+inline seq_iter seq_t::end() const      { return {}; }
+inline map_iter map_t::begin() const    { return {data(), data() + seq_t::size()}; }
+inline map_iter map_t::end() const      { return {}; }
+inline obj_t tag_t::content() const     { return std::get<obj_t>(decode(data(), data() + size())); }
+#else
 inline seq_iter seq_t::begin() const    { return {head, tail}; }
 inline seq_iter seq_t::end() const      { return {}; }
 inline map_iter map_t::begin() const    { return {head, tail}; }
 inline map_iter map_t::end() const      { return {}; }
 inline obj_t tag_t::content() const     { return std::get<obj_t>(decode(head, tail)); }
+#endif
 
 }
 

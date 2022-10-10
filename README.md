@@ -77,10 +77,10 @@ while (1) {
 
 ### Encode
 
-#### With `Codec` wrapper
+#### With `buffer_t` wrapper
 
 ```cpp
-zbor::Codec<64> msg;
+zbor::buffer_t<64> msg;
 
 const uint8_t data[] = {0x44, 0x45};
 
@@ -134,7 +134,7 @@ msg.clear(); // to reuse codec
 
 ```cpp
 auto buf = (uint8_t*) malloc(10);   // let's assume someone still uses malloc...
-auto msg = zbor::Buf{buf, 10};      // exactly as with Codec after this
+auto msg = zbor::codec_t{buf, 10};      // exactly as with buffer_t after this
 auto err = msg.encode("too long string");
 
 if (err == zbor::err_ok)

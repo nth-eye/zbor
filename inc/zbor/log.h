@@ -1,7 +1,6 @@
 #ifndef ZBOR_LOG_H
 #define ZBOR_LOG_H
 
-#include <cmath>
 #include "zbor/decode.h"
 #include "utl/log.h"
 

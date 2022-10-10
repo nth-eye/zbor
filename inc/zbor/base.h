@@ -1,13 +1,18 @@
 #ifndef ZBOR_BASE_H
 #define ZBOR_BASE_H
+#define ZBOR_SEQ_SPAN   true
 
 #include "utl/bit.h"
 #include "utl/float.h"
 #include <span>
+#include <string_view>
 
 namespace zbor {
 
 using byte = uint8_t;
+using mbuf_t = std::span<byte>;
+using span_t = std::span<const byte>;
+using text_t = std::string_view;
 
 struct seq_iter;
 struct map_iter;
@@ -91,12 +96,70 @@ enum err_t {
     err_break_without_start,
 };
 
+#if (ZBOR_SEQ_SPAN)
+
+/**
+ * @brief CBOR sequence, read-only wrapper for traversal on-the-fly.
+ * 
+ */
+struct seq_t : span_t {
+    using base = span_t;
+    using base::base;
+    seq_iter begin() const;
+    seq_iter end() const;
+    void set_end(const byte* end)   { *this = {data(), size_t(end - data())}; }
+};
+
+/**
+ * @brief Sequence wrapper for indefinite byte and text strings.
+ * 
+ */
+struct istr_r : seq_t {
+    istr_r(const byte* head) : seq_t{head, 0} {}
+};
+
+/**
+ * @brief Sequence wrapper for CBOR array.
+ * 
+ */
+struct arr_t : seq_t {
+    arr_t(const byte* head, size_t len) : seq_t{head, 0}, len{len} {}
+    size_t size() const { return len; }
+    bool indef() const  { return len == size_t(-1); } 
+protected:
+    size_t len;
+};
+
+/**
+ * @brief Sequence wrapper for CBOR map.
+ * 
+ */
+struct map_t : arr_t {
+    map_t(const byte* head, size_t len) : arr_t{head, len} {}
+    map_iter begin() const;
+    map_iter end() const;
+};
+
+/**
+ * @brief CBOR tag with number (stored) and content (decoded on-the-fly).
+ * 
+ */
+struct tag_t : seq_t {
+    tag_t(const byte* head, uint64_t number) : seq_t{head, 0}, number{number} {}
+    uint64_t num() const    { return number; }
+    obj_t content() const;
+private:
+    uint64_t number;
+};
+
+#else
+
 /**
  * @brief CBOR sequence, read-only wrapper for traversal on-the-fly.
  * 
  */
 struct seq_t {
-    seq_t(const byte* p) : head{p} {}
+    seq_t(const byte* p) : head{p}, tail{p} {}
     seq_t(const byte* p, size_t len) : head{p}, tail{p + len} {}
     seq_iter begin() const;
     seq_iter end() const;
@@ -112,16 +175,16 @@ protected:
  * @brief Sequence wrapper for indefinite byte and text strings.
  * 
  */
-struct istring_t : seq_t {
-    istring_t(const byte* head) : seq_t{head} {}
+struct istr_r : seq_t {
+    istr_r(const byte* head) : seq_t{head} {}
 };
 
 /**
  * @brief Sequence wrapper for generic array.
  * 
  */
-struct array_t : seq_t {
-    array_t(const byte* head, size_t len) : seq_t{head}, len{len} {}
+struct arr_t : seq_t {
+    arr_t(const byte* head, size_t len) : seq_t{head}, len{len} {}
     size_t size() const { return len; }
     bool indef() const  { return len == size_t(-1); } 
 protected:
@@ -132,8 +195,8 @@ protected:
  * @brief Sequence wrapper for generic map.
  * 
  */
-struct map_t : array_t {
-    map_t(const byte* head, size_t len) : array_t{head, len} {}
+struct map_t : arr_t {
+    map_t(const byte* head, size_t len) : arr_t{head, len} {}
     map_iter begin() const;
     map_iter end() const;
 };
@@ -150,6 +213,8 @@ private:
     uint64_t number;
 };
 
+#endif
+
 /**
  * @brief Generic CBOR object which can hold any type.
  * 
@@ -163,10 +228,10 @@ struct obj_t {
     union {
         uint64_t uint;
         int64_t sint;
-        std::string_view text;
-        std::span<const byte> data;
-        istring_t istr;
-        array_t arr;
+        text_t text;
+        span_t data;
+        istr_r istr;
+        arr_t arr;
         map_t map;
         tag_t tag;
         prim_t prim;

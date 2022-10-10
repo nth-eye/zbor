@@ -4,7 +4,7 @@
 
 int main(int, char**) 
 {
-    printf("sizeof(zbor::array_t):  %lu \n", sizeof(zbor::array_t));
+    printf("sizeof(zbor::arr_t):    %lu \n", sizeof(zbor::arr_t));
     printf("sizeof(zbor::map_t):    %lu \n", sizeof(zbor::map_t));
     printf("sizeof(zbor::tag_t):    %lu \n", sizeof(zbor::tag_t));
     printf("sizeof(zbor::obj_t):    %lu \n", sizeof(zbor::obj_t));
@@ -87,16 +87,16 @@ int main(int, char**)
         0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
     };
-    zbor::log_seq({example, sizeof(example)});
+    zbor::log_seq(example);
 
     auto test_case_1 = [&, i = 0] () mutable
     {
-        for (auto it : zbor::seq_t{example, sizeof(example)}) {
+        for (auto it : zbor::seq_t{example}) {
             ++i;
         }
         return i;
     };
-    static constexpr auto count = 10000000;
+    static constexpr auto count = 20000000;
 
     printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
     printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
