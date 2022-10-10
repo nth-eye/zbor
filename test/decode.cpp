@@ -31,8 +31,8 @@ TEST(Decode, Uint)
         0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 18446744073709551615
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -126,8 +126,8 @@ TEST(Decode, Sint)
         0x3b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // -18446744073709551616
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -190,8 +190,8 @@ TEST(Decode, fp_bits)
         0xf9, 0xfc, 0x00, // -Infinity
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -321,8 +321,8 @@ TEST(Decode, Simple)
         0xf8, 0xff, // simple(255)
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -359,14 +359,14 @@ TEST(Decode, Simple)
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 5);
     ASSERT_EQ(obj.type, type_prim);
-    ASSERT_EQ(obj.prim, Prim(16));
+    ASSERT_EQ(obj.prim, prim_t(16));
 
     std::tie(obj, err, ptr) = decode(ptr, end);
 
     ASSERT_EQ(err, err_ok);
     ASSERT_EQ(ptr, test + 7);
     ASSERT_EQ(obj.type, type_prim);
-    ASSERT_EQ(obj.prim, Prim(255));
+    ASSERT_EQ(obj.prim, prim_t(255));
 
     ASSERT_EQ(ptr, end);
 }
@@ -380,8 +380,8 @@ TEST(Decode, Data)
     const byte first[1] = {};
     const byte second[] = {0x01, 0x02, 0x03, 0x04};
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -418,8 +418,8 @@ TEST(Decode, Text)
     const byte garbage[] = { 0xf0, 0x90, 0x85, 0x91 };
     const std::string_view garbage_sv = {(const char*) garbage, sizeof(garbage)};
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -475,7 +475,7 @@ TEST(Decode, Text)
     ASSERT_EQ(ptr, end);
 }
 
-TEST(Decode, Tag)
+TEST(Decode, tag_t)
 {
     const byte test[] = {
         0xc0, 0x74, 0x32, 0x30, 0x31, 0x33, 0x2d, 0x30, 0x33, 0x2d, 0x32, 0x31, 0x54, 0x32, 0x30, 0x3a, 0x30, 0x34, 0x3a, 0x30, 0x30, 0x5a, // 0("2013-03-21T20:04:00Z")
@@ -488,9 +488,9 @@ TEST(Decode, Tag)
     const byte data_1[] = { 0x01, 0x02, 0x03, 0x04 };
     const byte data_2[] = { 0x64, 0x49, 0x45, 0x54, 0x46 };
 
-    Obj obj;
-    Obj content;
-    Err err;
+    obj_t obj;
+    obj_t content;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -574,8 +574,8 @@ TEST(Decode, Array)
         0x98, 0x19, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x18, 0x18, 0x19, // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -610,7 +610,7 @@ TEST(Decode, Array)
     ASSERT_EQ(ptr, end);
 }
 
-TEST(Decode, Map)
+TEST(Decode, map_t)
 {
     const byte test[] = {
         0xa0, // {}
@@ -619,8 +619,8 @@ TEST(Decode, Map)
         0xa5, 0x61, 0x61, 0x61, 0x41, 0x61, 0x62, 0x61, 0x42, 0x61, 0x63, 0x61, 0x43, 0x61, 0x64, 0x61, 0x44, 0x61, 0x65, 0x61, 0x45, // {"a": "A", "b": "B", "c": "C", "d": "D", "e": "E"}
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -661,8 +661,8 @@ TEST(Decode, IndefData)
         0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff, // (_ h'0102', h'030405')
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -681,8 +681,8 @@ TEST(Decode, IndefText)
         0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, // (_ "strea", "ming")
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -706,8 +706,8 @@ TEST(Decode, IndefArray)
         0x9f, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x18, 0x18, 0x19, 0xff, // [_ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -763,8 +763,8 @@ TEST(Decode, IndefMap)
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 
@@ -792,8 +792,8 @@ TEST(Decode, Mixed)
         0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
     };
 
-    Obj obj;
-    Err err;
+    obj_t obj;
+    err_t err;
     auto ptr = test;
     auto end = test + sizeof(test);
 

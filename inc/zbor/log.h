@@ -7,7 +7,7 @@
 
 namespace zbor {
 
-constexpr const char* str_type(Type t)
+constexpr const char* str_type(type_t t)
 {
     switch (t) {
         case type_uint: return "unsigned";
@@ -26,7 +26,7 @@ constexpr const char* str_type(Type t)
     }
 }
 
-constexpr const char* str_err(Err e)
+constexpr const char* str_err(err_t e)
 {
     switch (e) {
         case err_ok: return "err_ok";
@@ -47,7 +47,7 @@ constexpr const char* str_err(Err e)
  * 
  * @param obj CBOR item
  */
-inline void log_obj(const Obj &obj)
+inline void log_obj(const obj_t& obj)
 {
     switch (obj.type) 
     {
@@ -175,7 +175,7 @@ inline void log_obj(const Obj &obj)
  * 
  * @param s CBOR sequence
  */
-inline void log_seq(const seq& s)
+inline void log_seq(const seq_t& s)
 {
     printf("+-----------HEX-----------+\n");
     utl::log_hex(s.data(), s.size());
@@ -195,7 +195,7 @@ inline void log_seq(const seq& s)
  * 
  * @param obj CBOR item
  */
-inline void log_obj_with_pad(const Obj& obj, int first_pad = 0, int pad = 0)
+inline void log_obj_with_pad(const obj_t& obj, int first_pad = 0, int pad = 0)
 {
     for (int i = 0; i < first_pad; ++i)
         printf(" ");

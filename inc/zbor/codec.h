@@ -18,7 +18,7 @@ struct Buf {
     constexpr Buf(byte *buf, size_t max) : buf{buf}, max{max} {}
     constexpr Buf(std::span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
 
-    operator seq() const                    { return {buf, idx}; }
+    operator seq_t() const                    { return {buf, idx}; }
     seq_iter begin() const                  { return {buf, buf + idx}; }
     seq_iter end() const                    { return {}; }
     constexpr const byte& operator[](size_t i) const    { return buf[i]; }
@@ -29,41 +29,41 @@ struct Buf {
     constexpr size_t resize(size_t size)                { return size <= max ? idx = size : idx; }    
     constexpr void clear()                              { idx = 0; }
 
-    Err encode(int val);
-    Err encode(unsigned val);
-    Err encode(int64_t val);
-    Err encode(uint64_t val);
-    Err encode(std::span<const byte> val);
-    Err encode(std::string_view val);
-    Err encode(const char *val);
-    Err encode(Prim val);
-    Err encode(bool val);
-    Err encode(float val);
-    Err encode(double val);
+    err_t encode(int val);
+    err_t encode(unsigned val);
+    err_t encode(int64_t val);
+    err_t encode(uint64_t val);
+    err_t encode(std::span<const byte> val);
+    err_t encode(std::string_view val);
+    err_t encode(const char *val);
+    err_t encode(prim_t val);
+    err_t encode(bool val);
+    err_t encode(float val);
+    err_t encode(double val);
 
-    Err encode_indef_dat();
-    Err encode_indef_txt();
-    Err encode_indef_arr();
-    Err encode_indef_map();
-    Err encode_break();
-    Err encode_arr(size_t size);
-    Err encode_map(size_t size);
-    Err encode_tag(uint64_t val);
-    Err encode_head(mt_t mt, uint64_t val, size_t add_len = 0);
+    err_t encode_indef_dat();
+    err_t encode_indef_txt();
+    err_t encode_indef_arr();
+    err_t encode_indef_map();
+    err_t encode_break();
+    err_t encode_arr(size_t size);
+    err_t encode_map(size_t size);
+    err_t encode_tag(uint64_t val);
+    err_t encode_head(mt_t mt, uint64_t val, size_t add_len = 0);
 
     template<class K, class V>
-    Err encode(K key, V val)
+    err_t encode(K key, V val)
     {
-        Err err = encode(key);
+        err_t err = encode(key);
         if (err != err_ok)
             return err;
         return encode(val);
     }
 private:
-    Err encode_byte(byte b);
-    Err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
-    Err encode_bytes(mt_t mt, const void* data, size_t len);
-    Err encode_float(Prim type, utl::fp_bits val);
+    err_t encode_byte(byte b);
+    err_t encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
+    err_t encode_bytes(mt_t mt, const void* data, size_t len);
+    err_t encode_float(prim_t type, utl::fp_bits val);
 private:
     byte *buf;
     size_t max;
@@ -85,12 +85,12 @@ private:
 
 // SECTION: Private
 
-inline Err Buf::encode_byte(byte b)
+inline err_t Buf::encode_byte(byte b)
 {
     return idx < max ? buf[idx++] = b, err_ok : err_no_memory;
 }
 
-inline Err Buf::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len)
+inline err_t Buf::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len)
 {
     if (idx + ai_len + add_len + 1 > max)
         return err_no_memory;
@@ -102,7 +102,7 @@ inline Err Buf::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_
     return err_ok;
 }
 
-inline Err Buf::encode_head(mt_t mt, uint64_t val, size_t add_len)
+inline err_t Buf::encode_head(mt_t mt, uint64_t val, size_t add_len)
 {
     byte ai;
 
@@ -122,9 +122,9 @@ inline Err Buf::encode_head(mt_t mt, uint64_t val, size_t add_len)
     return encode_base(mt | ai, val, ai_len, add_len);
 }
 
-inline Err Buf::encode_bytes(mt_t mt, const void* data, size_t len)
+inline err_t Buf::encode_bytes(mt_t mt, const void* data, size_t len)
 {
-    Err err = encode_head(mt, len, len);
+    err_t err = encode_head(mt, len, len);
     if (err == err_ok && data && len) {
         memcpy(&buf[idx], data, len);
         idx += len;
@@ -132,7 +132,7 @@ inline Err Buf::encode_bytes(mt_t mt, const void* data, size_t len)
     return err;
 }
 
-inline Err Buf::encode_float(Prim type, utl::fp_bits val)
+inline err_t Buf::encode_float(prim_t type, utl::fp_bits val)
 {
     switch (type) 
     {
@@ -172,100 +172,100 @@ inline Err Buf::encode_float(Prim type, utl::fp_bits val)
 
 // !SECTION: Private
 
-inline Err Buf::encode(int val)
+inline err_t Buf::encode(int val)
 {
     return encode(int64_t(val));
 }
 
-inline Err Buf::encode(unsigned val)
+inline err_t Buf::encode(unsigned val)
 {
     return encode(uint64_t(val));
 }
 
-inline Err Buf::encode(uint64_t val)
+inline err_t Buf::encode(uint64_t val)
 {
     return encode_head(mt_uint, val);
 }
 
-inline Err Buf::encode(int64_t val)
+inline err_t Buf::encode(int64_t val)
 {
     uint64_t ui = val >> 63;
     return encode_head(mt_t(ui & 0x20), ui ^ val);
 }
 
-inline Err Buf::encode(std::span<const byte> val)
+inline err_t Buf::encode(std::span<const byte> val)
 {
     return encode_bytes(mt_data, val.data(), val.size());
 }
 
-inline Err Buf::encode(std::string_view val)
+inline err_t Buf::encode(std::string_view val)
 {
     return encode_bytes(mt_text, val.data(), val.size());
 }
 
-inline Err Buf::encode(const char *val)
+inline err_t Buf::encode(const char *val)
 {
     return encode_bytes(mt_text, val, strlen(val));
 }
 
-inline Err Buf::encode(Prim val)
+inline err_t Buf::encode(prim_t val)
 {
     if (val >= 24 && val <= 31)
         return err_invalid_simple;
     return encode_head(mt_simple, val);
 }
 
-inline Err Buf::encode(bool val)
+inline err_t Buf::encode(bool val)
 {
     return encode_byte(mt_simple | (prim_false + val));
 }
 
-inline Err Buf::encode(float val)
+inline err_t Buf::encode(float val)
 {
     return encode_float(prim_float_32, val);
 }
 
-inline Err Buf::encode(double val)
+inline err_t Buf::encode(double val)
 {
     return encode_float(prim_float_64, val);
 }
 
-inline Err Buf::encode_indef_dat()
+inline err_t Buf::encode_indef_dat()
 {
     return encode_byte(mt_data | byte(ai_indef));
 }
 
-inline Err Buf::encode_indef_txt()
+inline err_t Buf::encode_indef_txt()
 {
     return encode_byte(mt_text | byte(ai_indef));
 }
 
-inline Err Buf::encode_indef_arr()
+inline err_t Buf::encode_indef_arr()
 {
     return encode_byte(mt_array | byte(ai_indef));
 }
 
-inline Err Buf::encode_indef_map()
+inline err_t Buf::encode_indef_map()
 {
     return encode_byte(mt_map | byte(ai_indef));
 }
 
-inline Err Buf::encode_break()
+inline err_t Buf::encode_break()
 {
     return encode_byte(0xff);
 }
 
-inline Err Buf::encode_arr(size_t size)
+inline err_t Buf::encode_arr(size_t size)
 {
     return encode_head(mt_array, size);
 }
 
-inline Err Buf::encode_map(size_t size)
+inline err_t Buf::encode_map(size_t size)
 {
     return encode_head(mt_map, size);
 }
 
-inline Err Buf::encode_tag(uint64_t val)
+inline err_t Buf::encode_tag(uint64_t val)
 {
     return encode_head(mt_tag, val);
 }

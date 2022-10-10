@@ -4,12 +4,11 @@
 
 int main(int, char**) 
 {
-    printf("sizeof(zbor::Err): %lu \n", sizeof(zbor::Err));
-    printf("sizeof(zbor::Arr): %lu \n", sizeof(zbor::Arr));
-    printf("sizeof(zbor::Map): %lu \n", sizeof(zbor::Map));
-    printf("sizeof(zbor::Tag): %lu \n", sizeof(zbor::Tag));
-    printf("sizeof(zbor::Obj): %lu \n", sizeof(zbor::Obj));
-    printf("sizeof(zbor::seq): %lu \n", sizeof(zbor::seq));
+    printf("sizeof(zbor::array_t):  %lu \n", sizeof(zbor::array_t));
+    printf("sizeof(zbor::map_t):    %lu \n", sizeof(zbor::map_t));
+    printf("sizeof(zbor::tag_t):    %lu \n", sizeof(zbor::tag_t));
+    printf("sizeof(zbor::obj_t):    %lu \n", sizeof(zbor::obj_t));
+    printf("sizeof(zbor::seq_t):    %lu \n", sizeof(zbor::seq_t));
     printf("sizeof(zbor::seq_iter): %lu \n", sizeof(zbor::seq_iter));
     printf("sizeof(zbor::map_iter): %lu \n", sizeof(zbor::map_iter));
 
@@ -88,11 +87,11 @@ int main(int, char**)
         0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
     };
-    zbor::log_seq(zbor::seq(example, sizeof(example)));
+    zbor::log_seq({example, sizeof(example)});
 
     auto test_case_1 = [&, i = 0] () mutable
     {
-        for (auto it : zbor::seq{example, sizeof(example)}) {
+        for (auto it : zbor::seq_t{example, sizeof(example)}) {
             ++i;
         }
         return i;

@@ -1,8 +1,6 @@
 #ifndef ZBOR_BASE_H
 #define ZBOR_BASE_H
 
-#define ZBOR_SEQ_SPAN           false
-
 #include "utl/bit.h"
 #include "utl/float.h"
 #include <span>
@@ -13,7 +11,7 @@ using byte = uint8_t;
 
 struct seq_iter;
 struct map_iter;
-struct Obj;
+struct obj_t;
 
 /**
  * @brief CBOR major type (3 bits).
@@ -48,7 +46,7 @@ enum ai_t {
  * markers which are used during encoding.
  * 
  */
-enum Prim : byte {
+enum prim_t : byte {
     prim_false      = 20,
     prim_true       = 21,
     prim_null       = 22,
@@ -62,7 +60,7 @@ enum Prim : byte {
  * @brief Type for CBOR objects (not major type).
  * 
  */
-enum Type {
+enum type_t {
     type_uint,
     type_sint,
     type_data,
@@ -81,7 +79,7 @@ enum Type {
  * @brief General codec errors.
  * 
  */
-enum Err {
+enum err_t {
     err_ok,
     err_no_memory,
     err_out_of_bounds,
@@ -93,50 +91,13 @@ enum Err {
     err_break_without_start,
 };
 
-#if (ZBOR_SEQ_SPAN)
-
-struct seq : std::span<const byte> {
-    seq(const byte* p, size_t len) : std::span<const byte>{p, len} {}
-    seq_iter begin() const;
-    seq_iter end() const;
-    void set_end(const byte* end)   { *this = {data(), size_t(end - data())}; }
-};
-
-struct IndefString : seq {
-    IndefString(const byte* head) : seq{head, 0} {}
-};
-
-struct Arr : seq {
-    Arr(const byte* head, size_t len) : seq{head, 0}, len{len} {}
-    size_t size() const { return len; }
-    bool indef() const  { return len == size_t(-1); } 
-protected:
-    size_t len;
-};
-
-struct Map : Arr {
-    Map(const byte* head, size_t len) : Arr{head, len} {}
-    map_iter begin() const;
-    map_iter end() const;
-};
-
-struct Tag : seq {
-    Tag(const byte* head, uint64_t number) : seq{head, 0}, number{number} {}
-    uint64_t num() const    { return number; }
-    Obj content() const;
-private:
-    uint64_t number;
-};
-
-#else
-
 /**
  * @brief CBOR sequence, read-only wrapper for traversal on-the-fly.
  * 
  */
-struct seq {
-    seq(const byte* p) : head{p} {}
-    seq(const byte* p, size_t len) : head{p}, tail{p + len} {}
+struct seq_t {
+    seq_t(const byte* p) : head{p} {}
+    seq_t(const byte* p, size_t len) : head{p}, tail{p + len} {}
     seq_iter begin() const;
     seq_iter end() const;
     size_t size() const             { return tail - head; }
@@ -151,16 +112,16 @@ protected:
  * @brief Sequence wrapper for indefinite byte and text strings.
  * 
  */
-struct IndefString : seq {
-    IndefString(const byte* head) : seq{head} {}
+struct istring_t : seq_t {
+    istring_t(const byte* head) : seq_t{head} {}
 };
 
 /**
  * @brief Sequence wrapper for generic array.
  * 
  */
-struct Arr : seq {
-    Arr(const byte* head, size_t len) : seq{head}, len{len} {}
+struct array_t : seq_t {
+    array_t(const byte* head, size_t len) : seq_t{head}, len{len} {}
     size_t size() const { return len; }
     bool indef() const  { return len == size_t(-1); } 
 protected:
@@ -171,32 +132,31 @@ protected:
  * @brief Sequence wrapper for generic map.
  * 
  */
-struct Map : Arr {
-    Map(const byte* head, size_t len) : Arr{head, len} {}
+struct map_t : array_t {
+    map_t(const byte* head, size_t len) : array_t{head, len} {}
     map_iter begin() const;
     map_iter end() const;
 };
 
 /**
- * @brief Tag with number (stored) and content (decoded on-the-fly).
+ * @brief tag_t with number (stored) and content (decoded on-the-fly).
  * 
  */
-struct Tag : seq {
-    Tag(const byte* head, uint64_t number) : seq{head}, number{number} {}
+struct tag_t : seq_t {
+    tag_t(const byte* head, uint64_t number) : seq_t{head}, number{number} {}
     uint64_t num() const    { return number; }
-    Obj content() const;
+    obj_t content() const;
 private:
     uint64_t number;
 };
-#endif
 
 /**
  * @brief Generic CBOR object which can hold any type.
  * 
  */
-struct Obj {
+struct obj_t {
 
-    Obj() : uint{} {}
+    obj_t() : uint{} {}
 
     bool valid() const { return type != type_invalid; }
 
@@ -205,14 +165,14 @@ struct Obj {
         int64_t sint;
         std::string_view text;
         std::span<const byte> data;
-        IndefString istr;
-        Arr arr;
-        Map map;
-        Tag tag;
-        Prim prim;
+        istring_t istr;
+        array_t arr;
+        map_t map;
+        tag_t tag;
+        prim_t prim;
         double dbl;
     };
-    Type type = type_invalid;
+    type_t type = type_invalid;
 };
 
 }

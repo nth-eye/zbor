@@ -46,7 +46,7 @@ constexpr T uceil(T dividend, T divisor)
 }
 
 /**
- * @brief Map integer from one range to another. 
+ * @brief map_t integer from one range to another. 
  * Input range difference shouldn't be zero.
  * 
  * @tparam T Integer type

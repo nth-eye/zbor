@@ -18,7 +18,7 @@ namespace zbor {
  * @param end End pointer, must be valid pointer
  * @return Tuple with decoded object, error status and pointer to character past the last character interpreted
  */
-inline std::tuple<Obj, Err, const byte*> decode(const byte* p, const byte * const end)
+inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* const end)
 {
     if (p >= end)
         return {{}, err_out_of_bounds, end};
@@ -32,8 +32,8 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte* p, const byte * cons
 
     uint64_t val = ai;
 
-    Obj obj;
-    obj.type = Type(mt >> 5);
+    obj_t obj;
+    obj.type = type_t(mt >> 5);
 
     switch (ai) 
     {
@@ -123,7 +123,7 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte* p, const byte * cons
                 obj.type    = type_double;
             break;
             default:
-                obj.prim    = Prim(val);
+                obj.prim    = prim_t(val);
             break;
             }
         break;
@@ -225,8 +225,8 @@ inline std::tuple<Obj, Err, const byte*> decode(const byte* p, const byte * cons
 /**
  * @brief Sequence iterator which holds range (begin and end pointers). Used 
  * to traverse CBOR sequence (RFC-8742), which is just series of adjacent 
- * objects. Used to traverse Array, IndefString or any series of bytes 
- * as Objects one by one. Only exception is Map.
+ * objects. Used to traverse Array, istring_t or any series of bytes 
+ * as Objects one by one. Only exception is map_t.
  * 
  */
 struct seq_iter {
@@ -257,18 +257,18 @@ struct seq_iter {
         return tmp; 
     }
 protected:
-    void step(Obj& o) 
+    void step(obj_t& o) 
     {
         std::tie(o, std::ignore, head) = decode(head, tail); 
     }
 protected:
     const byte* head;
     const byte* tail;
-    Obj key;
+    obj_t key;
 };
 
 /**
- * @brief Map iterator, same as zbor::seq_iter, but parses two objects 
+ * @brief map_t iterator, same as zbor::seq_iter, but parses two objects 
  * in a row and returns them as pair.
  * 
  */
@@ -287,7 +287,7 @@ struct map_iter : seq_iter {
     }
     auto operator*() const 
     { 
-        return std::pair<const Obj&, const Obj&>{key, val}; 
+        return std::pair<const obj_t&, const obj_t&>{key, val}; 
     }
     auto& operator++()
     {
@@ -303,22 +303,14 @@ struct map_iter : seq_iter {
         return tmp; 
     }
 private:
-    Obj val;
+    obj_t val;
 };
 
-#if (ZBOR_SEQ_SPAN)
-inline seq_iter seq::begin() const  { return {data(), data() + size()}; }
-inline seq_iter seq::end() const    { return {}; }
-inline map_iter Map::begin() const  { return {data(), data() + size()}; }
-inline map_iter Map::end() const    { return {}; }
-inline Obj Tag::content() const     { return std::get<Obj>(decode(data(), data() + size())); }
-#else
-inline seq_iter seq::begin() const  { return {head, tail}; }
-inline seq_iter seq::end() const    { return {}; }
-inline map_iter Map::begin() const  { return {head, tail}; }
-inline map_iter Map::end() const    { return {}; }
-inline Obj Tag::content() const     { return std::get<Obj>(decode(head, tail)); }
-#endif
+inline seq_iter seq_t::begin() const    { return {head, tail}; }
+inline seq_iter seq_t::end() const      { return {}; }
+inline map_iter map_t::begin() const    { return {head, tail}; }
+inline map_iter map_t::end() const      { return {}; }
+inline obj_t tag_t::content() const     { return std::get<obj_t>(decode(head, tail)); }
 
 }
 
