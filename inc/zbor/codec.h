@@ -1,38 +1,12 @@
 #ifndef ZBOR_CODEC_H
 #define ZBOR_CODEC_H
 
-#if __cplusplus >= 202002L
 #include <span>
-#endif
 #include <string_view>
 #include <cstring>
 #include "zbor/decode.h"
 
 namespace zbor {
-
-#if __cplusplus >= 202002L
-template<class T>
-using Span = std::span<T>;
-#else
-/**
- * @brief Just wrapper for pointer and size, in case C++20 is not available.
- * Could do without it, but it's more convenient to pass arrays as one argument 
- * to encode(T, D) function while encoding key: pair for map.
- * 
- * @tparam T Data type.
- */
-template<class T>
-struct Span {
-    Span() = default;
-    Span(T *ptr, size_t len) : ptr{ptr}, len{len} {}
-    const T* data() const   { return ptr; }
-    T* data()               { return ptr; }
-    size_t size() const     { return len; }
-private:
-    T *ptr = nullptr;
-    size_t len = 0;
-};
-#endif
 
 /**
  * @brief CBOR buffer, basicaly codec with given external storage.
@@ -40,15 +14,26 @@ private:
  */
 struct Buf {
 
-    Buf() = delete;
-    Buf(byte *buf, size_t max) : buf{buf}, max{max} {}
-    Buf(Span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
+    constexpr Buf() = delete;
+    constexpr Buf(byte *buf, size_t max) : buf{buf}, max{max} {}
+    constexpr Buf(std::span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
+
+    operator Seq() const                    { return {buf, idx}; }
+    SeqIter begin() const                   { return {buf, buf + idx}; }
+    SeqIter end() const                     { return {}; }
+    constexpr const byte& operator[](size_t i) const    { return buf[i]; }
+    constexpr const byte* data() const                  { return buf; }
+    constexpr byte* data()                              { return buf; }
+    constexpr size_t capacity() const                   { return max; }
+    constexpr size_t size() const                       { return idx; }
+    constexpr size_t resize(size_t size)                { return size <= max ? idx = size : idx; }    
+    constexpr void clear()                              { idx = 0; }
 
     Err encode(int val);
     Err encode(unsigned val);
     Err encode(int64_t val);
     Err encode(uint64_t val);
-    Err encode(Span<const byte> val);
+    Err encode(std::span<const byte> val);
     Err encode(std::string_view val);
     Err encode(const char *val);
     Err encode(Prim val);
@@ -74,26 +59,15 @@ struct Buf {
             return err;
         return encode(val);
     }
-
-    operator Seq() const                    { return {buf, idx}; }
-    SeqIter begin() const                   { return {buf, buf + idx}; }
-    SeqIter end() const                     { return {}; }
-    const byte& operator[](size_t i) const  { return buf[i]; }
-    const byte* data() const                { return buf; }
-    byte* data()                            { return buf; }
-    size_t capacity() const                 { return max; }
-    size_t size() const                     { return idx; }
-    size_t resize(size_t size)              { return size <= max ? idx = size : idx; }    
-    void clear()                            { idx = 0; }
+private:
+    Err encode_byte(byte b);
+    Err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
+    Err encode_bytes(Mt mt, const void* data, size_t len);
+    Err encode_float(Prim type, utl::fp_bits val);
 private:
     byte *buf;
     size_t max;
     size_t idx = 0;
-
-    Err encode_byte(byte b);
-    Err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
-    Err encode_bytes(Mt mt, const void *data, size_t len);
-    Err encode_float(Prim type, utl::fp_bits val);
 };
 
 /**
@@ -148,7 +122,7 @@ inline Err Buf::encode_head(Mt mt, uint64_t val, size_t add_len)
     return encode_base(mt | ai, val, ai_len, add_len);
 }
 
-inline Err Buf::encode_bytes(Mt mt, const void *data, size_t len)
+inline Err Buf::encode_bytes(Mt mt, const void* data, size_t len)
 {
     Err err = encode_head(mt, len, len);
     if (err == err_ok && data && len) {
@@ -168,7 +142,7 @@ inline Err Buf::encode_float(Prim type, utl::fp_bits val)
             goto if_nan;
 
         float f32 = val.f64;
-        if (val.f64 != f32) // Else we can fallthrough to FLOAT_32
+        if (val.f64 != f32) // Else we can fallthrough to float_32
             return encode_base(mt_simple | byte(prim_float_64), val.u64, 8);
         val.f32 = f32;
         [[fallthrough]];
@@ -179,7 +153,7 @@ inline Err Buf::encode_float(Prim type, utl::fp_bits val)
             goto if_nan;
 
         uint16_t u16 = utl::float_to_half(val.u32);
-        if (val.f32 != utl::fp_bits{utl::half_to_float(u16)}.f32) // Else we can fallthrough to FLOAT_16
+        if (val.f32 != utl::fp_bits{utl::half_to_float(u16)}.f32) // Else we can fallthrough to float_16
             return encode_base(mt_simple | byte(prim_float_32), val.u32, 4);
         val.u16 = u16;
         [[fallthrough]];
@@ -219,7 +193,7 @@ inline Err Buf::encode(int64_t val)
     return encode_head(Mt(ui & 0x20), ui ^ val);
 }
 
-inline Err Buf::encode(Span<const byte> val)
+inline Err Buf::encode(std::span<const byte> val)
 {
     return encode_bytes(mt_data, val.data(), val.size());
 }
