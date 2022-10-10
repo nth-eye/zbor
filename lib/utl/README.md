@@ -1,0 +1,84 @@
+# utl
+
+Header-only utility library (`utl::` stands for __UTiL__) with small, simple and common functions and containers, which nevertheless weren't present in C++20 (was C++17 before, so some functions are now just wrappers for `std::`) standard library. All functions that can be `constexpr` are. Not intended to become anything serious, but you may find some parts really useful, for example `"float.h"` has IEE 754 half-precision floating point conversion functions. I use this library in many projects for embedded systems and in my other libraries, e.g. [zbor][1].
+
+## TODO
+
+- [ ] implementation
+    - [x] base
+    - [ ] bit_vector
+        - [ ] comments
+        - [x] update according to c++20
+        - [ ] ? calculate remainder on the fly
+    - [ ] bit_window
+    - [x] bit
+    - [x] float
+    - [ ] list
+    - [x] log
+    - [ ] makima
+        - [ ] comments
+        - [ ] ? simplification
+    - [ ] math
+        - [ ] galois field arithmetic
+    - [x] pool
+    - [ ] ring
+        - [ ] constructor
+        - [ ] destructor
+        - [ ] assignment
+        - [ ] emplace
+        - [ ] put / push
+        - [ ] get / pop
+        - [x] access
+        - [x] iterators
+        - [x] capacity
+        - [x] clear
+        - [ ] resize
+    - [ ] storage
+        - [ ] comments
+        - [ ] update according to c++20
+    - [x] str
+    - [x] time
+    - [ ] vector
+        - [ ] comments
+        - [x] constructor
+        - [x] destructor
+        - [x] assignment
+        - [x] emplace
+        - [x] insert
+        - [x] swap
+        - [x] pop
+        - [ ] review asserts
+        - [ ] review swap
+        - [x] make capacity and max_size static
+        - [ ] ? reverse iterators
+        - [ ] ? std::for_each
+        - [x] ! DRY (move_backward, move_forward, copy_forward)
+        - [ ] get rid of SFINAE
+- [ ] tests
+    - [x] base
+    - [ ] bit_vector
+    - [ ] bit_window
+    - [x] bit
+    - [ ] float
+    - [ ] list
+    - [ ] log
+    - [ ] makima
+    - [ ] math
+        - [ ] gf_mul
+        - [ ] haversine
+        - [ ] gcs_distance
+        - [ ] inclination
+        - [ ] roll
+        - [ ] pitch
+    - [ ] pool
+    - [ ] ring
+    - [ ] storage
+    - [x] str
+    - [ ] time
+    - [ ] vector
+        - [ ] swap
+        - [ ] ? death
+- [ ] readme
+- [ ] move here finite field arithmetic
+
+[1]: https://github.com/nth-eye/zbor
