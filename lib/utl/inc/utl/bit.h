@@ -2,6 +2,7 @@
 #define UTL_BIT_H
 
 #include "utl/base.h"
+#include <bit>
 
 namespace utl {
 
