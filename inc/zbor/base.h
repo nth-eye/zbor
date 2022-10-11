@@ -5,13 +5,38 @@
 #include "utl/float.h"
 #include <span>
 #include <string_view>
+#include <cstring>
 
 namespace zbor {
 
 using byte = uint8_t;
-using mbuf_t = std::span<byte>;
 using span_t = std::span<const byte>;
-using text_t = std::string_view;
+
+/**
+ * @brief 
+ * 
+ */
+struct text_t : std::basic_string_view<byte> {
+    using base = std::basic_string_view<byte>;
+    using base::base;
+    friend constexpr bool operator==(const text_t& lhs, const std::string_view& rhs)
+    {
+        if (lhs.size() != rhs.size())
+            return false;
+        if (std::is_constant_evaluated()) {
+            for (size_t i = 0; i < lhs.size(); ++i) {
+                if (lhs[i] != rhs[i])
+                    return false;
+            }
+            return true;
+        }
+        return !memcmp(lhs.data(), rhs.data(), lhs.size());
+    }
+    friend constexpr bool operator==(const std::string_view& lhs, const text_t& rhs)
+    {
+        return operator==(rhs, lhs);
+    }
+};
 
 struct seq_iter;
 struct map_iter;
@@ -101,10 +126,13 @@ enum err_t {
  */
 struct seq_t : span_t {
     using span_t::span_t;
-    seq_iter begin() const;
-    seq_iter end() const;
+    constexpr seq_iter begin() const;
+    constexpr seq_iter end() const;
 #if !(ZBOR_INITIALIZE_OBJ_AT_THE_END)
-    void set_end(const byte* end)   { *this = {data(), size_t(end - data())}; }
+    constexpr void set_end(const byte* end)
+    { 
+        *this = {data(), end}; 
+    }
 #endif
 };
 
@@ -116,7 +144,7 @@ struct istr_r : seq_t {
 #if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
     using seq_t::seq_t;
 #else
-    istr_r(const byte* head) : seq_t{head, 0} {}
+    constexpr istr_r(const byte* head) : seq_t{head, 0} {}
 #endif
 };
 
@@ -128,11 +156,11 @@ struct arr_t : seq_t {
 #if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
     arr_t(const byte* head, const byte* tail, size_t len) : seq_t{head, tail}, len{len} {}
 #else
-    arr_t(const byte* head, size_t len) : seq_t{head, 0}, len{len} {}
+    constexpr arr_t(const byte* head, size_t len) : seq_t{head, 0}, len{len} {}
 #endif
-    size_t size() const { return len; }
-    bool indef() const  { return len == size_t(-1); } 
-protected:
+    constexpr auto size() const     { return len; }
+    constexpr bool indef() const    { return len == size_t(-1); } 
+private:
     size_t len;
 };
 
@@ -144,10 +172,10 @@ struct map_t : arr_t {
 #if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
     using arr_t::arr_t;
 #else
-    map_t(const byte* head, size_t len) : arr_t{head, len} {}
+    constexpr map_t(const byte* head, size_t len) : arr_t{head, len} {}
 #endif
-    map_iter begin() const;
-    map_iter end() const;
+    constexpr map_iter begin() const;
+    constexpr map_iter end() const;
 };
 
 /**
@@ -158,10 +186,10 @@ struct tag_t : seq_t {
 #if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
     tag_t(const byte* head, const byte* tail, uint64_t number) : seq_t{head, tail}, number{number} {}
 #else
-    tag_t(const byte* head, uint64_t number) : seq_t{head, 0}, number{number} {}
+    constexpr tag_t(const byte* head, uint64_t number) : seq_t{head, 0}, number{number} {}
 #endif
-    uint64_t num() const    { return number; }
-    obj_t content() const;
+    constexpr uint64_t num() const  { return number; }
+    constexpr obj_t content() const;
 private:
     uint64_t number;
 };
@@ -172,10 +200,14 @@ private:
  */
 struct obj_t {
 
-    obj_t() : uint{} {}
+    constexpr obj_t() : uint{} 
+    {
 
-    bool valid() const { return type != type_invalid; }
-
+    }
+    constexpr bool valid() const 
+    { 
+        return type != type_invalid; 
+    }
     union {
         uint64_t uint;
         int64_t sint;

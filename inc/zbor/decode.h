@@ -18,7 +18,7 @@ namespace zbor {
  * @param end End pointer, must be valid pointer
  * @return Tuple with decoded object, error status and pointer to character past the last character interpreted
  */
-inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* const end)
+constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* const end)
 {
     if (p >= end)
         return {{}, err_out_of_bounds, end};
@@ -114,7 +114,7 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
             p += val;
         break;
         case mt_text:
-            obj.text = {(const char*) p, size_t(val)};
+            obj.text = {p, size_t(val)};
             p += val;
         break;
 #if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
@@ -151,15 +151,15 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
             switch (ai) 
             {
             case prim_float_16:
-                obj.dbl     = utl::fp_bits(utl::half_to_float(val)).f32;
+                obj.dbl     = std::bit_cast<float>(utl::half_to_float(val));
                 obj.type    = type_double;
             break;
             case prim_float_32:
-                obj.dbl     = utl::fp_bits(uint32_t(val)).f32;
+                obj.dbl     = std::bit_cast<float>(uint32_t(val));
                 obj.type    = type_double;
             break;
             case prim_float_64:
-                obj.dbl     = utl::fp_bits(val).f64;
+                obj.dbl     = std::bit_cast<double>(val);
                 obj.type    = type_double;
             break;
             default:
@@ -263,11 +263,11 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
 #else
     switch (obj.type) 
     {
-    case type_array:
-    case type_map:
-    case type_tag:
+    case type_array:        obj.arr.set_end(p); break;
+    case type_map:          obj.map.set_end(p); break;
+    case type_tag:          obj.tag.set_end(p); break;
     case type_indef_data:
-    case type_indef_text: obj.istr.set_end(p); break;
+    case type_indef_text:   obj.istr.set_end(p); break;
     default:;
     }
 #endif
@@ -283,39 +283,39 @@ inline std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* c
  */
 struct seq_iter {
     
-    seq_iter() = default;
-    seq_iter(const byte* head, const byte* tail) : head{head}, tail{tail}
+    constexpr seq_iter() = default;
+    constexpr seq_iter(const byte* head, const byte* tail) : head{head}, tail{tail}
     {
         step(key);
     }
 
-    bool operator!=(const seq_iter&) const 
+    constexpr bool operator!=(const seq_iter&) const 
     { 
         return key.valid();
     }
-    auto& operator*() const 
+    constexpr auto& operator*() const 
     { 
         return key; 
     }
-    auto& operator++()
+    constexpr auto& operator++()
     {
         step(key);
         return *this;
     }
-    auto operator++(int) 
+    constexpr auto operator++(int) 
     { 
         auto tmp = *this; 
         ++(*this); 
         return tmp; 
     }
 protected:
-    void step(obj_t& o) 
+    constexpr void step(obj_t& o) 
     {
         std::tie(o, std::ignore, head) = decode(head, tail); 
     }
 protected:
-    const byte* head;
-    const byte* tail;
+    const byte* head = nullptr;
+    const byte* tail = nullptr;
     obj_t key;
 };
 
@@ -326,29 +326,29 @@ protected:
  */
 struct map_iter : seq_iter {
 
-    map_iter() = default;
-    map_iter(const byte* head, const byte* tail) : seq_iter{head, tail}
+    constexpr map_iter() = default;
+    constexpr map_iter(const byte* head, const byte* tail) : seq_iter{head, tail}
     {
         if (key.valid()) 
             step(val);
     }
 
-    bool operator!=(const map_iter&) const 
+    constexpr bool operator!=(const map_iter&) const 
     { 
         return key.valid() && val.valid();
     }
-    auto operator*() const 
+    constexpr auto operator*() const 
     { 
         return std::pair<const obj_t&, const obj_t&>{key, val}; 
     }
-    auto& operator++()
+    constexpr auto& operator++()
     {
         step(key);
         if (key.valid()) 
             step(val);
         return *this;
     }
-    auto operator++(int) 
+    constexpr auto operator++(int) 
     { 
         auto tmp = *this; 
         ++(*this); 
@@ -358,11 +358,11 @@ private:
     obj_t val;
 };
 
-inline seq_iter seq_t::begin() const    { return {data(), data() + size()}; }
-inline seq_iter seq_t::end() const      { return {}; }
-inline map_iter map_t::begin() const    { return {data(), data() + seq_t::size()}; }
-inline map_iter map_t::end() const      { return {}; }
-inline obj_t tag_t::content() const     { return std::get<obj_t>(decode(data(), data() + size())); }
+constexpr seq_iter seq_t::begin() const { return {data(), data() + size()}; }
+constexpr seq_iter seq_t::end() const   { return {}; }
+constexpr map_iter map_t::begin() const { return {data(), data() + seq_t::size()}; }
+constexpr map_iter map_t::end() const   { return {}; }
+constexpr obj_t tag_t::content() const  { return std::get<obj_t>(decode(data(), data() + size())); }
 
 }
 

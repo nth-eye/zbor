@@ -12,7 +12,7 @@ int main(int, char**)
     printf("sizeof(zbor::seq_iter): %lu \n", sizeof(zbor::seq_iter));
     printf("sizeof(zbor::map_iter): %lu \n", sizeof(zbor::map_iter));
 
-    const uint8_t example[] = { 
+    static constexpr const uint8_t example[] = { 
         0x01, // 1
         0x02, // 2
         0x0a, // 10
@@ -87,6 +87,25 @@ int main(int, char**)
         0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
     };
+    static constexpr auto cnt = [&]()
+    {
+        int i = 0;
+        for (auto it : zbor::seq_t{example}) {
+            ++i;
+        }
+        return i;
+    }();
+    printf("count %d \n", cnt);
+
+    using namespace std::literals;
+
+    static constexpr uint8_t a[4] = {48, 48, 48, 48};
+    static constexpr zbor::text_t t = {a, sizeof(a)};
+    static constexpr std::string_view b = "0000"sv;
+    static constexpr bool c = t == b;
+
+    printf("eq %d \n", c);
+
     zbor::log_seq(example);
 
     auto test_case_1 = [&, i = 0] () mutable

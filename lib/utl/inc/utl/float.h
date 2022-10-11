@@ -39,24 +39,6 @@ constexpr uint32_t u32_sels(uint32_t test, uint32_t a, uint32_t b)
 }
 
 /**
- * @brief Union to access bit patterns of floating point numbers.
- * 
- */
-union fp_bits {
-    constexpr fp_bits() : u64{0} {};
-    constexpr fp_bits(float f) : f32{f} {}
-    constexpr fp_bits(double f) : f64{f} {}
-    constexpr fp_bits(uint16_t u) : u16{u} {}
-    constexpr fp_bits(uint32_t u) : u32{u} {}
-    constexpr fp_bits(uint64_t u) : u64{u} {} 
-    uint16_t    u16;
-    uint32_t    u32;
-    float       f32;
-    uint64_t    u64;
-    double      f64;
-};
-
-/**
  * @brief Convert single precision floating point to half precision.
  * 
  * @param f Single stored as uint32_t
@@ -191,9 +173,8 @@ constexpr uint32_t half_to_float(uint16_t h)
  */
 constexpr uint16_t double_to_half(uint64_t d)
 {
-    fp_bits fp = d;
-    fp.f32 = fp.f64;
-    return float_to_half(fp.u32);
+    float f = std::bit_cast<double>(d);
+    return float_to_half(std::bit_cast<uint32_t>(f));
 }
 
 /**
@@ -204,9 +185,8 @@ constexpr uint16_t double_to_half(uint64_t d)
  */
 constexpr uint64_t half_to_double(uint16_t h)
 {
-    fp_bits fp = half_to_float(h);
-    fp.f64 = fp.f32;
-    return fp.u64;
+    double d = std::bit_cast<float>(half_to_float(h));
+    return std::bit_cast<uint64_t>(d);
 }
 
 }

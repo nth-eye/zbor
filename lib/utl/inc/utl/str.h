@@ -243,6 +243,19 @@ constexpr auto split(std::string_view str, std::string_view del)
     return tokens;
 }
 
+/**
+ * @brief C style function, but with constexpr support.
+ * 
+ * @param str Pointer to null-terminated string
+ * @return String length
+ */
+constexpr size_t str_len(const char* str)
+{
+    size_t len = 0;
+    while (*str++);
+    return len;
+}
+
 }
 
 #endif

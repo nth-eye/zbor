@@ -416,7 +416,7 @@ TEST(Decode, Text)
         0x64, 0xf0, 0x90, 0x85, 0x91, // "\ud800\udd51"
     };
     const byte garbage[] = { 0xf0, 0x90, 0x85, 0x91 };
-    const std::string_view garbage_sv = {(const char*) garbage, sizeof(garbage)};
+    const text_t garbage_sv = garbage; // {garbage, sizeof(garbage)};
 
     obj_t obj;
     err_t err;
@@ -475,7 +475,7 @@ TEST(Decode, Text)
     ASSERT_EQ(ptr, end);
 }
 
-TEST(Decode, tag_t)
+TEST(Decode, Tag)
 {
     const byte test[] = {
         0xc0, 0x74, 0x32, 0x30, 0x31, 0x33, 0x2d, 0x30, 0x33, 0x2d, 0x32, 0x31, 0x54, 0x32, 0x30, 0x3a, 0x30, 0x34, 0x3a, 0x30, 0x30, 0x5a, // 0("2013-03-21T20:04:00Z")
@@ -610,7 +610,7 @@ TEST(Decode, Array)
     ASSERT_EQ(ptr, end);
 }
 
-TEST(Decode, map_t)
+TEST(Decode, Map)
 {
     const byte test[] = {
         0xa0, // {}

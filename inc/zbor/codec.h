@@ -2,21 +2,21 @@
 #define ZBOR_CODEC_H
 
 #include "zbor/decode.h"
-#include <cstring>
+#include "utl/str.h"
 
 namespace zbor {
 
 /**
- * @brief CBOR buffer, basicaly codec with given external storage.
+ * @brief CBOR codec with given external storage.
  * 
  */
 struct codec_t {
 
     constexpr codec_t() = delete;
-    constexpr codec_t(mbuf_t buf) : buf{buf.data()}, max{buf.size()} {}
+    constexpr codec_t(std::span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
 
-    seq_iter begin() const                              { return {buf, buf + idx}; }
-    seq_iter end() const                                { return {}; }
+    constexpr seq_iter begin() const                    { return {buf, buf + idx}; }
+    constexpr seq_iter end() const                      { return {}; }
     constexpr const byte& operator[](size_t i) const    { return buf[i]; }
     constexpr const byte* data() const                  { return buf; }
     constexpr byte* data()                              { return buf; }
@@ -25,30 +25,43 @@ struct codec_t {
     constexpr size_t resize(size_t size)                { return size <= max ? idx = size : idx; }    
     constexpr void clear()                              { idx = 0; }
 
-    err_t encode(int val);
-    err_t encode(unsigned val);
-    err_t encode(int64_t val);
-    err_t encode(uint64_t val);
-    err_t encode(span_t val);
-    err_t encode(text_t val);
-    err_t encode(const char* val);
-    err_t encode(prim_t val);
-    err_t encode(bool val);
-    err_t encode(float val);
-    err_t encode(double val);
-
-    err_t encode_indef_dat();
-    err_t encode_indef_txt();
-    err_t encode_indef_arr();
-    err_t encode_indef_map();
-    err_t encode_break();
-    err_t encode_arr(size_t size);
-    err_t encode_map(size_t size);
-    err_t encode_tag(uint64_t val);
-    err_t encode_head(mt_t mt, uint64_t val, size_t add_len = 0);
+    constexpr err_t encode(int val)             { return encode(int64_t(val)); }
+    constexpr err_t encode(unsigned val)        { return encode(uint64_t(val)); }
+    constexpr err_t encode(uint64_t val)        { return encode_head(mt_uint, val); }
+    constexpr err_t encode(int64_t val)
+    {
+        uint64_t ui = val >> 63;
+        return encode_head(mt_t(ui & 0x20), ui ^ val);
+    }
+    constexpr err_t encode(span_t val)          { return encode_bytes(mt_data, val.data(), val.size()); }
+    constexpr err_t encode(text_t val)          { return encode_bytes(mt_text, val.data(), val.size()); }
+    constexpr err_t encode(const char* val)     { return encode_bytes(mt_text, val, utl::str_len(val)); }
+    constexpr err_t encode(prim_t val)
+    {
+        return val < 24 || val > 31 ? encode_head(mt_simple, val) : err_invalid_simple;
+    }
+    constexpr err_t encode(bool val)            { return encode_byte(mt_simple | (prim_false + val)); }
+    constexpr err_t encode(float val)           { return encode_float(val); }
+    constexpr err_t encode(double val)
+    {
+        if (val != val)
+            return encode_nan();
+        if (val == float(val))
+            return encode_float(val);
+        return encode_base(mt_simple | byte(prim_float_64), std::bit_cast<uint64_t>(val), 8);
+    }
+    constexpr err_t encode_indef_dat()          { return encode_byte(mt_data | byte(ai_indef)); }
+    constexpr err_t encode_indef_txt()          { return encode_byte(mt_text | byte(ai_indef)); }
+    constexpr err_t encode_indef_arr()          { return encode_byte(mt_array | byte(ai_indef)); }
+    constexpr err_t encode_indef_map()          { return encode_byte(mt_map | byte(ai_indef)); }
+    constexpr err_t encode_break()              { return encode_byte(0xff); }
+    constexpr err_t encode_arr(size_t size)     { return encode_head(mt_array, size); }
+    constexpr err_t encode_map(size_t size)     { return encode_head(mt_map, size); }
+    constexpr err_t encode_tag(uint64_t val)    { return encode_head(mt_tag, val); }
+    constexpr err_t encode_head(mt_t mt, uint64_t val, size_t add_len = 0);
 
     template<class K, class V>
-    err_t encode(K key, V val)
+    constexpr err_t encode(K key, V val)
     {
         err_t err = encode(key);
         if (err != err_ok)
@@ -56,10 +69,11 @@ struct codec_t {
         return encode(val);
     }
 private:
-    err_t encode_byte(byte b);
-    err_t encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
-    err_t encode_bytes(mt_t mt, const void* data, size_t len);
-    err_t encode_float(prim_t type, utl::fp_bits val);
+    constexpr err_t encode_nan()        { return encode_base(mt_simple | byte(prim_float_16), 0x7e00, 2); }
+    constexpr err_t encode_byte(byte b) { return idx < max ? buf[idx++] = b, err_ok : err_no_memory; }
+    constexpr err_t encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0);
+    constexpr err_t encode_bytes(mt_t mt, const void* data, size_t len);
+    constexpr err_t encode_float(float val);
 private:
     byte* buf;
     size_t max;
@@ -78,14 +92,7 @@ private:
     byte buf[N];
 };
 
-// SECTION: Private
-
-inline err_t codec_t::encode_byte(byte b)
-{
-    return idx < max ? buf[idx++] = b, err_ok : err_no_memory;
-}
-
-inline err_t codec_t::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len)
+constexpr err_t codec_t::encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len)
 {
     if (idx + ai_len + add_len + 1 > max)
         return err_no_memory;
@@ -97,7 +104,7 @@ inline err_t codec_t::encode_base(byte start, uint64_t val, size_t ai_len, size_
     return err_ok;
 }
 
-inline err_t codec_t::encode_head(mt_t mt, uint64_t val, size_t add_len)
+constexpr err_t codec_t::encode_head(mt_t mt, uint64_t val, size_t add_len)
 {
     byte ai;
 
@@ -117,152 +124,31 @@ inline err_t codec_t::encode_head(mt_t mt, uint64_t val, size_t add_len)
     return encode_base(mt | ai, val, ai_len, add_len);
 }
 
-inline err_t codec_t::encode_bytes(mt_t mt, const void* data, size_t len)
+constexpr err_t codec_t::encode_bytes(mt_t mt, const void* data, size_t len)
 {
     err_t err = encode_head(mt, len, len);
     if (err == err_ok && data && len) {
-        memcpy(&buf[idx], data, len);
+        std::copy_n(static_cast<const byte*>(data), len, buf + idx);
         idx += len;
     }
     return err;
 }
 
-inline err_t codec_t::encode_float(prim_t type, utl::fp_bits val)
+constexpr err_t codec_t::encode_float(float val)
 {
-    switch (type) 
-    {
-    case prim_float_64:
-    {
-        if (val.f64 != val.f64)
-            goto if_nan;
+    if (val != val)
+        return encode_nan();
 
-        float f32 = val.f64;
-        if (val.f64 != f32) // Else we can fallthrough to float_32
-            return encode_base(mt_simple | byte(prim_float_64), val.u64, 8);
-        val.f32 = f32;
-        [[fallthrough]];
-    }
-    case prim_float_32:
-    {
-        if (val.f32 != val.f32)
-            goto if_nan;
+    auto u32 = std::bit_cast<uint32_t>(val);
+    auto u16 = utl::float_to_half(u32);
 
-        uint16_t u16 = utl::float_to_half(val.u32);
-        if (val.f32 != utl::fp_bits{utl::half_to_float(u16)}.f32) // Else we can fallthrough to float_16
-            return encode_base(mt_simple | byte(prim_float_32), val.u32, 4);
-        val.u16 = u16;
-        [[fallthrough]];
-    }
-    case prim_float_16:
-        if ((val.u16 & 0x7fff) > 0x7c00)
-            goto if_nan;
-        return encode_base(mt_simple | byte(prim_float_16), val.u16, 2);
-    if_nan: 
-        return encode_base(mt_simple | byte(prim_float_16), 0x7e00, 2);
+    if (val != std::bit_cast<float>(utl::half_to_float(u16)))
+        return encode_base(mt_simple | byte(prim_float_32), u32, 4);
+    
+    if ((u16 & 0x7fff) <= 0x7c00)
+        return encode_base(mt_simple | byte(prim_float_16), u16, 2);
 
-    default:
-        return err_invalid_float_type;
-    }
-}
-
-// !SECTION: Private
-
-inline err_t codec_t::encode(int val)
-{
-    return encode(int64_t(val));
-}
-
-inline err_t codec_t::encode(unsigned val)
-{
-    return encode(uint64_t(val));
-}
-
-inline err_t codec_t::encode(uint64_t val)
-{
-    return encode_head(mt_uint, val);
-}
-
-inline err_t codec_t::encode(int64_t val)
-{
-    uint64_t ui = val >> 63;
-    return encode_head(mt_t(ui & 0x20), ui ^ val);
-}
-
-inline err_t codec_t::encode(span_t val)
-{
-    return encode_bytes(mt_data, val.data(), val.size());
-}
-
-inline err_t codec_t::encode(text_t val)
-{
-    return encode_bytes(mt_text, val.data(), val.size());
-}
-
-inline err_t codec_t::encode(const char* val)
-{
-    return encode_bytes(mt_text, val, strlen(val));
-}
-
-inline err_t codec_t::encode(prim_t val)
-{
-    if (val >= 24 && val <= 31)
-        return err_invalid_simple;
-    return encode_head(mt_simple, val);
-}
-
-inline err_t codec_t::encode(bool val)
-{
-    return encode_byte(mt_simple | (prim_false + val));
-}
-
-inline err_t codec_t::encode(float val)
-{
-    return encode_float(prim_float_32, val);
-}
-
-inline err_t codec_t::encode(double val)
-{
-    return encode_float(prim_float_64, val);
-}
-
-inline err_t codec_t::encode_indef_dat()
-{
-    return encode_byte(mt_data | byte(ai_indef));
-}
-
-inline err_t codec_t::encode_indef_txt()
-{
-    return encode_byte(mt_text | byte(ai_indef));
-}
-
-inline err_t codec_t::encode_indef_arr()
-{
-    return encode_byte(mt_array | byte(ai_indef));
-}
-
-inline err_t codec_t::encode_indef_map()
-{
-    return encode_byte(mt_map | byte(ai_indef));
-}
-
-inline err_t codec_t::encode_break()
-{
-    return encode_byte(0xff);
-}
-
-inline err_t codec_t::encode_arr(size_t size)
-{
-    return encode_head(mt_array, size);
-}
-
-inline err_t codec_t::encode_map(size_t size)
-{
-    return encode_head(mt_map, size);
-}
-
-inline err_t codec_t::encode_tag(uint64_t val)
-{
-    return encode_head(mt_tag, val);
+    return encode_nan();
 }
 
 }
