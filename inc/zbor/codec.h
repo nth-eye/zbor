@@ -3,6 +3,7 @@
 
 #include "zbor/decode.h"
 #include "utl/str.h"
+#include <algorithm>
 
 namespace zbor {
 

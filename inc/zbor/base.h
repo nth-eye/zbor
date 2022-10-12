@@ -1,6 +1,5 @@
 #ifndef ZBOR_BASE_H
 #define ZBOR_BASE_H
-#define ZBOR_INITIALIZE_OBJ_AT_THE_END  false
 
 #include "utl/float.h"
 #include <span>
@@ -128,12 +127,6 @@ struct seq_t : span_t {
     using span_t::span_t;
     constexpr seq_iter begin() const;
     constexpr seq_iter end() const;
-#if !(ZBOR_INITIALIZE_OBJ_AT_THE_END)
-    constexpr void set_end(const byte* end)
-    { 
-        *this = {data(), end}; 
-    }
-#endif
 };
 
 /**
@@ -141,11 +134,7 @@ struct seq_t : span_t {
  * 
  */
 struct istr_r : seq_t {
-#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
     using seq_t::seq_t;
-#else
-    constexpr istr_r(const byte* head) : seq_t{head, 0} {}
-#endif
 };
 
 /**
@@ -153,11 +142,7 @@ struct istr_r : seq_t {
  * 
  */
 struct arr_t : seq_t {
-#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
-    arr_t(const byte* head, const byte* tail, size_t len) : seq_t{head, tail}, len{len} {}
-#else
-    constexpr arr_t(const byte* head, size_t len) : seq_t{head, 0}, len{len} {}
-#endif
+    constexpr arr_t(const byte* head, const byte* tail, size_t len) : seq_t{head, tail}, len{len} {}
     constexpr auto size() const     { return len; }
     constexpr bool indef() const    { return len == size_t(-1); } 
 private:
@@ -169,11 +154,7 @@ private:
  * 
  */
 struct map_t : arr_t {
-#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
     using arr_t::arr_t;
-#else
-    constexpr map_t(const byte* head, size_t len) : arr_t{head, len} {}
-#endif
     constexpr map_iter begin() const;
     constexpr map_iter end() const;
 };
@@ -183,11 +164,7 @@ struct map_t : arr_t {
  * 
  */
 struct tag_t : seq_t {
-#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
-    tag_t(const byte* head, const byte* tail, uint64_t number) : seq_t{head, tail}, number{number} {}
-#else
-    constexpr tag_t(const byte* head, uint64_t number) : seq_t{head, 0}, number{number} {}
-#endif
+    constexpr tag_t(const byte* head, const byte* tail, uint64_t number) : seq_t{head, tail}, number{number} {}
     constexpr uint64_t num() const  { return number; }
     constexpr obj_t content() const;
 private:
@@ -199,15 +176,9 @@ private:
  * 
  */
 struct obj_t {
-
-    constexpr obj_t() : uint{} 
-    {
-
-    }
-    constexpr bool valid() const 
-    { 
-        return type != type_invalid; 
-    }
+    constexpr obj_t() : uint{}      {}
+    constexpr bool valid() const    { return type != type_invalid; }
+    type_t type = type_invalid;
     union {
         uint64_t uint;
         int64_t sint;
@@ -220,7 +191,6 @@ struct obj_t {
         prim_t prim;
         double dbl;
     };
-    type_t type = type_invalid;
 };
 
 }

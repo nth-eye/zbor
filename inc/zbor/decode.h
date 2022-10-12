@@ -26,13 +26,11 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
     size_t nest = 0;
     size_t skip = 0;
     size_t len;
-#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
-    uint64_t size = 0;
-    const byte* head = 0;
-#endif
+
     byte mt = *p   & 0xe0;
     byte ai = *p++ & 0x1f;
-
+    const byte* head = 0;
+    uint64_t size = 0;
     uint64_t val = ai;
 
     obj_t obj;
@@ -43,7 +41,7 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
     case ai_1:
     case ai_2:
     case ai_4:
-    case ai_8: 
+    case ai_8:
         len = utl::bit(ai - ai_1);
         if (p + len > end)
             return {{}, err_out_of_bounds, p};
@@ -58,46 +56,21 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
     case ai_indef:
         switch (mt)
         {
-#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
         case mt_data: 
-            head = p;
             obj.type = type_indef_data;
-            nest = 1;
         break;
         case mt_text:
-            head = p;
             obj.type = type_indef_text;
-            nest = 1;
         break;
         case mt_array:
         case mt_map:
-            head = p;
             size = size_t(-1);
-            nest = 1;
         break;
-#else
-        case mt_data: 
-            obj.istr = {p};
-            obj.type = type_indef_data;
-            nest = 1;
-        break;
-        case mt_text:
-            obj.istr = {p};
-            obj.type = type_indef_text;
-            nest = 1;
-        break;
-        case mt_array:
-            obj.arr = {p, size_t(-1)};
-            nest = 1;
-        break;
-        case mt_map:
-            obj.map = {p, size_t(-1)};
-            nest = 1;
-        break;
-#endif
         default:
             return {{}, err_invalid_indef_mt, p};
         }
+        head = p;
+        nest = 1;
     }
 
     if (ai != ai_indef) {
@@ -117,7 +90,6 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
             obj.text = {p, size_t(val)};
             p += val;
         break;
-#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
         case mt_map:
             head = p;
             size = val;
@@ -133,20 +105,6 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
             size = val;
             skip = 1;
         break;
-#else
-        case mt_map:
-            obj.map = {p, size_t(val)};
-            skip = val << 1;
-        break;
-        case mt_array:
-            obj.arr = {p, size_t(val)};
-            skip = val;
-        break;
-        case mt_tag:
-            obj.tag = {p, val};
-            skip = 1;
-        break;
-#endif
         case mt_simple:
             switch (ai) 
             {
@@ -177,12 +135,9 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
 
         mt  = *p & 0xe0;
         val = *p & 0x1f;
-        
-        if (obj.type == type_indef_data) {
-            if (!(mt == mt_data && val != ai_indef) && *p != 0xff)
-                return {{}, err_invalid_indef_item, p};
-        } else if (obj.type == type_indef_text) {
-            if (!(mt == mt_text && val != ai_indef) && *p != 0xff)
+
+        if ((obj.type == type_indef_data || obj.type == type_indef_text) && *p != 0xff) {
+            if (obj.type != (mt >> 5) + 7 || val == ai_indef)
                 return {{}, err_invalid_indef_item, p};
         }
         ++p;
@@ -250,7 +205,6 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
             skip--;
     }
 
-#if (ZBOR_INITIALIZE_OBJ_AT_THE_END)
     switch (obj.type) 
     {
     case type_array:        obj.arr  = {head, p, size}; break;
@@ -260,17 +214,6 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
     case type_indef_text:   obj.istr = {head, p}; break;
     default:;
     }
-#else
-    switch (obj.type) 
-    {
-    case type_array:        obj.arr.set_end(p); break;
-    case type_map:          obj.map.set_end(p); break;
-    case type_tag:          obj.tag.set_end(p); break;
-    case type_indef_data:
-    case type_indef_text:   obj.istr.set_end(p); break;
-    default:;
-    }
-#endif
     return {obj, err_ok, p};
 }
 

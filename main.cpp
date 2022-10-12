@@ -115,7 +115,7 @@ int main(int, char**)
         }
         return i;
     };
-    static constexpr auto count = 30000000;
+    static constexpr auto count = 20000000;
 
     printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
     printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
