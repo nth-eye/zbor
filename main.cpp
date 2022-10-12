@@ -4,13 +4,19 @@
 
 int main(int, char**) 
 {
-    printf("sizeof(zbor::arr_t):    %lu \n", sizeof(zbor::arr_t));
-    printf("sizeof(zbor::map_t):    %lu \n", sizeof(zbor::map_t));
-    printf("sizeof(zbor::tag_t):    %lu \n", sizeof(zbor::tag_t));
-    printf("sizeof(zbor::item):     %lu \n", sizeof(zbor::item));
-    printf("sizeof(zbor::seq):      %lu \n", sizeof(zbor::seq));
-    printf("sizeof(zbor::seq_iter): %lu \n", sizeof(zbor::seq_iter));
-    printf("sizeof(zbor::map_iter): %lu \n", sizeof(zbor::map_iter));
+    // ANCHOR sizeof
+
+    printf("sizeof(zbor::arr_t):        %lu \n", sizeof(zbor::arr_t));
+    printf("sizeof(zbor::map_t):        %lu \n", sizeof(zbor::map_t));
+    printf("sizeof(zbor::tag_t):        %lu \n", sizeof(zbor::tag_t));
+    printf("sizeof(zbor::item):         %lu \n", sizeof(zbor::item));
+    printf("sizeof(zbor::seq):          %lu \n", sizeof(zbor::seq));
+    printf("sizeof(zbor::seq_iter):     %lu \n", sizeof(zbor::seq_iter));
+    printf("sizeof(zbor::map_iter):     %lu \n", sizeof(zbor::map_iter));
+    printf("sizeof(zbor::view):         %lu \n", sizeof(zbor::view));
+    printf("sizeof(zbor::codec<16>):    %lu \n", sizeof(zbor::codec<16>));
+
+    // ANCHOR decode
 
     static constexpr const uint8_t example[] = { 
         0x01, // 1
@@ -87,28 +93,25 @@ int main(int, char**)
         0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
     };
+    zbor::log_seq(example);
+
+    // ANCHOR constexpr decode check
+
     static constexpr auto cnt = [&]()
     {
         int i = 0;
-        for (auto it : zbor::seq{example}) {
+        for ([[maybe_unused]] auto it : zbor::seq{example}) {
             ++i;
         }
         return i;
     }();
     printf("count %d \n", cnt);
 
-    printf("sizeof(zbor::codec): %lu \n", sizeof(zbor::codec));
-    printf("sizeof(zbor::buffer): %lu \n", sizeof(zbor::buffer<1>));
-
-    // auto tester = [](zbor::codec view) {
-
-    // };
-
-    using namespace std::literals;
+    // ANCHOR codec constexpr example
 
     static constexpr auto codec = [&]() {
         uint8_t str[] = "test";
-        zbor::buffer<99> codec;
+        zbor::codec<99> codec;
         codec.encode_(1, 2, 3, 4);
         codec.encode_text({example + 216, 4});
         codec.encode_text(str);
@@ -117,42 +120,52 @@ int main(int, char**)
     }();    
     zbor::log_seq(codec);
 
+    // ANCHOR passing codec as view
+
+    zbor::codec<16> vcodec;
+    vcodec.encode_(true, false, zbor::prim_null);
+    [] (zbor::view view) {
+        zbor::log_seq(view);
+    }(vcodec);
+
+    // ANCHOR view example
+
     uint8_t data[] = {0x44, 0x45};
     uint8_t buf[99];
-    zbor::codec msg{buf};
+    zbor::view msg{buf};
 
     msg.encode_arr(3);                  // start fixed size array
     msg.encode(-1);                     // negative int
     msg.encode(1);                      // positive int
     msg.encode(1u);                     // explicitly positive
 
-    // std::span<const uint8_t> c = data;
+    msg.encode_map(1);                  // start fixed size map
+    msg.encode("text");                 // text string
+    msg.encode(zbor::span_t{data});     // byte string
+    msg.encode(zbor::text_t{data});     // text string
 
-    // msg.encode_map(1);                  // start fixed size map
-    // msg.encode("text");                 // text string
-    // msg.encode_(data);   // byte string
-    // msg.encode(zbor::span_t{data});   // byte string
-    // msg.encode(zbor::text_t{data});   // byte string
-    // msg.encode(c);   // byte string
+    msg.encode_tag(69);                 // tag number, next object will be content
+    msg.encode_indef_arr();             // start indefinite size array (previously tagged)
+    msg.encode(true);                   // simple bool
+    msg.encode(zbor::prim_null);        // simple null
+    msg.encode(zbor::prim_t(42));       // another valid simple (primitive)
+    msg.encode_break();                 // break, end of indefinite array
 
-    // msg.encode_tag(69);                 // tag number, next object will be content
-    // msg.encode_indef_arr();             // start indefinite size array (previously tagged)
-    // msg.encode(true);                   // simple bool
-    // msg.encode(zbor::prim_null);        // simple null
-    // msg.encode(zbor::prim_t(42));       // another valid simple (primitive)
-    // msg.encode_break();                 // break, end of indefinite array
+    msg.encode_indef_map();             // start indefinite size map
+    msg.encode(42.0f);                  // float32, will be compressed to half-float if possible
+    msg.encode(42.0);                   // float64, will be compressed to half-float if possible
+    msg.encode_break();                 // break, end of indefinite map
 
-    // msg.encode_indef_map();             // start indefinite size map
-    // msg.encode(42.0f);                  // float32, will be compressed to half-float if possible
-    // msg.encode(42.0);                   // float64, will be compressed to half-float if possible
-    // msg.encode_break();                 // break, end of indefinite map
+    msg.encode_indef_txt();             // start indefinite size text string made from separate chunks
+    msg.encode("Hello");                // first chunk
+    msg.encode("World");                // second chunk
+    msg.encode_break();                 // break, end of indefinite text string
 
-    // msg.encode_indef_txt();             // start indefinite size text string made from separate chunks
-    // msg.encode("Hello");                // first chunk
-    // msg.encode("World");                // second chunk
-    // msg.encode_break();                 // break, end of indefinite text string
+    msg.encode_(data, vcodec);          // implicit conversion to bool and zbor::span_t, BE CAREFUL
 
-    // zbor::log_seq(msg);
+    zbor::log_seq(msg);
+
+    // ANCHOR performance
 
     // auto test_case_1 = [&, i = 0] () mutable
     // {

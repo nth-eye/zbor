@@ -1,12 +1,14 @@
 # zbor
 
-Small C++17 CBOR stream codec. No dynamic memory allocation, all items are encoded/parsed on-the-fly in a given buffer. Decoding can be done manually with `zbor::decode()` or using `zbor::seq` wrapper in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact `zbor::err` you need to decode and check manually every item.
+Small C++20 CBOR codec. No dynamic memory allocation, all items are encoded/parsed on-the-fly in a given buffer (either `zbor::view` or `zbor::codec<>`). Decoding can be done manually with `zbor::decode()` or using `zbor::seq` wrapper in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact `zbor::err` you need to decode and check manually every item.
 
 __Half-float support included with [`utl::`][1]!__
 
+## Explanation
+
 ## Examples
 
-### Decode
+<!-- ### Decode
 
 #### With range-based for loop
 
@@ -141,14 +143,20 @@ if (err == zbor::err_ok)
     zbor::log_seq(msg);
 else
     printf("error: %d -> %s", err, zbor::str_err(err));
-```
+``` -->
 
 ## TODO
 
-- [ ] encoder tests
-- [x] examples in readme
-- [x] constexpr whole library
-- [ ] review naming conventions
-- [x] forbid implicit const char* conversion to bool
+- [ ] implementation
+    - [x] constexpr whole library
+    - [ ] review naming conventions
+- [ ] tests
+    - [ ] base
+    - [ ] decode
+    - [ ] encode
+- [ ] reamde
+    - [ ] description
+    - [ ] explanation
+    - [ ] examples
 
 [1]: https://github.com/nth-eye/utl
