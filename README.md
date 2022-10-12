@@ -1,6 +1,6 @@
 # zbor
 
-Small C++17 CBOR stream codec. No dynamic memory allocation, all items are encoded/parsed on-the-fly in a given buffer. Decoding can be done manually with `zbor::decode()` or using `zbor::seq_t` wrapper in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact `zbor::err_t` you need to decode and check manually every item.
+Small C++17 CBOR stream codec. No dynamic memory allocation, all items are encoded/parsed on-the-fly in a given buffer. Decoding can be done manually with `zbor::decode()` or using `zbor::seq` wrapper in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact `zbor::err` you need to decode and check manually every item.
 
 __Half-float support included with [`utl::`][1]!__
 
@@ -17,7 +17,7 @@ const uint8_t example[] = {
     0x83, 0x01, 0x02, 0x03, // [1, 2, 3]
 };
 
-for (auto it : zbor::seq_t{example, sizeof(example)}) {
+for (auto it : zbor::seq{example, sizeof(example)}) {
     switch (it.type) {
         case zbor::type_uint:
             printf("got uint %lu \n", it.uint); 
@@ -47,8 +47,8 @@ const uint8_t illformed[] = {
     0xfe, // <invalid> - AI 30 is reserved
 };
 
-zbor::obj_t obj;
-zbor::err_t err;
+zbor::item obj;
+zbor::err err;
 auto ptr = illformed;
 auto end = illformed + sizeof(illformed);
 
@@ -77,10 +77,10 @@ while (1) {
 
 ### Encode
 
-#### With `buffer_t` wrapper
+#### With `buffer` wrapper
 
 ```cpp
-zbor::buffer_t<64> msg;
+zbor::buffer<64> msg;
 
 const uint8_t data[] = {0x44, 0x45};
 
@@ -97,7 +97,7 @@ msg.encode_tag(69);                 // tag number, next object will be content
 msg.encode_indef_arr();             // start indefinite size array (previously tagged)
 msg.encode(true);                   // simple bool
 msg.encode(zbor::prim_null);        // simple null
-msg.encode(zbor::prim_t(42));         // another valid simple (primitive)
+msg.encode(zbor::prim_t(42));       // another valid simple (primitive)
 msg.encode_break();                 // break, end of indefinite array
 
 msg.encode_indef_map();             // start indefinite size map
@@ -110,7 +110,7 @@ msg.encode("Hello");                // first chunk
 msg.encode("World");                // second chunk
 msg.encode_break();                 // break, end of indefinite text string
 
-some_c_style_handler(msg.data(), msg.size());
+some_c_fn(msg.data(), msg.size());
 
 zbor::log_seq(msg); // expected result below
 
@@ -134,7 +134,7 @@ msg.clear(); // to reuse codec
 
 ```cpp
 auto buf = (uint8_t*) malloc(10);   // let's assume someone still uses malloc...
-auto msg = zbor::codec_t{buf, 10};      // exactly as with buffer_t after this
+auto msg = zbor::codec{buf, 10};      // exactly as with buffer after this
 auto err = msg.encode("too long string");
 
 if (err == zbor::err_ok)
@@ -147,8 +147,8 @@ else
 
 - [ ] encoder tests
 - [x] examples in readme
-- [ ] maybe try to constexpr whole library ?
+- [x] constexpr whole library
 - [ ] review naming conventions
-- [ ] forbid implicit const char* conversion to bool
+- [x] forbid implicit const char* conversion to bool
 
 [1]: https://github.com/nth-eye/utl

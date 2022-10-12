@@ -18,7 +18,7 @@ namespace zbor {
  * @param end End pointer, must be valid pointer
  * @return Tuple with decoded object, error status and pointer to character past the last character interpreted
  */
-constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte* const end)
+constexpr std::tuple<item, err, const byte*> decode(const byte* p, const byte* const end)
 {
     if (p >= end)
         return {{}, err_out_of_bounds, end};
@@ -29,12 +29,10 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
 
     byte mt = *p   & 0xe0;
     byte ai = *p++ & 0x1f;
-    const byte* head = 0;
-    uint64_t size = 0;
+    item obj = type_t(mt >> 5);
     uint64_t val = ai;
-
-    obj_t obj;
-    obj.type = type_t(mt >> 5);
+    uint64_t size = 0;
+    decltype(p) head = nullptr;
 
     switch (ai) 
     {
@@ -220,18 +218,16 @@ constexpr std::tuple<obj_t, err_t, const byte*> decode(const byte* p, const byte
 /**
  * @brief Sequence iterator which holds range (begin and end pointers). Used 
  * to traverse CBOR sequence (RFC-8742), which is just series of adjacent 
- * objects. Used to traverse arr_t, istr_r or any series of bytes 
- * as obj_t one by one. Only exception is map_t.
+ * objects. Used to traverse arr_t, istr_t or any series of bytes 
+ * as item one by one. Only exception is map_t.
  * 
  */
 struct seq_iter {
-    
     constexpr seq_iter() = default;
     constexpr seq_iter(const byte* head, const byte* tail) : head{head}, tail{tail}
     {
         step(key);
     }
-
     constexpr bool operator!=(const seq_iter&) const 
     { 
         return key.valid();
@@ -252,14 +248,14 @@ struct seq_iter {
         return tmp; 
     }
 protected:
-    constexpr void step(obj_t& o) 
+    constexpr void step(item& o) 
     {
         std::tie(o, std::ignore, head) = decode(head, tail); 
     }
 protected:
     const byte* head = nullptr;
     const byte* tail = nullptr;
-    obj_t key;
+    item key;
 };
 
 /**
@@ -268,21 +264,19 @@ protected:
  * 
  */
 struct map_iter : seq_iter {
-
     constexpr map_iter() = default;
     constexpr map_iter(const byte* head, const byte* tail) : seq_iter{head, tail}
     {
         if (key.valid()) 
             step(val);
     }
-
     constexpr bool operator!=(const map_iter&) const 
     { 
         return key.valid() && val.valid();
     }
     constexpr auto operator*() const 
     { 
-        return std::pair<const obj_t&, const obj_t&>{key, val}; 
+        return std::pair<const item&, const item&>{key, val}; 
     }
     constexpr auto& operator++()
     {
@@ -298,14 +292,14 @@ struct map_iter : seq_iter {
         return tmp; 
     }
 private:
-    obj_t val;
+    item val;
 };
 
-constexpr seq_iter seq_t::begin() const { return {data(), data() + size()}; }
-constexpr seq_iter seq_t::end() const   { return {}; }
-constexpr map_iter map_t::begin() const { return {data(), data() + seq_t::size()}; }
+constexpr seq_iter seq::begin() const   { return {data(), data() + size()}; }
+constexpr seq_iter seq::end() const     { return {}; }
+constexpr map_iter map_t::begin() const { return {data(), data() + seq::size()}; }
 constexpr map_iter map_t::end() const   { return {}; }
-constexpr obj_t tag_t::content() const  { return std::get<obj_t>(decode(data(), data() + size())); }
+constexpr item tag_t::content() const   { return std::get<item>(decode(data(), data() + size())); }
 
 }
 

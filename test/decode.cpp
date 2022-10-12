@@ -8,11 +8,11 @@ TEST(Decode, OutOfBounds)
 {
     const byte test[] = { 0x00 };
 
-    auto [obj, err, ptr] = decode(test + sizeof(test), test + sizeof(test));
+    auto [o, e, p] = decode(test + sizeof(test), test + sizeof(test));
 
-    ASSERT_EQ(err, err_out_of_bounds);
-    ASSERT_EQ(ptr, test + sizeof(test));
-    ASSERT_EQ(obj.type, type_invalid);
+    ASSERT_EQ(e, err_out_of_bounds);
+    ASSERT_EQ(p, test + sizeof(test));
+    ASSERT_EQ(o.type, type_invalid);
 }
 
 TEST(Decode, Uint)
@@ -31,89 +31,89 @@ TEST(Decode, Uint)
         0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 18446744073709551615
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 1);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 1);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 2);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 1);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 2);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 1);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 3);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 10);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 3);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 10);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 4);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 23);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 4);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 23);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 6);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 24);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 6);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 24);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 8);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 25);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 8);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 25);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 10);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 100);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 10);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 100);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 13);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 1000);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 13);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 1000);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 18);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 1000000);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 18);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 1000000);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 27);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 1000000000000);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 27);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 1000000000000);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 36);
-    ASSERT_EQ(obj.type, type_uint);
-    ASSERT_EQ(obj.uint, 18446744073709551615u);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 36);
+    ASSERT_EQ(o.type, type_uint);
+    ASSERT_EQ(o.uint, 18446744073709551615u);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, Sint)
@@ -126,47 +126,47 @@ TEST(Decode, Sint)
         0x3b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // -18446744073709551616
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 1);
-    ASSERT_EQ(obj.type, type_sint);
-    ASSERT_EQ(obj.sint, -1);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 1);
+    ASSERT_EQ(o.type, type_sint);
+    ASSERT_EQ(o.sint, -1);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 2);
-    ASSERT_EQ(obj.type, type_sint);
-    ASSERT_EQ(obj.sint, -10);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 2);
+    ASSERT_EQ(o.type, type_sint);
+    ASSERT_EQ(o.sint, -10);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 4);
-    ASSERT_EQ(obj.type, type_sint);
-    ASSERT_EQ(obj.sint, -100);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 4);
+    ASSERT_EQ(o.type, type_sint);
+    ASSERT_EQ(o.sint, -100);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 7);
-    ASSERT_EQ(obj.type, type_sint);
-    ASSERT_EQ(obj.sint, -1000);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 7);
+    ASSERT_EQ(o.type, type_sint);
+    ASSERT_EQ(o.sint, -1000);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 16);
-    ASSERT_EQ(obj.type, type_sint);
-    ASSERT_EQ(obj.sint, 0); // -18446744073709551616
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 16);
+    ASSERT_EQ(o.type, type_sint);
+    ASSERT_EQ(o.sint, 0); // -18446744073709551616
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, Float)
@@ -190,124 +190,124 @@ TEST(Decode, Float)
         0xf9, 0xfc, 0x00, // -Infinity
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 3);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 0.0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 3);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 0.0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 6);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, -0.0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 6);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, -0.0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 9);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 1.0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 9);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 1.0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 18);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 1.1);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 18);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 1.1);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 21);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 1.5);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 21);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 1.5);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 24);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 65504.0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 24);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 65504.0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 29);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 100000.0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 29);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 100000.0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 34);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 3.4028234663852886e+38);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 34);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 3.4028234663852886e+38);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 43);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 1.0e+300);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 43);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 1.0e+300);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 46);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 5.960464477539063e-8);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 46);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 5.960464477539063e-8);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 49);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, 0.00006103515625);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 49);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, 0.00006103515625);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 52);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, -4.0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 52);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, -4.0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 61);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, -4.1);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 61);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, -4.1);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 64);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, double(INFINITY));
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 64);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, double(INFINITY));
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 67);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_TRUE(std::isnan(obj.dbl));
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 67);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_TRUE(std::isnan(o.dbl));
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 70);
-    ASSERT_EQ(obj.type, type_double);
-    ASSERT_DOUBLE_EQ(obj.dbl, double(-INFINITY));
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 70);
+    ASSERT_EQ(o.type, type_double);
+    ASSERT_DOUBLE_EQ(o.dbl, double(-INFINITY));
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, Simple)
@@ -321,54 +321,54 @@ TEST(Decode, Simple)
         0xf8, 0xff, // simple(255)
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 1);
-    ASSERT_EQ(obj.type, type_prim);
-    ASSERT_EQ(obj.prim, zbor::prim_false);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 1);
+    ASSERT_EQ(o.type, type_prim);
+    ASSERT_EQ(o.prim, zbor::prim_false);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 2);
-    ASSERT_EQ(obj.type, type_prim);
-    ASSERT_EQ(obj.prim, zbor::prim_true);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 2);
+    ASSERT_EQ(o.type, type_prim);
+    ASSERT_EQ(o.prim, zbor::prim_true);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 3);
-    ASSERT_EQ(obj.type, type_prim);
-    ASSERT_EQ(obj.prim, zbor::prim_null);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 3);
+    ASSERT_EQ(o.type, type_prim);
+    ASSERT_EQ(o.prim, zbor::prim_null);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 4);
-    ASSERT_EQ(obj.type, type_prim);
-    ASSERT_EQ(obj.prim, zbor::prim_undefined);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 4);
+    ASSERT_EQ(o.type, type_prim);
+    ASSERT_EQ(o.prim, zbor::prim_undefined);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 5);
-    ASSERT_EQ(obj.type, type_prim);
-    ASSERT_EQ(obj.prim, prim_t(16));
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 5);
+    ASSERT_EQ(o.type, type_prim);
+    ASSERT_EQ(o.prim, prim_t(16));
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 7);
-    ASSERT_EQ(obj.type, type_prim);
-    ASSERT_EQ(obj.prim, prim_t(255));
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 7);
+    ASSERT_EQ(o.type, type_prim);
+    ASSERT_EQ(o.prim, prim_t(255));
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, Data)
@@ -380,28 +380,28 @@ TEST(Decode, Data)
     const byte first[1] = {};
     const byte second[] = {0x01, 0x02, 0x03, 0x04};
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 1);
-    ASSERT_EQ(obj.type, type_data);
-    ASSERT_EQ(obj.data.size(), 0);
-    ASSERT_EQ(memcmp(first, obj.data.data(), obj.data.size()), 0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 1);
+    ASSERT_EQ(o.type, type_data);
+    ASSERT_EQ(o.data.size(), 0);
+    ASSERT_EQ(memcmp(first, o.data.data(), o.data.size()), 0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 6);
-    ASSERT_EQ(obj.type, type_data);
-    ASSERT_EQ(obj.data.size(), 4);
-    ASSERT_EQ(memcmp(second, obj.data.data(), obj.data.size()), 0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 6);
+    ASSERT_EQ(o.type, type_data);
+    ASSERT_EQ(o.data.size(), 4);
+    ASSERT_EQ(memcmp(second, o.data.data(), o.data.size()), 0);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, Text)
@@ -418,61 +418,61 @@ TEST(Decode, Text)
     const byte garbage[] = { 0xf0, 0x90, 0x85, 0x91 };
     const text_t garbage_sv = garbage; // {garbage, sizeof(garbage)};
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 1);
-    ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.text, "");
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 1);
+    ASSERT_EQ(o.type, type_text);
+    ASSERT_EQ(o.text, "");
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 3);
-    ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.text, "a");
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 3);
+    ASSERT_EQ(o.type, type_text);
+    ASSERT_EQ(o.text, "a");
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 8);
-    ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.text, "IETF");
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 8);
+    ASSERT_EQ(o.type, type_text);
+    ASSERT_EQ(o.text, "IETF");
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 11);
-    ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.text, "\"\\");
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 11);
+    ASSERT_EQ(o.type, type_text);
+    ASSERT_EQ(o.text, "\"\\");
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 14);
-    ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.text, "\u00fc");
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 14);
+    ASSERT_EQ(o.type, type_text);
+    ASSERT_EQ(o.text, "\u00fc");
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 18);
-    ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.text, "\u6c34");
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 18);
+    ASSERT_EQ(o.type, type_text);
+    ASSERT_EQ(o.text, "\u6c34");
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 23);
-    ASSERT_EQ(obj.type, type_text);
-    ASSERT_EQ(obj.text, garbage_sv);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 23);
+    ASSERT_EQ(o.type, type_text);
+    ASSERT_EQ(o.text, garbage_sv);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, Tag)
@@ -488,81 +488,81 @@ TEST(Decode, Tag)
     const byte data_1[] = { 0x01, 0x02, 0x03, 0x04 };
     const byte data_2[] = { 0x64, 0x49, 0x45, 0x54, 0x46 };
 
-    obj_t obj;
-    obj_t content;
-    err_t err;
-    auto ptr = test;
+    item o;
+    item content;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 22);
-    ASSERT_EQ(obj.type, type_tag);
-    ASSERT_EQ(obj.tag.num(), 0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 22);
+    ASSERT_EQ(o.type, type_tag);
+    ASSERT_EQ(o.tag.num(), 0);
 
-    content = obj.tag.content();
+    content = o.tag.content();
     ASSERT_EQ(content.type, type_text);
     ASSERT_EQ(content.text, "2013-03-21T20:04:00Z");
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 28);
-    ASSERT_EQ(obj.type, type_tag);
-    ASSERT_EQ(obj.tag.num(), 1);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 28);
+    ASSERT_EQ(o.type, type_tag);
+    ASSERT_EQ(o.tag.num(), 1);
 
-    content = obj.tag.content();
+    content = o.tag.content();
     ASSERT_EQ(content.type, type_uint);
     ASSERT_EQ(content.uint, 1363896240);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 38);
-    ASSERT_EQ(obj.type, type_tag);
-    ASSERT_EQ(obj.tag.num(), 1);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 38);
+    ASSERT_EQ(o.type, type_tag);
+    ASSERT_EQ(o.tag.num(), 1);
 
-    content = obj.tag.content();
+    content = o.tag.content();
     ASSERT_EQ(content.type, type_double);
     ASSERT_DOUBLE_EQ(content.dbl, 1363896240.5);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 44);
-    ASSERT_EQ(obj.type, type_tag);
-    ASSERT_EQ(obj.tag.num(), 23);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 44);
+    ASSERT_EQ(o.type, type_tag);
+    ASSERT_EQ(o.tag.num(), 23);
 
-    content = obj.tag.content();
+    content = o.tag.content();
     ASSERT_EQ(content.type, type_data);
     ASSERT_EQ(content.data.size(), sizeof(data_1));
     ASSERT_EQ(memcmp(data_1, content.data.data(), content.data.size()), 0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 52);
-    ASSERT_EQ(obj.type, type_tag);
-    ASSERT_EQ(obj.tag.num(), 24);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 52);
+    ASSERT_EQ(o.type, type_tag);
+    ASSERT_EQ(o.tag.num(), 24);
 
-    content = obj.tag.content();
+    content = o.tag.content();
     ASSERT_EQ(content.type, type_data);
     ASSERT_EQ(content.data.size(), sizeof(data_2));
     ASSERT_EQ(memcmp(data_2, content.data.data(), content.data.size()), 0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 77);
-    ASSERT_EQ(obj.type, type_tag);
-    ASSERT_EQ(obj.tag.num(), 32);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 77);
+    ASSERT_EQ(o.type, type_tag);
+    ASSERT_EQ(o.tag.num(), 32);
 
-    content = obj.tag.content();
+    content = o.tag.content();
     ASSERT_EQ(content.type, type_text);
     ASSERT_EQ(content.text, "http://www.example.com");
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, Array)
@@ -574,40 +574,40 @@ TEST(Decode, Array)
         0x98, 0x19, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x18, 0x18, 0x19, // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 1);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.size(), 0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 1);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.size(), 0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 5);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.size(), 3);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 5);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.size(), 3);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 13);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.size(), 3);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 13);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.size(), 3);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 42);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.size(), 25);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 42);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.size(), 25);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, Map)
@@ -619,40 +619,40 @@ TEST(Decode, Map)
         0xa5, 0x61, 0x61, 0x61, 0x41, 0x61, 0x62, 0x61, 0x42, 0x61, 0x63, 0x61, 0x43, 0x61, 0x64, 0x61, 0x44, 0x61, 0x65, 0x61, 0x45, // {"a": "A", "b": "B", "c": "C", "d": "D", "e": "E"}
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 1);
-    ASSERT_EQ(obj.type, type_map);
-    ASSERT_EQ(obj.map.size(), 0);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 1);
+    ASSERT_EQ(o.type, type_map);
+    ASSERT_EQ(o.map.size(), 0);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 6);
-    ASSERT_EQ(obj.type, type_map);
-    ASSERT_EQ(obj.map.size(), 2);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 6);
+    ASSERT_EQ(o.type, type_map);
+    ASSERT_EQ(o.map.size(), 2);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 15);
-    ASSERT_EQ(obj.type, type_map);
-    ASSERT_EQ(obj.map.size(), 2);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 15);
+    ASSERT_EQ(o.type, type_map);
+    ASSERT_EQ(o.map.size(), 2);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 36);
-    ASSERT_EQ(obj.type, type_map);
-    ASSERT_EQ(obj.map.size(), 5);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 36);
+    ASSERT_EQ(o.type, type_map);
+    ASSERT_EQ(o.map.size(), 5);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, IndefData)
@@ -661,18 +661,18 @@ TEST(Decode, IndefData)
         0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff, // (_ h'0102', h'030405')
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 9);
-    ASSERT_EQ(obj.type, type_indef_data);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 9);
+    ASSERT_EQ(o.type, type_indef_data);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, IndefText)
@@ -681,18 +681,18 @@ TEST(Decode, IndefText)
         0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, // (_ "strea", "ming")
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 13);
-    ASSERT_EQ(obj.type, type_indef_text);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 13);
+    ASSERT_EQ(o.type, type_indef_text);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, IndefArray)
@@ -706,54 +706,54 @@ TEST(Decode, IndefArray)
         0x9f, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x18, 0x18, 0x19, 0xff, // [_ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 2);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.indef(), true);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 2);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.indef(), true);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 12);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.indef(), true);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 12);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.indef(), true);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 21);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.indef(), true);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 21);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.indef(), true);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 30);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.indef(), false);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 30);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.indef(), false);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 39);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.indef(), false);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 39);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.indef(), false);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 68);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.indef(), true);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 68);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.indef(), true);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, IndefMap)
@@ -763,26 +763,26 @@ TEST(Decode, IndefMap)
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 11);
-    ASSERT_EQ(obj.type, type_map);
-    ASSERT_EQ(obj.map.indef(), true);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 11);
+    ASSERT_EQ(o.type, type_map);
+    ASSERT_EQ(o.map.indef(), true);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 23);
-    ASSERT_EQ(obj.type, type_map);
-    ASSERT_EQ(obj.map.indef(), true);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 23);
+    ASSERT_EQ(o.type, type_map);
+    ASSERT_EQ(o.map.indef(), true);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }
 
 TEST(Decode, Mixed)
@@ -792,24 +792,24 @@ TEST(Decode, Mixed)
         0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
     };
 
-    obj_t obj;
-    err_t err;
-    auto ptr = test;
+    item o;
+    err e;
+    auto p = test;
     auto end = test + sizeof(test);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 8);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.size(), 2);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 8);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.size(), 2);
 
-    std::tie(obj, err, ptr) = decode(ptr, end);
+    std::tie(o, e, p) = decode(p, end);
 
-    ASSERT_EQ(err, err_ok);
-    ASSERT_EQ(ptr, test + 17);
-    ASSERT_EQ(obj.type, type_array);
-    ASSERT_EQ(obj.arr.size(), 2);
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 17);
+    ASSERT_EQ(o.type, type_array);
+    ASSERT_EQ(o.arr.size(), 2);
 
-    ASSERT_EQ(ptr, end);
+    ASSERT_EQ(p, end);
 }

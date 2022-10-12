@@ -6,47 +6,12 @@
 
 namespace zbor {
 
-constexpr const char* str_type(type_t t)
-{
-    switch (t) {
-        case type_uint: return "unsigned";
-        case type_sint: return "negative";
-        case type_data: return "byte string";
-        case type_text: return "text string ";
-        case type_array: return "array";
-        case type_map: return "map";
-        case type_tag: return "tag";
-        case type_prim: return "simple";
-        case type_double: return "float";
-        case type_indef_data: return "indefinite byte string";
-        case type_indef_text: return "indefinite text string";
-        case type_invalid: return "<invalid>";
-        default: return "<unknown>";
-    }
-}
-
-constexpr const char* str_err(err_t e)
-{
-    switch (e) {
-        case err_ok: return "err_ok";
-        case err_no_memory: return "err_no_memory";
-        case err_out_of_bounds: return "err_out_of_bounds";
-        case err_invalid_simple: return "err_invalid_simple";
-        case err_invalid_float_type: return "err_invalid_float_type";
-        case err_invalid_indef_mt: return "err_invalid_indef_mt";
-        case err_invalid_indef_item: return "err_invalid_indef_item";
-        case err_reserved_ai: return "err_reserved_ai";
-        case err_break_without_start: return "err_break_without_start";
-        default: return "<unknown>";
-    }
-}
-
 /**
  * @brief Print CBOR object in diagnostic notation.
  * 
  * @param obj CBOR item
  */
-inline void log_obj(const obj_t& obj)
+inline void log_obj(const item& obj)
 {
     switch (obj.type) 
     {
@@ -174,7 +139,7 @@ inline void log_obj(const obj_t& obj)
  * 
  * @param s CBOR sequence
  */
-inline void log_seq(const seq_t& s)
+inline void log_seq(const seq& s)
 {
     printf("+-----------HEX-----------+\n");
     utl::log_hex(s.data(), s.size());
@@ -194,7 +159,7 @@ inline void log_seq(const seq_t& s)
  * 
  * @param obj CBOR item
  */
-inline void log_obj_with_pad(const obj_t& obj, int first_pad = 0, int pad = 0)
+inline void log_obj_with_pad(const item& obj, int first_pad = 0, int pad = 0)
 {
     for (int i = 0; i < first_pad; ++i)
         printf(" ");

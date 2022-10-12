@@ -252,7 +252,7 @@ constexpr auto split(std::string_view str, std::string_view del)
 constexpr size_t str_len(const char* str)
 {
     size_t len = 0;
-    while (*str++);
+    while (*str++) ++len;
     return len;
 }
 

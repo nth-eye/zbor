@@ -12,7 +12,12 @@ using byte = uint8_t;
 using span_t = std::span<const byte>;
 
 /**
- * @brief 
+ * @brief String view with <zbor::byte> as underlying character type. 
+ * May be expanded with additional "text"-type specific functionality, 
+ * e.g comparison with std::string_view. This workwaround is necessary 
+ * to make decode() constexpr, because reinterpret_cast is not allowed 
+ * and it's not possible to create regular std::string_view from <byte*> 
+ * during parsing. 
  * 
  */
 struct text_t : std::basic_string_view<byte> {
@@ -39,7 +44,7 @@ struct text_t : std::basic_string_view<byte> {
 
 struct seq_iter;
 struct map_iter;
-struct obj_t;
+struct item;
 
 /**
  * @brief CBOR major type (3 bits).
@@ -107,7 +112,7 @@ enum type_t {
  * @brief General codec errors.
  * 
  */
-enum err_t {
+enum err {
     err_ok,
     err_no_memory,
     err_out_of_bounds,
@@ -123,7 +128,7 @@ enum err_t {
  * @brief CBOR sequence, read-only wrapper for traversal on-the-fly.
  * 
  */
-struct seq_t : span_t {
+struct seq : span_t {
     using span_t::span_t;
     constexpr seq_iter begin() const;
     constexpr seq_iter end() const;
@@ -133,16 +138,16 @@ struct seq_t : span_t {
  * @brief Sequence wrapper for indefinite byte and text strings.
  * 
  */
-struct istr_r : seq_t {
-    using seq_t::seq_t;
+struct istr_t : seq {
+    using seq::seq;
 };
 
 /**
  * @brief Sequence wrapper for CBOR array.
  * 
  */
-struct arr_t : seq_t {
-    constexpr arr_t(const byte* head, const byte* tail, size_t len) : seq_t{head, tail}, len{len} {}
+struct arr_t : seq {
+    constexpr arr_t(const byte* head, const byte* tail, size_t len) : seq{head, tail}, len{len} {}
     constexpr auto size() const     { return len; }
     constexpr bool indef() const    { return len == size_t(-1); } 
 private:
@@ -163,10 +168,10 @@ struct map_t : arr_t {
  * @brief CBOR tag with number (stored) and content (decoded on-the-fly).
  * 
  */
-struct tag_t : seq_t {
-    constexpr tag_t(const byte* head, const byte* tail, uint64_t number) : seq_t{head, tail}, number{number} {}
+struct tag_t : seq {
+    constexpr tag_t(const byte* head, const byte* tail, uint64_t number) : seq{head, tail}, number{number} {}
     constexpr uint64_t num() const  { return number; }
-    constexpr obj_t content() const;
+    constexpr item content() const;
 private:
     uint64_t number;
 };
@@ -175,16 +180,17 @@ private:
  * @brief Generic CBOR object which can hold any type.
  * 
  */
-struct obj_t {
-    constexpr obj_t() : uint{}      {}
-    constexpr bool valid() const    { return type != type_invalid; }
+struct item {
+    constexpr item()                    {}
+    constexpr item(type_t t) : type{t}  {}
+    constexpr bool valid() const        { return type != type_invalid; }
     type_t type = type_invalid;
     union {
         uint64_t uint;
         int64_t sint;
         text_t text;
         span_t data;
-        istr_r istr;
+        istr_t istr;
         arr_t arr;
         map_t map;
         tag_t tag;
@@ -192,6 +198,53 @@ struct obj_t {
         double dbl;
     };
 };
+
+/**
+ * @brief Get human readable name for type enum.
+ * 
+ * @param t Type enumeration
+ * @return String with type name 
+ */
+constexpr auto str_type(type_t t)
+{
+    switch (t) {
+        case type_uint: return "unsigned";
+        case type_sint: return "negative";
+        case type_data: return "byte string";
+        case type_text: return "text string ";
+        case type_array: return "array";
+        case type_map: return "map";
+        case type_tag: return "tag";
+        case type_prim: return "simple";
+        case type_double: return "float";
+        case type_indef_data: return "indefinite byte string";
+        case type_indef_text: return "indefinite text string";
+        case type_invalid: return "<invalid>";
+        default: return "<unknown>";
+    }
+}
+
+/**
+ * @brief Get human readable name for error enum.
+ * 
+ * @param e Error enumeration
+ * @return String with error name
+ */
+constexpr auto str_err(err e)
+{
+    switch (e) {
+        case err_ok: return "err_ok";
+        case err_no_memory: return "err_no_memory";
+        case err_out_of_bounds: return "err_out_of_bounds";
+        case err_invalid_simple: return "err_invalid_simple";
+        case err_invalid_float_type: return "err_invalid_float_type";
+        case err_invalid_indef_mt: return "err_invalid_indef_mt";
+        case err_invalid_indef_item: return "err_invalid_indef_item";
+        case err_reserved_ai: return "err_reserved_ai";
+        case err_break_without_start: return "err_break_without_start";
+        default: return "<unknown>";
+    }
+}
 
 }
 
