@@ -123,6 +123,7 @@ TEST(Decode, Sint)
         0x29, // -10
         0x38, 0x63, // -100
         0x39, 0x03, 0xe7, // -1000
+        0x3b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // -9223372036854775808
         0x3b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // -18446744073709551616
     };
 
@@ -164,7 +165,14 @@ TEST(Decode, Sint)
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 16);
     ASSERT_EQ(o.type, type_sint);
-    ASSERT_EQ(o.sint, 0); // -18446744073709551616
+    ASSERT_EQ(o.sint, -9223372036854775807 - 1);
+
+    std::tie(o, e, p) = decode(p, end);
+
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test + 25);
+    ASSERT_EQ(o.type, type_sint);
+    ASSERT_EQ(o.sint, 0); // NOTE: can't represent -18446744073709551616
 
     ASSERT_EQ(p, end);
 }
@@ -416,7 +424,6 @@ TEST(Decode, Text)
         0x64, 0xf0, 0x90, 0x85, 0x91, // "\ud800\udd51"
     };
     const byte garbage[] = { 0xf0, 0x90, 0x85, 0x91 };
-    const text_t garbage_sv = garbage; // {garbage, sizeof(garbage)};
 
     item o;
     err e;
@@ -470,7 +477,7 @@ TEST(Decode, Text)
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 23);
     ASSERT_EQ(o.type, type_text);
-    ASSERT_EQ(o.text, garbage_sv);
+    ASSERT_EQ(o.text, text_t(garbage, sizeof(garbage)));
 
     ASSERT_EQ(p, end);
 }

@@ -1,7 +1,6 @@
 #ifndef ZBOR_BASE_H
 #define ZBOR_BASE_H
 
-#include "utl/float.h"
 #include <span>
 #include <string_view>
 #include <cstring>
@@ -76,7 +75,7 @@ enum ai_t {
 
 /**
  * @brief Enum for primitive (simple) values. Includes float 
- * markers which are used during encoding.
+ * markers which are used during en/decoding.
  * 
  */
 enum prim_t : byte {
@@ -135,7 +134,7 @@ struct seq : span_t {
 };
 
 /**
- * @brief Sequence wrapper for indefinite byte and text strings.
+ * @brief Sequence wrapper for CBOR indefinite byte and text strings.
  * 
  */
 struct istr_t : seq {
@@ -181,10 +180,9 @@ private:
  * 
  */
 struct item {
-    constexpr item()                    {}
-    constexpr item(type_t t) : type{t}  {}
-    constexpr bool valid() const        { return type != type_invalid; }
-    type_t type = type_invalid;
+    constexpr item(type_t t = type_invalid) : type{t} {}
+    constexpr bool valid() const { return type != type_invalid; }
+    type_t type;
     union {
         uint64_t uint;
         int64_t sint;
@@ -210,15 +208,15 @@ constexpr auto str_type(type_t t)
     switch (t) {
         case type_uint: return "unsigned";
         case type_sint: return "negative";
-        case type_data: return "byte string";
-        case type_text: return "text string ";
+        case type_data: return "data";
+        case type_text: return "text";
         case type_array: return "array";
         case type_map: return "map";
         case type_tag: return "tag";
         case type_prim: return "simple";
         case type_double: return "float";
-        case type_indef_data: return "indefinite byte string";
-        case type_indef_text: return "indefinite text string";
+        case type_indef_data: return "indefinite data";
+        case type_indef_text: return "indefinite text";
         case type_invalid: return "<invalid>";
         default: return "<unknown>";
     }
@@ -233,15 +231,15 @@ constexpr auto str_type(type_t t)
 constexpr auto str_err(err e)
 {
     switch (e) {
-        case err_ok: return "err_ok";
-        case err_no_memory: return "err_no_memory";
-        case err_out_of_bounds: return "err_out_of_bounds";
-        case err_invalid_simple: return "err_invalid_simple";
-        case err_invalid_float_type: return "err_invalid_float_type";
-        case err_invalid_indef_mt: return "err_invalid_indef_mt";
-        case err_invalid_indef_item: return "err_invalid_indef_item";
-        case err_reserved_ai: return "err_reserved_ai";
-        case err_break_without_start: return "err_break_without_start";
+        case err_ok: return "ok";
+        case err_no_memory: return "no_memory";
+        case err_out_of_bounds: return "out_of_bounds";
+        case err_invalid_simple: return "invalid_simple";
+        case err_invalid_float_type: return "invalid_float_type";
+        case err_invalid_indef_mt: return "invalid_indef_mt";
+        case err_invalid_indef_item: return "invalid_indef_item";
+        case err_reserved_ai: return "reserved_ai";
+        case err_break_without_start: return "break_without_start";
         default: return "<unknown>";
     }
 }

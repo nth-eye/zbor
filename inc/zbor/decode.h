@@ -2,6 +2,7 @@
 #define ZBOR_DECODE_H
 
 #include "zbor/base.h"
+#include "utl/float.h"
 #include <tuple>
 
 namespace zbor {
@@ -16,7 +17,7 @@ namespace zbor {
  * 
  * @param p Begin pointer, must be valid pointer
  * @param end End pointer, must be valid pointer
- * @return Tuple with decoded object, error status and pointer to character past the last character interpreted
+ * @return Tuple with decoded object, error status and pointer past last character interpreted
  */
 constexpr std::tuple<item, err, const byte*> decode(const byte* p, const byte* const end)
 {
@@ -218,8 +219,8 @@ constexpr std::tuple<item, err, const byte*> decode(const byte* p, const byte* c
 /**
  * @brief Sequence iterator which holds range (begin and end pointers). Used 
  * to traverse CBOR sequence (RFC-8742), which is just series of adjacent 
- * objects. Used to traverse arr_t, istr_t or any series of bytes 
- * as item one by one. Only exception is map_t.
+ * objects. Used to traverse arr_t, istr_t or any series of bytes as item 
+ * one by one. Only exception is map_t.
  * 
  */
 struct seq_iter {
@@ -259,8 +260,8 @@ protected:
 };
 
 /**
- * @brief Map iterator, same as seq_iter, but parses two objects 
- * in a row and returns them as pair.
+ * @brief Map iterator, same as seq_iter, but parses two objects in a 
+ * row and returns them as pair.
  * 
  */
 struct map_iter : seq_iter {

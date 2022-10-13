@@ -151,8 +151,8 @@ else
     - [x] constexpr whole library
     - [ ] review naming conventions
 - [ ] tests
-    - [ ] base
-    - [ ] decode
+    - [x] object
+    - [x] decode
     - [ ] encode
 - [ ] reamde
     - [ ] description

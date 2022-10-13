@@ -1,11 +1,8 @@
-#ifndef ZBOR_CODEC_H
-#define ZBOR_CODEC_H
+#ifndef ZBOR_ENCODE_H
+#define ZBOR_ENCODE_H
 
 #include "zbor/decode.h"
-#include "utl/str.h"
 #include <algorithm>
-
-#define ZBOR_CRTP   true
 
 namespace zbor {
 namespace impl {
@@ -139,14 +136,12 @@ private:
 private:
     constexpr auto buf() const  { return static_cast<const T*>(this)->buf; }
     constexpr auto buf()        { return static_cast<T*>(this)->buf; }
-    constexpr auto max()        { return static_cast<T*>(this)->max; }
+    constexpr auto max() const  { return static_cast<const T*>(this)->max; }
     constexpr auto& idx()       { return static_cast<T*>(this)->idx; }
     constexpr auto& idx() const { return static_cast<const T*>(this)->idx; }
 };
 
 }
-
-#if (ZBOR_CRTP)
 
 /**
  * @brief Reference to CBOR codec with actual storage, either zbor::view 
@@ -175,12 +170,11 @@ private:
  */
 struct view : impl::interface<view> {
     friend impl::interface<view>;
-    constexpr view() = delete;
-    constexpr view(std::span<byte> buf) : max{buf.size()}, buf{buf.data()} {}
-    constexpr view(std::span<byte> buf, size_t len) : idx{len}, max{buf.size()}, buf{buf.data()} {}
     constexpr operator ref() { return {{buf, max}, idx}; }
+    constexpr view() = delete;
+    constexpr view(std::span<byte> buf, size_t len = 0) : idx{len}, max{buf.size()}, buf{buf.data()} {}
 private:
-    size_t idx = 0;
+    size_t idx;
     const size_t max;
     byte* const buf;
 };
@@ -202,59 +196,6 @@ private:
     static constexpr size_t max = N;
     byte buf[N]{};
 };
-
-#else
-
-/**
- * @brief CBOR codec with external storage. Basically a view which 
- * allows to use writable referenced memory with codec interface. 
- * 
- */
-struct view : impl::interface<view> {
-    friend impl::interface<view>;
-    constexpr view() = delete;
-    constexpr view(std::span<byte> buf) : max{buf.size()}, buf{buf.data()} {}
-    constexpr view(std::span<byte> buf, size_t len) : idx{len}, max{buf.size()}, buf{buf.data()} {}
-protected:
-    size_t idx = 0;
-    const size_t max;
-    byte* buf;
-};
-
-/**
- * @brief CBOR codec with internal storage. Can be cheaply passed 
- * into common non-templated functions which expect zbor::view. 
- * 
- * @tparam N Buffer size in bytes
- */
-template<size_t N>
-struct codec : view {
-    constexpr codec() : view{buf} {}
-    constexpr codec(codec&& other) : view{buf, other.idx} 
-    {
-        std::copy_n(other.buf, other.idx, buf);
-    }
-    constexpr codec(const codec& other) : view{buf, other.idx} 
-    {
-        std::copy_n(other.buf, other.idx, buf);
-    }
-    constexpr codec& operator=(codec&& other)
-    {
-        idx = other.idx;
-        std::copy_n(other.buf, other.idx, buf);
-    }
-    constexpr codec& operator=(const codec& other)
-    {
-        idx = other.idx;
-        std::copy_n(other.buf, other.idx, buf);
-    }
-private:
-    byte buf[N]{};
-};
-
-using ref = view&;
-
-#endif
 
 }
 

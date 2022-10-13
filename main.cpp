@@ -1,4 +1,4 @@
-#include "zbor/codec.h"
+#include "zbor/encode.h"
 #include "zbor/log.h"
 #include "utl/time.h"
 
@@ -13,6 +13,7 @@ int main(int, char**)
     printf("sizeof(zbor::seq):          %lu \n", sizeof(zbor::seq));
     printf("sizeof(zbor::seq_iter):     %lu \n", sizeof(zbor::seq_iter));
     printf("sizeof(zbor::map_iter):     %lu \n", sizeof(zbor::map_iter));
+    printf("sizeof(zbor::ref):          %lu \n", sizeof(zbor::ref));
     printf("sizeof(zbor::view):         %lu \n", sizeof(zbor::view));
     printf("sizeof(zbor::codec<1>):     %lu \n", sizeof(zbor::codec<1>));
 
@@ -93,19 +94,19 @@ int main(int, char**)
         0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
         0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
     };
-    // zbor::log_seq(example);
+    zbor::log_seq(example);
 
-    // // ANCHOR constexpr decode check
+    // ANCHOR constexpr decode check
 
-    // static constexpr auto cnt = [&]()
-    // {
-    //     int i = 0;
-    //     for ([[maybe_unused]] auto it : zbor::seq{example}) {
-    //         ++i;
-    //     }
-    //     return i;
-    // }();
-    // printf("count %d \n", cnt);
+    static constexpr auto cnt = [&]()
+    {
+        int i = 0;
+        for ([[maybe_unused]] auto it : zbor::seq{example}) {
+            ++i;
+        }
+        return i;
+    }();
+    printf("count %d \n", cnt);
 
     // ANCHOR codec constexpr example
 
@@ -120,18 +121,18 @@ int main(int, char**)
     }();    
     zbor::log_seq(codec);
 
-    // ANCHOR passing codec as view
+    // ANCHOR passing codec as ref
 
-    zbor::codec<16> vcodec;
+    zbor::codec<16> ref_codec;
 
-    vcodec.encode_(true, false, zbor::prim_null);
-    [] (zbor::ref view)
+    ref_codec.encode_(true, false, zbor::prim_null);
+    [] (zbor::ref codec)
     {
-        view.encode(66);
-        zbor::log_seq(view);
-    }(vcodec);
+        codec.encode(66);
+        zbor::log_seq(codec);
+    }(ref_codec);
 
-    zbor::log_seq(vcodec);
+    zbor::log_seq(ref_codec);
 
     // ANCHOR view example
 
@@ -166,25 +167,25 @@ int main(int, char**)
     msg.encode("World");                // second chunk
     msg.encode_break();                 // break, end of indefinite text string
 
-    msg.encode_(data, vcodec);          // implicit conversion to bool and zbor::span_t, BE CAREFUL
+    msg.encode_(data, ref_codec);       // implicit conversion to bool and zbor::span_t, BE CAREFUL
 
     zbor::log_seq(msg);
 
-    // // ANCHOR performance
+    // ANCHOR performance
 
-    // auto test_case_1 = [&, i = 0] () mutable
-    // {
-    //     for (auto it : zbor::seq{example}) {
-    //         ++i;
-    //     }
-    //     return i;
-    // };
-    // static constexpr auto count = 20000000;
+    auto test_case_1 = [&, i = 0] () mutable
+    {
+        for ([[maybe_unused]] auto it : zbor::seq{example}) {
+            ++i;
+        }
+        return i;
+    };
+    static constexpr auto count = 20000000;
 
-    // printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
-    // printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
-    // printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
-    // printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
 
-    // printf("1 ret %u \n", test_case_1());
+    printf("1 ret %u \n", test_case_1());
 }
