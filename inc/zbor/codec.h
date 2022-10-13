@@ -5,31 +5,30 @@
 #include "utl/str.h"
 #include <algorithm>
 
+#define ZBOR_CRTP   true
+
 namespace zbor {
 namespace impl {
 
 /**
- * @brief CBOR codec implementation with CRTP interface.
+ * @brief CBOR base codec implementation with CRTP interface.
  * 
- * @tparam T Implementation class
+ * @tparam T User class
  */
 template<class T>
 struct interface {
 
-    constexpr interface() = default;
-    constexpr interface(size_t len) : idx{len} {}
-
-    constexpr operator seq() const                      { return {buf(), buf() + idx}; }
-    constexpr seq_iter begin() const                    { return {buf(), buf() + idx}; }
+    constexpr operator seq() const                      { return {buf(), buf() + idx()}; }
+    constexpr seq_iter begin() const                    { return {buf(), buf() + idx()}; }
     constexpr seq_iter end() const                      { return {}; }
     constexpr const byte& operator[](size_t i) const    { return buf()[i]; }
     constexpr byte& operator[](size_t i)                { return buf()[i]; }
     constexpr const byte* data() const                  { return buf(); }
     constexpr byte* data()                              { return buf(); }
     constexpr size_t capacity() const                   { return max(); }
-    constexpr size_t size() const                       { return idx; }
-    constexpr size_t resize(size_t len)                 { return len <= max() ? idx = len : idx; }    
-    constexpr void clear()                              { idx = 0; }
+    constexpr size_t size() const                       { return idx(); }
+    constexpr size_t resize(size_t len)                 { return len <= max() ? idx() = len : idx(); }    
+    constexpr void clear()                              { idx() = 0; }
 
     /**
      * @brief Encode variadic list of argument one by one, stops on any error.
@@ -100,15 +99,15 @@ struct interface {
     }
 private:
     constexpr err encode_nan()          { return encode_base(mt_simple | byte(prim_float_16), 0x7e00, 2); }
-    constexpr err encode_byte(byte b)   { return idx < max() ? buf()[idx++] = b, err_ok : err_no_memory; }
+    constexpr err encode_byte(byte b)   { return idx() < max() ? buf()[idx()++] = b, err_ok : err_no_memory; }
     constexpr err encode_base(byte start, uint64_t val, size_t ai_len, size_t add_len = 0)
     {
-        if (idx + ai_len + add_len + 1 > max())
+        if (idx() + ai_len + add_len + 1 > max())
             return err_no_memory;
 
-        buf()[idx++] = start;
+        buf()[idx()++] = start;
         for (int i = 8 * ai_len - 8; i >= 0; i -= 8)
-            buf()[idx++] = val >> i;
+            buf()[idx()++] = val >> i;
 
         return err_ok;
     }
@@ -116,8 +115,8 @@ private:
     {
         err e = encode_head(mt, len, len);
         if (e == err_ok && data && len) {
-            std::copy_n(static_cast<const byte*>(data), len, buf() + idx);
-            idx += len;
+            std::copy_n(static_cast<const byte*>(data), len, buf() + idx());
+            idx() += len;
         }
         return e;
     }
@@ -141,11 +140,70 @@ private:
     constexpr auto buf() const  { return static_cast<const T*>(this)->buf; }
     constexpr auto buf()        { return static_cast<T*>(this)->buf; }
     constexpr auto max()        { return static_cast<T*>(this)->max; }
-protected:
-    size_t idx = 0;
+    constexpr auto& idx()       { return static_cast<T*>(this)->idx; }
+    constexpr auto& idx() const { return static_cast<const T*>(this)->idx; }
 };
 
 }
+
+#if (ZBOR_CRTP)
+
+/**
+ * @brief Reference to CBOR codec with actual storage, either zbor::view 
+ * or zbor::codec<>. Use it to pass those around to common non-templated
+ * functions to read and/or modify source. Unlike zbor::view, stores a 
+ * reference to both memory and current size of a storage.
+ * 
+ */
+struct ref : impl::interface<ref> {
+    friend impl::interface<ref>;
+    constexpr ref() = delete;
+    constexpr ref(std::span<byte> buf, size_t& len) : idx{len}, max{buf.size()}, buf{buf.data()} {}
+private:
+    size_t& idx;
+    const size_t max;
+    byte* const buf;
+};
+
+/**
+ * @brief CBOR codec with external storage. Basically a view which allows 
+ * to use writable referenced memory with codec interface. Unlike zbor::ref, 
+ * stores reference only to memory, while current size is part of an instance. 
+ * So passing it by value into a function and modifying there, will modify 
+ * memory content but leave size unchanged.
+ * 
+ */
+struct view : impl::interface<view> {
+    friend impl::interface<view>;
+    constexpr view() = delete;
+    constexpr view(std::span<byte> buf) : max{buf.size()}, buf{buf.data()} {}
+    constexpr view(std::span<byte> buf, size_t len) : idx{len}, max{buf.size()}, buf{buf.data()} {}
+    constexpr operator ref() { return {{buf, max}, idx}; }
+private:
+    size_t idx = 0;
+    const size_t max;
+    byte* const buf;
+};
+
+/**
+ * @brief CBOR codec with internal storage. Similar to zbor::view, but 
+ * doesn't have overhead of an additional pointer to external storage, 
+ * while still uses same CRTP codec interface. Like zbor::view, it can 
+ * be cheaply passed around as zbor::ref. 
+ * 
+ * @tparam N Buffer size in bytes
+ */
+template<size_t N>
+struct codec : impl::interface<codec<N>> {
+    friend impl::interface<codec<N>>;
+    constexpr operator ref() { return {{buf}, idx}; }
+private:
+    size_t idx = 0;
+    static constexpr size_t max = N;
+    byte buf[N]{};
+};
+
+#else
 
 /**
  * @brief CBOR codec with external storage. Basically a view which 
@@ -153,14 +211,14 @@ protected:
  * 
  */
 struct view : impl::interface<view> {
-    using base = impl::interface<view>;
-    friend base;
+    friend impl::interface<view>;
     constexpr view() = delete;
-    constexpr view(std::span<byte> buf) : buf{buf.data()}, max{buf.size()} {}
-    constexpr view(std::span<byte> buf, size_t len) : base{len}, buf{buf.data()}, max{buf.size()} {}
-private:
+    constexpr view(std::span<byte> buf) : max{buf.size()}, buf{buf.data()} {}
+    constexpr view(std::span<byte> buf, size_t len) : idx{len}, max{buf.size()}, buf{buf.data()} {}
+protected:
+    size_t idx = 0;
+    const size_t max;
     byte* buf;
-    size_t max;
 };
 
 /**
@@ -170,13 +228,33 @@ private:
  * @tparam N Buffer size in bytes
  */
 template<size_t N>
-struct codec : impl::interface<codec<N>> {
-    friend impl::interface<codec<N>>;
-    constexpr operator view() { return {{buf}, this->idx}; }
+struct codec : view {
+    constexpr codec() : view{buf} {}
+    constexpr codec(codec&& other) : view{buf, other.idx} 
+    {
+        std::copy_n(other.buf, other.idx, buf);
+    }
+    constexpr codec(const codec& other) : view{buf, other.idx} 
+    {
+        std::copy_n(other.buf, other.idx, buf);
+    }
+    constexpr codec& operator=(codec&& other)
+    {
+        idx = other.idx;
+        std::copy_n(other.buf, other.idx, buf);
+    }
+    constexpr codec& operator=(const codec& other)
+    {
+        idx = other.idx;
+        std::copy_n(other.buf, other.idx, buf);
+    }
 private:
     byte buf[N]{};
-    static constexpr size_t max = N;
 };
+
+using ref = view&;
+
+#endif
 
 }
 

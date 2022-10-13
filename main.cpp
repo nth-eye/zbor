@@ -14,7 +14,7 @@ int main(int, char**)
     printf("sizeof(zbor::seq_iter):     %lu \n", sizeof(zbor::seq_iter));
     printf("sizeof(zbor::map_iter):     %lu \n", sizeof(zbor::map_iter));
     printf("sizeof(zbor::view):         %lu \n", sizeof(zbor::view));
-    printf("sizeof(zbor::codec<16>):    %lu \n", sizeof(zbor::codec<16>));
+    printf("sizeof(zbor::codec<1>):     %lu \n", sizeof(zbor::codec<1>));
 
     // ANCHOR decode
 
@@ -107,65 +107,68 @@ int main(int, char**)
     // }();
     // printf("count %d \n", cnt);
 
-    // // ANCHOR codec constexpr example
+    // ANCHOR codec constexpr example
 
-    // static constexpr auto codec = [&]() {
-    //     uint8_t str[] = "test";
-    //     zbor::codec<99> codec;
-    //     codec.encode_(1, 2, 3, 4);
-    //     codec.encode_text({example + 216, 4});
-    //     codec.encode_text(str);
-    //     codec.encode_data(str);
-    //     return codec;
-    // }();    
-    // zbor::log_seq(codec);
+    static constexpr auto codec = [&]() {
+        uint8_t str[] = "test";
+        zbor::codec<99> codec;
+        codec.encode_(1, 2, 3, 4);
+        codec.encode_text({example + 216, 4});
+        codec.encode_text(str);
+        codec.encode_data(str);
+        return codec;
+    }();    
+    zbor::log_seq(codec);
 
     // ANCHOR passing codec as view
 
     zbor::codec<16> vcodec;
+
     vcodec.encode_(true, false, zbor::prim_null);
-    [] (zbor::view view) {
+    [] (zbor::ref view)
+    {
         view.encode(66);
         zbor::log_seq(view);
     }(vcodec);
+
     zbor::log_seq(vcodec);
 
-    // // ANCHOR view example
+    // ANCHOR view example
 
-    // uint8_t data[] = {0x44, 0x45};
-    // uint8_t buf[99];
-    // zbor::view msg{buf};
+    uint8_t data[] = {0x44, 0x45};
+    uint8_t buf[99];
+    zbor::view msg{buf};
 
-    // msg.encode_arr(3);                  // start fixed size array
-    // msg.encode(-1);                     // negative int
-    // msg.encode(1);                      // positive int
-    // msg.encode(1u);                     // explicitly positive
+    msg.encode_arr(3);                  // start fixed size array
+    msg.encode(-1);                     // negative int
+    msg.encode(1);                      // positive int
+    msg.encode(1u);                     // explicitly positive
 
-    // msg.encode_map(1);                  // start fixed size map
-    // msg.encode("text");                 // text string
-    // msg.encode(zbor::span_t{data});     // byte string
-    // msg.encode(zbor::text_t{data});     // text string
+    msg.encode_map(1);                  // start fixed size map
+    msg.encode("text");                 // text string
+    msg.encode(zbor::span_t{data});     // byte string
+    msg.encode(zbor::text_t{data});     // text string
 
-    // msg.encode_tag(69);                 // tag number, next object will be content
-    // msg.encode_indef_arr();             // start indefinite size array (previously tagged)
-    // msg.encode(true);                   // simple bool
-    // msg.encode(zbor::prim_null);        // simple null
-    // msg.encode(zbor::prim_t(42));       // another valid simple (primitive)
-    // msg.encode_break();                 // break, end of indefinite array
+    msg.encode_tag(69);                 // tag number, next object will be content
+    msg.encode_indef_arr();             // start indefinite size array (previously tagged)
+    msg.encode(true);                   // simple bool
+    msg.encode(zbor::prim_null);        // simple null
+    msg.encode(zbor::prim_t(42));       // another valid simple (primitive)
+    msg.encode_break();                 // break, end of indefinite array
 
-    // msg.encode_indef_map();             // start indefinite size map
-    // msg.encode(42.0f);                  // float32, will be compressed to half-float if possible
-    // msg.encode(42.0);                   // float64, will be compressed to half-float if possible
-    // msg.encode_break();                 // break, end of indefinite map
+    msg.encode_indef_map();             // start indefinite size map
+    msg.encode(42.0f);                  // float32, will be compressed to half-float if possible
+    msg.encode(42.0);                   // float64, will be compressed to half-float if possible
+    msg.encode_break();                 // break, end of indefinite map
 
-    // msg.encode_indef_txt();             // start indefinite size text string made from separate chunks
-    // msg.encode("Hello");                // first chunk
-    // msg.encode("World");                // second chunk
-    // msg.encode_break();                 // break, end of indefinite text string
+    msg.encode_indef_txt();             // start indefinite size text string made from separate chunks
+    msg.encode("Hello");                // first chunk
+    msg.encode("World");                // second chunk
+    msg.encode_break();                 // break, end of indefinite text string
 
-    // msg.encode_(data, vcodec);          // implicit conversion to bool and zbor::span_t, BE CAREFUL
+    msg.encode_(data, vcodec);          // implicit conversion to bool and zbor::span_t, BE CAREFUL
 
-    // zbor::log_seq(msg);
+    zbor::log_seq(msg);
 
     // // ANCHOR performance
 
