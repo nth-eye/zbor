@@ -6,9 +6,6 @@ int main(int, char**)
 {
     // ANCHOR sizeof
 
-    printf("sizeof(zbor::arr_t):        %lu \n", sizeof(zbor::arr_t));
-    printf("sizeof(zbor::map_t):        %lu \n", sizeof(zbor::map_t));
-    printf("sizeof(zbor::tag_t):        %lu \n", sizeof(zbor::tag_t));
     printf("sizeof(zbor::item):         %lu \n", sizeof(zbor::item));
     printf("sizeof(zbor::seq):          %lu \n", sizeof(zbor::seq));
     printf("sizeof(zbor::seq_iter):     %lu \n", sizeof(zbor::seq_iter));

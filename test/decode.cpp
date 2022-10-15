@@ -207,112 +207,112 @@ TEST(Decode, Float)
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 3);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 0.0);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 6);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, -0.0);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 9);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 1.0);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 18);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 1.1);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 21);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 1.5);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 24);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 65504.0);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 29);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 100000.0);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 34);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 3.4028234663852886e+38);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 43);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 1.0e+300);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 46);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 5.960464477539063e-8);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 49);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, 0.00006103515625);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 52);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, -4.0);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 61);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, -4.1);
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 64);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, double(INFINITY));
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 67);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_TRUE(std::isnan(o.dbl));
 
     std::tie(o, e, p) = decode(p, end);
 
     ASSERT_EQ(e, err_ok);
     ASSERT_EQ(p, test + 70);
-    ASSERT_EQ(o.type, type_double);
+    ASSERT_EQ(o.type, type_floating);
     ASSERT_DOUBLE_EQ(o.dbl, double(-INFINITY));
 
     ASSERT_EQ(p, end);
@@ -531,7 +531,7 @@ TEST(Decode, Tag)
     ASSERT_EQ(o.tag.num(), 1);
 
     content = o.tag.content();
-    ASSERT_EQ(content.type, type_double);
+    ASSERT_EQ(content.type, type_floating);
     ASSERT_DOUBLE_EQ(content.dbl, 1363896240.5);
 
     std::tie(o, e, p) = decode(p, end);

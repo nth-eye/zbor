@@ -100,14 +100,14 @@ inline void log_obj(const item& obj)
         break;
         }
     break;
-    case type_double: 
-        if (int(obj.dbl * 10) % 10 == 0) {
-            if (obj.dbl == 0 && std::signbit(obj.dbl))
+    case type_floating: 
+        if (int(obj.fp * 10) % 10 == 0) {
+            if (obj.fp == 0 && std::signbit(obj.fp))
                 printf("-0.0");
             else
-                printf("%.1f", obj.dbl); 
+                printf("%.1f", obj.fp); 
         } else {
-            printf("%g", obj.dbl); 
+            printf("%g", obj.fp); 
         }
     break;
     case type_indef_data:
@@ -258,14 +258,14 @@ inline void log_obj_with_pad(const item& obj, int first_pad = 0, int pad = 0)
         break;
         }
     break;
-    case type_double: 
-        if (int(obj.dbl * 10) % 10 == 0) {
-            if (obj.dbl == 0 && std::signbit(obj.dbl))
+    case type_floating: 
+        if (int(obj.fp * 10) % 10 == 0) {
+            if (obj.fp == 0 && std::signbit(obj.fp))
                 printf("-0.0");
             else
-                printf("%.1f", obj.dbl); 
+                printf("%.1f", obj.fp); 
         } else {
-            printf("%g", obj.dbl); 
+            printf("%g", obj.fp); 
         }
     break;
     case type_indef_data:

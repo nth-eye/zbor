@@ -4,7 +4,6 @@
 #include <span>
 #include <string_view>
 #include <cstring>
-#include "utl/str.h"
 
 namespace zbor {
 
@@ -107,7 +106,7 @@ enum type_t {
     type_map,
     type_tag,
     type_prim,
-    type_double,
+    type_floating,
     type_indef_data,
     type_indef_text,
     type_invalid,
@@ -129,19 +128,6 @@ enum err {
 };
 
 /**
- * @brief Wrapper for uint64_t to allow encode() function overload
- * for CBOR tag type. Content must be encoded separately.
- * 
- */
-struct tag_num {
-    constexpr tag_num() = delete;
-    constexpr tag_num(uint64_t num) : num{num} {}
-    constexpr operator uint64_t() const { return num; }
-private:
-    uint64_t num;
-};
-
-/**
  * @brief CBOR sequence, read-only wrapper for traversal on-the-fly.
  * 
  */
@@ -149,70 +135,6 @@ struct seq : span_t {
     using span_t::span_t;
     constexpr seq_iter begin() const;
     constexpr seq_iter end() const;
-};
-
-/**
- * @brief Sequence wrapper for CBOR indefinite byte and text strings.
- * 
- */
-struct istr_t : seq {
-    using seq::seq;
-};
-
-/**
- * @brief Sequence wrapper for CBOR array.
- * 
- */
-struct arr_t : seq {
-    constexpr arr_t(const byte* head, const byte* tail, size_t len) : seq{head, tail}, len{len} {}
-    constexpr auto size() const     { return len; }
-    constexpr bool indef() const    { return len == size_t(-1); } 
-private:
-    size_t len;
-};
-
-/**
- * @brief Sequence wrapper for CBOR map.
- * 
- */
-struct map_t : arr_t {
-    using arr_t::arr_t;
-    constexpr map_iter begin() const;
-    constexpr map_iter end() const;
-};
-
-/**
- * @brief CBOR tag with number (stored) and content (decoded on-the-fly).
- * 
- */
-struct tag_t : seq {
-    constexpr tag_t(const byte* head, const byte* tail, uint64_t number) : seq{head, tail}, number{number} {}
-    constexpr uint64_t num() const { return number; }
-    constexpr item content() const;
-private:
-    uint64_t number;
-};
-
-/**
- * @brief Generic decoded CBOR object which can hold any type.
- * 
- */
-struct item {
-    constexpr item(type_t t = type_invalid) : type{t} {}
-    constexpr bool valid() const { return type != type_invalid; }
-    type_t type;
-    union {
-        uint64_t uint;
-        int64_t sint;
-        text_t text;
-        span_t data;
-        istr_t istr;
-        arr_t arr;
-        map_t map;
-        tag_t tag;
-        prim_t prim;
-        double dbl;
-    };
 };
 
 /**
@@ -232,7 +154,7 @@ constexpr auto str_type(type_t t)
         case type_map: return "map";
         case type_tag: return "tag";
         case type_prim: return "simple";
-        case type_double: return "float";
+        case type_floating: return "float";
         case type_indef_data: return "indefinite data";
         case type_indef_text: return "indefinite text";
         case type_invalid: return "<invalid>";

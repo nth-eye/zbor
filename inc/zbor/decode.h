@@ -6,6 +6,80 @@
 #include <tuple>
 
 namespace zbor {
+namespace dec {
+
+using uint  = uint64_t;
+using sint  = int64_t;
+using prim  = prim_t;
+using data  = span_t;
+using text  = text_t;
+using fp    = double;
+
+/**
+ * @brief Sequence wrapper for CBOR indefinite byte and text strings.
+ * 
+ */
+struct istr : seq {
+    using seq::seq;
+};
+
+/**
+ * @brief Sequence wrapper for CBOR array.
+ * 
+ */
+struct arr : seq {
+    constexpr arr(const byte* head, const byte* tail, size_t len) : seq{head, tail}, len{len} {}
+    constexpr auto size() const     { return len; }
+    constexpr bool indef() const    { return len == size_t(-1); } 
+private:
+    size_t len;
+};
+
+/**
+ * @brief Sequence wrapper for CBOR map.
+ * 
+ */
+struct map : arr {
+    using arr::arr;
+    constexpr map_iter begin() const;
+    constexpr map_iter end() const;
+};
+
+/**
+ * @brief CBOR tag with number (stored) and content (decoded on-the-fly).
+ * 
+ */
+struct tag : seq {
+    constexpr tag(const byte* head, const byte* tail, uint64_t number) : seq{head, tail}, number{number} {}
+    constexpr uint64_t num() const { return number; }
+    constexpr item content() const;
+private:
+    uint64_t number;
+};
+
+}
+
+/**
+ * @brief Generic decoded CBOR object which can hold any type.
+ * 
+ */
+struct item {
+    constexpr item(type_t t = type_invalid) : type{t} {}
+    constexpr bool valid() const { return type != type_invalid; }
+    type_t type;
+    union {
+        dec::uint uint;
+        dec::sint sint;
+        dec::prim prim;
+        dec::data data;
+        dec::text text;
+        dec::istr istr;
+        dec::arr arr;
+        dec::map map;
+        dec::tag tag;
+        dec::fp fp;
+    };
+};
 
 /**
  * @brief Decode next adjacent CBOR item. Almost all validity checks always performed 
@@ -108,16 +182,16 @@ constexpr std::tuple<item, err, const byte*> decode(const byte* p, const byte* c
             switch (ai) 
             {
             case prim_float_16:
-                obj.dbl     = std::bit_cast<float>(utl::half_to_float(val));
-                obj.type    = type_double;
+                obj.fp      = std::bit_cast<float>(utl::half_to_float(val));
+                obj.type    = type_floating;
             break;
             case prim_float_32:
-                obj.dbl     = std::bit_cast<float>(uint32_t(val));
-                obj.type    = type_double;
+                obj.fp      = std::bit_cast<float>(uint32_t(val));
+                obj.type    = type_floating;
             break;
             case prim_float_64:
-                obj.dbl     = std::bit_cast<double>(val);
-                obj.type    = type_double;
+                obj.fp      = std::bit_cast<double>(val);
+                obj.type    = type_floating;
             break;
             default:
                 obj.prim    = prim_t(val);
@@ -296,11 +370,11 @@ private:
     item val;
 };
 
-constexpr seq_iter seq::begin() const   { return {data(), data() + size()}; }
-constexpr seq_iter seq::end() const     { return {}; }
-constexpr map_iter map_t::begin() const { return {data(), data() + seq::size()}; }
-constexpr map_iter map_t::end() const   { return {}; }
-constexpr item tag_t::content() const   { return std::get<item>(decode(data(), data() + size())); }
+constexpr seq_iter seq::begin() const       { return {data(), data() + size()}; }
+constexpr seq_iter seq::end() const         { return {}; }
+constexpr map_iter dec::map::begin() const  { return {data(), data() + seq::size()}; }
+constexpr map_iter dec::map::end() const    { return {}; }
+constexpr item dec::tag::content() const    { return std::get<item>(decode(data(), data() + size())); }
 
 }
 
