@@ -15,7 +15,7 @@ TEST(Decode, OutOfBounds)
     ASSERT_EQ(o.type, type_invalid);
 }
 
-TEST(Decode, Uint)
+TEST(Decode, Unsigned)
 {
     const byte test[] = { 
         0x00, // 0
@@ -116,7 +116,7 @@ TEST(Decode, Uint)
     ASSERT_EQ(p, end);
 }
 
-TEST(Decode, Sint)
+TEST(Decode, Signed)
 {
     const byte test[] = {
         0x20, // -1

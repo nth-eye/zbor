@@ -4,10 +4,11 @@
 #include <span>
 #include <string_view>
 #include <cstring>
+#include "utl/str.h"
 
 namespace zbor {
 
-using byte = uint8_t;
+using byte = unsigned char;
 using span_t = std::span<const byte>;
 
 /**
@@ -22,6 +23,11 @@ using span_t = std::span<const byte>;
 struct text_t : std::basic_string_view<byte> {
     using base = std::basic_string_view<byte>;
     using base::base;
+
+    text_t(const char* str) noexcept
+        : base{reinterpret_cast<const byte*>(str), strlen(str)} 
+    {}
+
     friend constexpr bool operator==(const text_t& lhs, const std::string_view& rhs)
     {
         if (lhs.size() != rhs.size())
@@ -116,11 +122,23 @@ enum err {
     err_no_memory,
     err_out_of_bounds,
     err_invalid_simple,
-    err_invalid_float_type,
     err_invalid_indef_mt,
     err_invalid_indef_item,
     err_reserved_ai,
     err_break_without_start,
+};
+
+/**
+ * @brief Wrapper for uint64_t to allow encode() function overload
+ * for CBOR tag type. Content must be encoded separately.
+ * 
+ */
+struct tag_num {
+    constexpr tag_num() = delete;
+    constexpr tag_num(uint64_t num) : num{num} {}
+    constexpr operator uint64_t() const { return num; }
+private:
+    uint64_t num;
 };
 
 /**
@@ -169,14 +187,14 @@ struct map_t : arr_t {
  */
 struct tag_t : seq {
     constexpr tag_t(const byte* head, const byte* tail, uint64_t number) : seq{head, tail}, number{number} {}
-    constexpr uint64_t num() const  { return number; }
+    constexpr uint64_t num() const { return number; }
     constexpr item content() const;
 private:
     uint64_t number;
 };
 
 /**
- * @brief Generic CBOR object which can hold any type.
+ * @brief Generic decoded CBOR object which can hold any type.
  * 
  */
 struct item {
@@ -235,7 +253,6 @@ constexpr auto str_err(err e)
         case err_no_memory: return "no_memory";
         case err_out_of_bounds: return "out_of_bounds";
         case err_invalid_simple: return "invalid_simple";
-        case err_invalid_float_type: return "invalid_float_type";
         case err_invalid_indef_mt: return "invalid_indef_mt";
         case err_invalid_indef_item: return "invalid_indef_item";
         case err_reserved_ai: return "reserved_ai";

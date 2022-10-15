@@ -47,6 +47,10 @@ struct interface {
         uint64_t ui = val >> 63;
         return encode_head(mt_t(ui & 0x20), ui ^ val);
     }
+    constexpr err encode(std::initializer_list<byte> val)
+    { 
+        return encode_bytes(mt_data, val.begin(), val.size()); 
+    }
     constexpr err encode(span_t val)        { return encode_bytes(mt_data, val.data(), val.size()); }
     constexpr err encode(text_t val)        { return encode_bytes(mt_text, val.data(), val.size()); }
     err encode(std::string_view val)        { return encode_bytes(mt_text, val.data(), val.size()); }
@@ -65,13 +69,22 @@ struct interface {
             return encode_float(val);
         return encode_base(mt_simple | byte(prim_float_64), std::bit_cast<uint64_t>(val), 8);
     }
+    constexpr err encode(tag_num val)       { return encode_head(mt_tag, val); }
     constexpr err encode_indef_dat()        { return encode_byte(mt_data | byte(ai_indef)); }
     constexpr err encode_indef_txt()        { return encode_byte(mt_text | byte(ai_indef)); }
     constexpr err encode_indef_arr()        { return encode_byte(mt_array | byte(ai_indef)); }
     constexpr err encode_indef_map()        { return encode_byte(mt_map | byte(ai_indef)); }
     constexpr err encode_break()            { return encode_byte(0xff); }
     constexpr err encode_data(span_t val)   { return encode_bytes(mt_data, val.data(), val.size()); }
+    constexpr err encode_data(std::initializer_list<byte> val)   
+    { 
+        return encode_bytes(mt_data, val.begin(), val.size()); 
+    }
     constexpr err encode_text(span_t val)   { return encode_bytes(mt_text, val.data(), val.size()); }
+    constexpr err encode_text(std::initializer_list<byte> val)   
+    { 
+        return encode_bytes(mt_text, val.begin(), val.size()); 
+    }
     constexpr err encode_arr(size_t size)   { return encode_head(mt_array, size); }
     constexpr err encode_map(size_t size)   { return encode_head(mt_map, size); }
     constexpr err encode_tag(uint64_t val)  { return encode_head(mt_tag, val); }
@@ -196,6 +209,59 @@ private:
     static constexpr size_t max = N;
     byte buf[N]{};
 };
+
+namespace literals {
+
+#define ZBOR_LIT_INT    true
+#define ZBOR_LIT_FLOAT  true
+#define ZBOR_LIT_INDEF  true
+
+#if (ZBOR_LIT_FLOAT)
+struct cbor_float {
+    constexpr cbor_float() = delete;
+    constexpr cbor_float(double x) : x{x} {}
+    constexpr operator double() const { return x; }
+private:
+    double x;
+};
+#endif
+#if (ZBOR_LIT_INT)
+enum cbor_uint : uint64_t {};
+enum cbor_sint : int64_t {};
+#endif
+enum cbor_tag : uint64_t {};
+enum cbor_arr : size_t {};
+enum cbor_map : size_t {};
+#if (ZBOR_LIT_INDEF)
+inline constexpr struct cbor_indef_dat  {} indef_dat;
+inline constexpr struct cbor_indef_txt  {} indef_txt;
+inline constexpr struct cbor_indef_arr  {} indef_arr;
+inline constexpr struct cbor_indef_map  {} indef_map;
+inline constexpr struct cbor_break      {} breaker;
+#endif
+
+#if (ZBOR_LIT_FLOAT)
+constexpr cbor_float operator"" _fp(long double x)          { return cbor_float(x); }
+#endif
+#if (ZBOR_LIT_INT)
+constexpr cbor_uint operator"" _ui(unsigned long long x)    { return cbor_uint(x); }
+constexpr cbor_sint operator"" _si(unsigned long long x)    { return cbor_sint(x); }
+#endif
+constexpr cbor_tag operator"" _tag(unsigned long long x)    { return cbor_tag(x); }
+constexpr cbor_arr operator"" _arr(unsigned long long x)    { return cbor_arr(x); }
+constexpr cbor_map operator"" _map(unsigned long long x)    { return cbor_map(x); }
+constexpr prim_t operator"" _prim(unsigned long long x)     { return prim_t(x); }
+
+// constexpr span_t operator"" _dat();
+// constexpr text_t operator"" _txt(const char8_t* str, size_t len)
+// {
+//     return {static_cast<const byte*>(str), len};
+// }
+
+// _dat
+// _txt
+
+}
 
 }
 
