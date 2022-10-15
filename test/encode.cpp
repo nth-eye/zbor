@@ -19,7 +19,7 @@ protected:
     {
         codec.clear();
     }
-    zbor::codec<70> codec;
+    zbor::codec<77> codec;
 };
 
 TEST_F(Codec, EncodeUnsigned)
@@ -115,19 +115,9 @@ TEST_F(Codec, EncodeSimple)
     codec.encode(zbor::prim_undefined);
     codec.encode(zbor::prim_t(16));
     codec.encode(zbor::prim_t(255));
+    codec.encode(false);
+    codec.encode(true);
 
-    check(codec, {
-        0xf4, // false
-        0xf5, // true
-        0xf6, // null
-        0xf7, // undefined
-        0xf0, // simple(16)
-        0xf8, 0xff, // simple(255)
-    });
-}
-
-TEST_F(Codec, EncodeIllegalSimple)
-{
     ASSERT_EQ(zbor::err_invalid_simple, codec.encode(zbor::prim_t(24)));
     ASSERT_EQ(zbor::err_invalid_simple, codec.encode(zbor::prim_t(25)));
     ASSERT_EQ(zbor::err_invalid_simple, codec.encode(zbor::prim_t(26)));
@@ -137,15 +127,13 @@ TEST_F(Codec, EncodeIllegalSimple)
     ASSERT_EQ(zbor::err_invalid_simple, codec.encode(zbor::prim_t(30)));
     ASSERT_EQ(zbor::err_invalid_simple, codec.encode(zbor::prim_t(31)));
 
-    check(codec, {});
-}
-
-TEST_F(Codec, EncodeBool)
-{
-    codec.encode(false);
-    codec.encode(true);
-
     check(codec, {
+        0xf4, // false
+        0xf5, // true
+        0xf6, // null
+        0xf7, // undefined
+        0xf0, // simple(16)
+        0xf8, 0xff, // simple(255)
         0xf4, // false
         0xf5, // true
     });
@@ -153,11 +141,244 @@ TEST_F(Codec, EncodeBool)
 
 TEST_F(Codec, EncodeData)
 {
-    // codec.encode(std::span<uint8_t>{});
-    // codec.encode(std::span<uint8_t>{});
+    const uint8_t pld[] = {0xb1, 0x6b, 0x00, 0xb5};
+
+    codec.encode({});
+    codec.encode({0x01, 0x02, 0x03, 0x04});
+    codec.encode(zbor::span_t{});
+    codec.encode(zbor::span_t{pld});
+    codec.encode(std::span<uint8_t>{});
+    codec.encode(std::span<const uint8_t>{pld});
+    codec.encode_data({});
+    codec.encode_data({0x77, 0x77, 0x77});
+    codec.encode_data(pld);
 
     check(codec, {
         0x40, // h''
         0x44, 0x01, 0x02, 0x03, 0x04, // h'01020304'
+        0x40, // h''
+        0x44, 0xb1, 0x6b, 0x00, 0xb5, // h'b16b00b5'
+        0x40, // h''
+        0x44, 0xb1, 0x6b, 0x00, 0xb5, // h'b16b00b5'
+        0x40, // h''
+        0x43, 0x77, 0x77, 0x77, // h'777777'
+        0x44, 0xb1, 0x6b, 0x00, 0xb5, // h'b16b00b5'
     });
+}
+
+TEST_F(Codec, EncodeText)
+{
+   const uint8_t pld[] = {0xf0, 0x90, 0x85, 0x91};
+
+    codec.encode("");
+    codec.encode("a");
+    codec.encode("IETF");
+    codec.encode(std::string_view{"\"\\"});
+    codec.encode(std::string_view{"\u00fc"});
+    codec.encode(zbor::text_t{"\u6c34"});
+    codec.encode(zbor::text_t{pld, sizeof(pld)});
+    codec.encode(zbor::text_t{});
+    codec.encode_text({});
+    codec.encode_text({0x77, 0x77, 0x77});
+    codec.encode_text(pld);
+
+    check(codec, {
+        0x60, // ""
+        0x61, 0x61, // "a"
+        0x64, 0x49, 0x45, 0x54, 0x46, // "IETF"
+        0x62, 0x22, 0x5c, // "\"\\"
+        0x62, 0xc3, 0xbc, // "\u00fc"
+        0x63, 0xe6, 0xb0, 0xb4, // "\u6c34"
+        0x64, 0xf0, 0x90, 0x85, 0x91, // "\ud800\udd51"
+        0x60, // ""
+        0x60, // ""
+        0x63, 0x77, 0x77, 0x77, // "\x77\x77\x77"
+        0x64, 0xf0, 0x90, 0x85, 0x91, // "\ud800\udd51"
+    });
+}
+
+TEST_F(Codec, EncodeTag)
+{
+    codec.encode_tag(0);
+    codec.encode("2013-03-21T20:04:00Z");
+    codec.encode_tag(1);
+    codec.encode(1363896240);
+    codec.encode_tag(1);
+    codec.encode(1363896240.5);
+    codec.encode(zbor::tag_num{23});
+    codec.encode({0x01, 0x02, 0x03, 0x04});
+    codec.encode(zbor::tag_num{24});
+    codec.encode({0x64, 0x49, 0x45, 0x54, 0x46});
+    codec.encode(zbor::tag_num{32});
+    codec.encode("http://www.example.com");
+
+    check(codec, {
+        0xc0, 0x74, 0x32, 0x30, 0x31, 0x33, 0x2d, 0x30, 0x33, 0x2d, 0x32, 0x31, 0x54, 0x32, 0x30, 0x3a, 0x30, 0x34, 0x3a, 0x30, 0x30, 0x5a, // 0("2013-03-21T20:04:00Z")
+        0xc1, 0x1a, 0x51, 0x4b, 0x67, 0xb0, // 1(1363896240)
+        0xc1, 0xfb, 0x41, 0xd4, 0x52, 0xd9, 0xec, 0x20, 0x00, 0x00, // 1(1363896240.5)
+        0xd7, 0x44, 0x01, 0x02, 0x03, 0x04, // 23(h'01020304')
+        0xd8, 0x18, 0x45, 0x64, 0x49, 0x45, 0x54, 0x46, // 24(h'6449455446')
+        0xd8, 0x20, 0x76, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d, // 32("http://www.example.com")
+    });
+}
+
+TEST_F(Codec, Array)
+{
+    codec.encode_arr(0);
+    codec.encode_arr(3);
+    codec.encode(1);
+    codec.encode(2);
+    codec.encode(3);
+    codec.encode_arr(3);
+    codec.encode(1);
+    codec.encode_arr(2);
+    codec.encode(2);
+    codec.encode(3);
+    codec.encode_arr(2);
+    codec.encode(4);
+    codec.encode(5);
+    codec.encode_arr(25);
+    for (int i = 1; i <= 25; ++i)
+        codec.encode(i);
+
+    check(codec, {
+        0x80, // []
+        0x83, 0x01, 0x02, 0x03, // [1, 2, 3]
+        0x83, 0x01, 0x82, 0x02, 0x03, 0x82, 0x04, 0x05, // [1, [2, 3], [4, 5]]
+        0x98, 0x19, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x18, 0x18, 0x19, // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+    });
+}
+
+TEST_F(Codec, EncodeMap)
+{
+    codec.encode_map(0);
+    codec.encode_map(2);
+    codec.encode(1);
+    codec.encode(2);
+    codec.encode(3);
+    codec.encode(4);
+    codec.encode_map(2);
+    codec.encode("a");
+    codec.encode(1);
+    codec.encode("b");
+    codec.encode_arr(2);
+    codec.encode(2);
+    codec.encode(3);
+    codec.encode_map(5);
+    codec.encode("a");
+    codec.encode("A");
+    codec.encode("b");
+    codec.encode("B");
+    codec.encode("c");
+    codec.encode("C");
+    codec.encode("d");
+    codec.encode("D");
+    codec.encode("e");
+    codec.encode("E");
+
+    check(codec, {
+        0xa0, // {}
+        0xa2, 0x01, 0x02, 0x03, 0x04, // {1: 2, 3: 4}
+        0xa2, 0x61, 0x61, 0x01, 0x61, 0x62, 0x82, 0x02, 0x03, // {"a": 1, "b": [2, 3]}
+        0xa5, 0x61, 0x61, 0x61, 0x41, 0x61, 0x62, 0x61, 0x42, 0x61, 0x63, 0x61, 0x43, 0x61, 0x64, 0x61, 0x44, 0x61, 0x65, 0x61, 0x45, // {"a": "A", "b": "B", "c": "C", "d": "D", "e": "E"}
+    });
+}
+
+TEST_F(Codec, EncodeIndefData)
+{
+    codec.encode_indef_dat();
+    codec.encode({0x01, 0x02});
+    codec.encode({0x03, 0x04, 0x05});
+    codec.encode_break();
+
+    check(codec, {
+        0x5f, 0x42, 0x01, 0x02, 0x43, 0x03, 0x04, 0x05, 0xff, // (_ h'0102', h'030405')
+    });
+}
+
+TEST_F(Codec, EncodeIndefText)
+{
+    codec.encode_indef_txt();
+    codec.encode("strea");
+    codec.encode("ming");
+    codec.encode_break();
+
+    check(codec, {
+        0x7f, 0x65, 0x73, 0x74, 0x72, 0x65, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x67, 0xff, // (_ "strea", "ming")
+    });
+}
+
+TEST_F(Codec, EncodeIndefArray)
+{
+    codec.encode_indef_arr();
+    codec.encode_break();
+
+    codec.encode_indef_arr();
+    codec.encode(1);
+    codec.encode_arr(2);
+    codec.encode(2);
+    codec.encode(3);
+    codec.encode_indef_arr();
+    codec.encode(4);
+    codec.encode(5);
+    codec.encode_break();
+    codec.encode_break();
+
+    codec.encode_indef_arr();
+    codec.encode(1);
+    codec.encode_arr(2);
+    codec.encode(2);
+    codec.encode(3);
+    codec.encode_arr(2);
+    codec.encode(4);
+    codec.encode(5);
+    codec.encode_break();
+
+    codec.encode_arr(3);
+    codec.encode(1);
+    codec.encode_arr(2);
+    codec.encode(2);
+    codec.encode(3);
+    codec.encode_indef_arr();
+    codec.encode(4);
+    codec.encode(5);
+    codec.encode_break();
+
+    codec.encode_arr(3);
+    codec.encode(1);
+    codec.encode_indef_arr();
+    codec.encode(2);
+    codec.encode(3);
+    codec.encode_break();
+    codec.encode_arr(2);
+    codec.encode(4);
+    codec.encode(5);
+
+    codec.encode_indef_arr();
+    for (int i = 1; i <= 25; ++i)
+        codec.encode(i);
+    codec.encode_break();
+
+    check(codec, {
+        0x9f, 0xff, // [_ ]
+        0x9f, 0x01, 0x82, 0x02, 0x03, 0x9f, 0x04, 0x05, 0xff, 0xff, // [_ 1, [2, 3], [_ 4, 5]]
+        0x9f, 0x01, 0x82, 0x02, 0x03, 0x82, 0x04, 0x05, 0xff, // [_ 1, [2, 3], [4, 5]]
+        0x83, 0x01, 0x82, 0x02, 0x03, 0x9f, 0x04, 0x05, 0xff, // [1, [2, 3], [_ 4, 5]]
+        0x83, 0x01, 0x9f, 0x02, 0x03, 0xff, 0x82, 0x04, 0x05, // [1, [_ 2, 3], [4, 5]]
+        0x9f, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x18, 0x18, 0x19, 0xff, // [_ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+    });
+}
+
+TEST_F(Codec, EncodeIndefMap)
+{
+    // using namespace zbor::literals;
+
+    // auto str = "aaa"_txt;
+
+    // std::cout << str << std::endl;
+
+    // check(codec, {
+    //     0xbf, 0x61, 0x61, 0x01, 0x61, 0x62, 0x9f, 0x02, 0x03, 0xff, 0xff, // {_ "a": 1, "b": [_ 2, 3]}
+    //     0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff, // {_ "Fun": true, "Amt": -2}
+    // });
 }
