@@ -1,50 +1,16 @@
 #ifndef ZBOR_BASE_H
 #define ZBOR_BASE_H
 
+#include <cstdint>
+#include <cstddef>
 #include <span>
-#include <string_view>
-#include <cstring>
 
 namespace zbor {
 
-using byte = unsigned char;
-using span_t = std::span<const byte>;
-
-/**
- * @brief String view with <zbor::byte> as underlying character type. 
- * May be expanded with additional "text"-type specific functionality, 
- * e.g comparison with std::string_view. This workwaround is necessary 
- * to make decode() constexpr, because reinterpret_cast is not allowed 
- * and it's not possible to create regular std::string_view from <byte*> 
- * during parsing. 
- * 
- */
-struct text_t : std::basic_string_view<byte> {
-    using base = std::basic_string_view<byte>;
-    using base::base;
-
-    text_t(const char* str) noexcept
-        : base{reinterpret_cast<const byte*>(str), strlen(str)} 
-    {}
-
-    friend constexpr bool operator==(const text_t& lhs, const std::string_view& rhs)
-    {
-        if (lhs.size() != rhs.size())
-            return false;
-        if (std::is_constant_evaluated()) {
-            for (size_t i = 0; i < lhs.size(); ++i) {
-                if (lhs[i] != rhs[i])
-                    return false;
-            }
-            return true;
-        }
-        return !memcmp(lhs.data(), rhs.data(), lhs.size());
-    }
-    friend constexpr bool operator==(const std::string_view& lhs, const text_t& rhs)
-    {
-        return operator==(rhs, lhs);
-    }
-};
+using byte = uint8_t;
+using span = std::span<const byte>;
+using list = std::initializer_list<byte>;
+using pointer = const byte*;
 
 struct seq_iter;
 struct map_iter;
@@ -83,7 +49,7 @@ enum ai_t {
  * markers which are used during en/decoding.
  * 
  */
-enum prim_t : byte {
+enum prim : byte {
     prim_false      = 20,
     prim_true       = 21,
     prim_null       = 22,
@@ -131,8 +97,8 @@ enum err {
  * @brief CBOR sequence, read-only wrapper for traversal on-the-fly.
  * 
  */
-struct seq : span_t {
-    using span_t::span_t;
+struct seq : span {
+    using span::span;
     constexpr seq_iter begin() const;
     constexpr seq_iter end() const;
 };

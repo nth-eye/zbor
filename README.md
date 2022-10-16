@@ -99,7 +99,7 @@ msg.encode_tag(69);                 // tag number, next object will be content
 msg.encode_indef_arr();             // start indefinite size array (previously tagged)
 msg.encode(true);                   // simple bool
 msg.encode(zbor::prim_null);        // simple null
-msg.encode(zbor::prim_t(42));       // another valid simple (primitive)
+msg.encode(zbor::prim(42));       // another valid simple (primitive)
 msg.encode_break();                 // break, end of indefinite array
 
 msg.encode_indef_map();             // start indefinite size map
@@ -151,7 +151,7 @@ else
     - [x] constexpr whole library
     - [ ] review naming conventions
 - [ ] tests
-    - [x] object
+    - [x] ~~object~~
     - [x] decode
     - [ ] encode
 - [ ] reamde

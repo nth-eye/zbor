@@ -263,7 +263,7 @@ inline void log_obj_with_pad(const item& obj, int first_pad = 0, int pad = 0)
             if (obj.fp == 0 && std::signbit(obj.fp))
                 printf("-0.0");
             else
-                printf("%.1f", obj.fp); 
+                printf("%.1f", obj.fp);
         } else {
             printf("%g", obj.fp); 
         }

@@ -13,9 +13,8 @@ add_executable(zbor main.cpp)
 target_link_libraries(zbor PRIVATE libzbor)
 target_compile_features(zbor PRIVATE cxx_std_20)
 
-# add_executable(testzbor 
-#     test/decode.cpp
-#     test/encode.cpp
-#     test/object.cpp)
-# target_link_libraries(testzbor PRIVATE gtest_main libzbor)
-# target_compile_features(testzbor PRIVATE cxx_std_20)
+add_executable(testzbor 
+    test/decode.cpp
+    test/encode.cpp)
+target_link_libraries(testzbor PRIVATE gtest_main libzbor)
+target_compile_features(testzbor PRIVATE cxx_std_20)

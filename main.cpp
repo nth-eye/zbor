@@ -1,6 +1,7 @@
 #include "zbor/encode.h"
 #include "zbor/log.h"
 #include "utl/time.h"
+#include <iostream>
 
 int main(int, char**) 
 {
@@ -142,16 +143,19 @@ int main(int, char**)
     msg.encode(1);                      // positive int
     msg.encode(1u);                     // explicitly positive
 
+    using namespace zbor::literals;
+    using namespace std::literals;
+
     msg.encode_map(1);                  // start fixed size map
-    msg.encode("text");                 // text string
-    msg.encode(zbor::span_t{data});     // byte string
-    msg.encode(zbor::text_t{data});     // text string
+    // msg.encode("aaaa"_txt);                 // text string
+    msg.encode("aaaa"sv);                 // text string
+    msg.encode(zbor::span{data});     // byte string
 
     msg.encode_tag(69);                 // tag number, next object will be content
     msg.encode_indef_arr();             // start indefinite size array (previously tagged)
     msg.encode(true);                   // simple bool
     msg.encode(zbor::prim_null);        // simple null
-    msg.encode(zbor::prim_t(42));       // another valid simple (primitive)
+    msg.encode(zbor::prim(42));       // another valid simple (primitive)
     msg.encode_break();                 // break, end of indefinite array
 
     msg.encode_indef_map();             // start indefinite size map
@@ -164,7 +168,7 @@ int main(int, char**)
     msg.encode("World");                // second chunk
     msg.encode_break();                 // break, end of indefinite text string
 
-    msg.encode_(data, ref_codec);       // implicit conversion to bool and zbor::span_t, BE CAREFUL
+    // msg.encode_(data, ref_codec);       // implicit conversion to bool and zbor::span, BE CAREFUL
 
     zbor::log_seq(msg);
 
@@ -177,12 +181,12 @@ int main(int, char**)
         }
         return i;
     };
-    static constexpr auto count = 20000000;
+    static constexpr auto count = 30000000;
 
     printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
     printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
     printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
     printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
 
-    printf("1 ret %u \n", test_case_1());
+    // printf("1 ret %u \n", test_case_1());
 }

@@ -7,11 +7,6 @@
 namespace zbor {
 namespace enc {
 
-// using uint  = uint64_t;
-// using sint  = int64_t;
-using prim  = prim_t;
-using data  = span_t;
-// using fp    = double;
 enum arr : size_t   {};
 enum map : size_t   {};
 enum tag : uint64_t {};
@@ -20,6 +15,15 @@ struct indef_txt    {};
 struct indef_arr    {};
 struct indef_map    {};
 struct breaker      {};
+template<size_t N>
+struct txt { 
+    consteval txt(const char (&str)[N]) { std::copy_n(str, N - 1, buf); }
+    consteval auto data() const { return &buf[0]; }
+    consteval auto size() const { return N; }
+    byte buf[N - 1]{};
+};
+template<class T>
+concept boolean = std::is_same<T, bool>::value;
 
 /**
  * @brief CBOR base codec implementation with CRTP interface.
@@ -45,10 +49,11 @@ struct interface {
 
     // ANCHOR Variadic interface
 
-    constexpr err encode_(auto... args)
+    template<class ...Args>
+    constexpr err encode_(Args&&... args)
     {
         err e = err_ok;
-        ((e = encode(args)) || ...);
+        ((e = encode(std::forward<Args>(args))) || ...);
         return e;
     }
 
@@ -70,11 +75,11 @@ struct interface {
     {
         return encode_sint(val);
     }
-    constexpr err encode(prim_t val)
+    constexpr err encode(prim val)
     {
         return encode_prim(val);
     }
-    constexpr err encode(bool val)
+    constexpr err encode(boolean auto val)
     { 
         return encode_bool(val); 
     }
@@ -86,19 +91,59 @@ struct interface {
     { 
         return encode_double(val);
     }
-    constexpr err encode(span_t val)
+    constexpr err encode(span val)
     { 
         return encode_data(val); 
     }
-    constexpr err encode(std::initializer_list<byte> val)
+    constexpr err encode(list val)
     { 
         return encode_data(val); 
     }
-
-
-    constexpr err encode(text_t val)        { return encode_string(mt_text, val.data(), val.size()); }
-    err encode(std::string_view val)        { return encode_string(mt_text, val.data(), val.size()); }
-    err encode(const char* val)             { return encode_string(mt_text, val, strlen(val)); }
+    err encode(std::string_view val)
+    { 
+        return encode_text(val);
+    }
+    err encode(const char* val)
+    { 
+        return encode_text(val); 
+    }
+    template<size_t N>
+    consteval err encode(const enc::txt<N>& val)
+    {
+        return encode_text(val); 
+    }
+    constexpr err encode(enc::arr val)
+    {
+        return encode_arr(val);
+    }
+    constexpr err encode(enc::map val)
+    {
+        return encode_map(val);
+    }
+    constexpr err encode(enc::tag val)
+    {
+        return encode_tag(val);
+    }
+    constexpr err encode(enc::indef_dat)
+    {
+        return encode_indef_dat();
+    }
+    constexpr err encode(enc::indef_txt)
+    {
+        return encode_indef_txt();
+    }
+    constexpr err encode(enc::indef_arr)
+    {
+        return encode_indef_arr();
+    }
+    constexpr err encode(enc::indef_map)
+    {
+        return encode_indef_map();
+    }
+    constexpr err encode(enc::breaker)
+    {
+        return encode_break();
+    }
 
     // ANCHOR: Explicit interface
 
@@ -111,7 +156,7 @@ struct interface {
         uint64_t ui = val >> 63;
         return encode_head(mt_t(ui & 0x20), ui ^ val);
     }
-    constexpr err encode_prim(prim_t val)
+    constexpr err encode_prim(prim val)
     {
         return val < 24 || val > 31 ? encode_head(mt_simple, val) : err_invalid_simple;
     }
@@ -143,29 +188,34 @@ struct interface {
             return encode_float(val);
         return encode_base(mt_simple | byte(prim_float_64), std::bit_cast<uint64_t>(val), 8);
     }
-    constexpr err encode_data(span_t val)
+    constexpr err encode_data(span val)
     { 
         return encode_string(mt_data, val.data(), val.size()); 
     }
-    constexpr err encode_data(std::initializer_list<byte> val)
+    constexpr err encode_data(list val)
     { 
         return encode_string(mt_data, val.begin(), val.size());  
     }
-    constexpr err encode_text(span_t val)
-    { 
-        return encode_string(mt_text, val.data(), val.size()); 
+    constexpr err encode_text(span val)
+    {
+        return encode_string(mt_text, val.data(), val.size());
     }
-    constexpr err encode_text(std::initializer_list<byte> val)
+    constexpr err encode_text(list val)
     { 
         return encode_string(mt_text, val.begin(), val.size()); 
     }
-    err encode_text(std::string_view val) // NOTE: not constexpr
+    err encode_text(std::string_view val)
     { 
         return encode_string(mt_text, val.data(), val.size());
     }
-    err encode_text(const char* val) // NOTE: not constexpr
+    err encode_text(const char* val)
     { 
         return encode_string(mt_text, val, strlen(val)); 
+    }
+    template<size_t N>
+    consteval err encode_text(const enc::txt<N>& val)
+    {
+        return encode_string(mt_text, val.data(), val.size());
     }
     constexpr err encode_arr(size_t size)
     { 
@@ -236,8 +286,8 @@ private:
     constexpr err encode_string(mt_t mt, const void* data, size_t len)
     {
         err e = encode_head(mt, len, len);
-        if (e == err_ok && data && len) {
-            std::copy_n(static_cast<const byte*>(data), len, buf() + idx());
+        if (e == err_ok && len) {
+            std::copy_n(static_cast<pointer>(data), len, buf() + idx());
             idx() += len;
         }
         return e;
@@ -300,29 +350,21 @@ template<size_t N>
 struct codec : enc::interface<codec<N>> {
     friend enc::interface<codec<N>>;
     constexpr operator ref() { return {{buf}, idx}; }
+    static constexpr size_t capacity() { return N; }
 private:
     size_t idx = 0;
     static constexpr size_t max = N;
     byte buf[N]{};
 };
 
-
 namespace literals {
 
-// constexpr auto operator"" _fp(long double x)            { return enc::fp(x); }
-// constexpr auto operator"" _ui(unsigned long long x)     { return enc::uint(x); }
-// constexpr auto operator"" _si(unsigned long long x)     { return enc::sint(x); }
 constexpr auto operator"" _arr(unsigned long long x)    { return enc::arr(x); }
 constexpr auto operator"" _map(unsigned long long x)    { return enc::map(x); }
 constexpr auto operator"" _tag(unsigned long long x)    { return enc::tag(x); }
-constexpr auto operator"" _prim(unsigned long long x)   { return enc::prim(x); }
-
-// TODO: _dat
-// TODO: _txt
-// constexpr text_t operator"" _txt(const char8_t* str, size_t len)
-// {
-//     return {static_cast<const byte*>(str), len};
-// }
+constexpr auto operator"" _prim(unsigned long long x)   { return prim(x); }
+template<enc::txt T>
+constexpr auto operator"" _txt()                        { return T; }
 
 }
 

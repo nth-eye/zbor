@@ -3,17 +3,43 @@
 
 #include "zbor/base.h"
 #include "utl/float.h"
+#include <string_view>
+#include <cstring>
 #include <tuple>
 
 namespace zbor {
 namespace dec {
 
-using uint  = uint64_t;
-using sint  = int64_t;
-using prim  = prim_t;
-using data  = span_t;
-using text  = text_t;
-using fp    = double;
+/**
+ * @brief String view with <zbor::byte> as underlying character type. 
+ * May be expanded with additional "text"-type specific functionality, 
+ * e.g comparison with std::string_view. This workwaround is necessary 
+ * to make decode() constexpr, because reinterpret_cast is not allowed 
+ * and it's not possible to create regular std::string_view from <byte*> 
+ * during parsing. 
+ * 
+ */
+struct txt : std::basic_string_view<byte> {
+    using base = std::basic_string_view<byte>;
+    using base::base;
+    friend constexpr bool operator==(const txt& lhs, const std::string_view& rhs)
+    {
+        if (lhs.size() != rhs.size())
+            return false;
+        if (std::is_constant_evaluated()) {
+            for (size_t i = 0; i < lhs.size(); ++i) {
+                if (lhs[i] != rhs[i])
+                    return false;
+            }
+            return true;
+        }
+        return !memcmp(lhs.data(), rhs.data(), lhs.size());
+    }
+    friend constexpr bool operator==(const std::string_view& lhs, const txt& rhs)
+    {
+        return operator==(rhs, lhs);
+    }
+};
 
 /**
  * @brief Sequence wrapper for CBOR indefinite byte and text strings.
@@ -28,7 +54,7 @@ struct istr : seq {
  * 
  */
 struct arr : seq {
-    constexpr arr(const byte* head, const byte* tail, size_t len) : seq{head, tail}, len{len} {}
+    constexpr arr(pointer head, pointer tail, size_t len) : seq{head, tail}, len{len} {}
     constexpr auto size() const     { return len; }
     constexpr bool indef() const    { return len == size_t(-1); } 
 private:
@@ -50,12 +76,36 @@ struct map : arr {
  * 
  */
 struct tag : seq {
-    constexpr tag(const byte* head, const byte* tail, uint64_t number) : seq{head, tail}, number{number} {}
+    constexpr tag(pointer head, pointer tail, uint64_t number) : seq{head, tail}, number{number} {}
     constexpr uint64_t num() const { return number; }
     constexpr item content() const;
 private:
     uint64_t number;
 };
+
+constexpr std::tuple<err, uint64_t, pointer> ai_check(byte ai, pointer p, const pointer end)
+{
+    switch (ai) 
+    {
+    case ai_1:
+    case ai_2:
+    case ai_4:
+    case ai_8: {
+        size_t len = utl::bit(ai - ai_1);
+        if (p + len > end)
+            return {err_out_of_bounds, 0, p};
+        uint64_t val = 0;
+        for (int i = 8 * len - 8; i >= 0; i -= 8)
+            val |= uint64_t(*p++) << i;
+        return {err_ok, val, p};
+    }
+    break;
+    case 28:
+    case 29:
+    case 30: return {err_reserved_ai, 0, p};
+    }
+    return {err_ok, ai, p};
+}
 
 }
 
@@ -68,16 +118,16 @@ struct item {
     constexpr bool valid() const { return type != type_invalid; }
     type_t type;
     union {
-        dec::uint uint;
-        dec::sint sint;
-        dec::prim prim;
-        dec::data data;
-        dec::text text;
+        uint64_t uint;
+        int64_t sint;
+        prim prim;
+        span data;
+        dec::txt text;
         dec::istr istr;
         dec::arr arr;
         dec::map map;
         dec::tag tag;
-        dec::fp fp;
+        double fp;
     };
 };
 
@@ -93,68 +143,42 @@ struct item {
  * @param end End pointer, must be valid pointer
  * @return Tuple with decoded object, error status and pointer past last character interpreted
  */
-constexpr std::tuple<item, err, const byte*> decode(const byte* p, const byte* const end)
+constexpr std::tuple<item, err, pointer> decode(pointer p, const pointer end)
 {
     if (p >= end)
         return {{}, err_out_of_bounds, end};
 
-    size_t nest = 0;
-    size_t skip = 0;
-    size_t len;
+    byte mt             = *p   & 0xe0;
+    byte ai             = *p++ & 0x1f;
+    item obj            = type_t(mt >> 5);
+    uint64_t val        = ai;
+    uint64_t size       = 0;
+    size_t nest         = 0;
+    size_t skip         = 0;
+    decltype(p) head    = nullptr;
+    err e;
 
-    byte mt = *p   & 0xe0;
-    byte ai = *p++ & 0x1f;
-    item obj = type_t(mt >> 5);
-    uint64_t val = ai;
-    uint64_t size = 0;
-    decltype(p) head = nullptr;
-
-    switch (ai) 
-    {
-    case ai_1:
-    case ai_2:
-    case ai_4:
-    case ai_8:
-        len = utl::bit(ai - ai_1);
-        if (p + len > end)
-            return {{}, err_out_of_bounds, p};
-        val = 0;
-        for (int i = 8 * len - 8; i >= 0; i -= 8)
-            val |= uint64_t(*p++) << i;
-    break;
-    case 28:
-    case 29:
-    case 30:
-        return {{}, err_reserved_ai, p};
-    case ai_indef:
+    if (ai == ai_indef) {
         switch (mt)
         {
-        case mt_data: 
-            obj.type = type_indef_data;
-        break;
-        case mt_text:
-            obj.type = type_indef_text;
-        break;
+        case mt_data: obj.type = type_indef_data; break;
+        case mt_text: obj.type = type_indef_text; break;
         case mt_array:
-        case mt_map:
-            size = size_t(-1);
-        break;
-        default:
-            return {{}, err_invalid_indef_mt, p};
+        case mt_map: size = size_t(-1); break;
+        default: return {{}, err_invalid_indef_mt, p};
         }
         head = p;
         nest = 1;
-    }
+    } else {
+        std::tie(e, val, p) = dec::ai_check(ai, p, end);
 
-    if (ai != ai_indef) {
+        if (e != err_ok)
+            return {{}, e, p};
+
         switch (mt) 
         {
-        case mt_uint:
-            obj.uint = val;
-        break;
-        case mt_nint:
-            obj.sint = ~val;
-        break;
+        case mt_uint: obj.uint = val; break;
+        case mt_nint: obj.sint = ~val; break;
         case mt_data:
             obj.data = {p, size_t(val)};
             p += val;
@@ -194,90 +218,78 @@ constexpr std::tuple<item, err, const byte*> decode(const byte* p, const byte* c
                 obj.type    = type_floating;
             break;
             default:
-                obj.prim    = prim_t(val);
+                obj.prim    = prim(val);
             break;
             }
         break;
         }
     }
 
-    while (skip || nest) {
+    if (obj.type == type_indef_data || 
+        obj.type == type_indef_text) 
+    {
+        while (true) {
+            
+            if (p >= end)
+                return {{}, err_out_of_bounds, end};
 
-        if (p >= end)
-            return {{}, err_out_of_bounds, end};
+            if (*p == 0xff) {
+                ++p;
+                break;
+            }
+            val = *p & 0x1f;
 
-        mt  = *p & 0xe0;
-        val = *p & 0x1f;
-
-        if ((obj.type == type_indef_data || obj.type == type_indef_text) && *p != 0xff) {
-            if (obj.type != (mt >> 5) + 7 || val == ai_indef)
+            if (obj.type != ((*p & 0xe0) >> 5) + 7 || val == ai_indef)
                 return {{}, err_invalid_indef_item, p};
-        }
-        ++p;
 
-        switch (val)
-        {
-        case ai_1:
-        case ai_2:
-        case ai_4:
-        case ai_8: 
-            len = utl::bit(val - ai_1);
-            if (p + len > end)
-                return {{}, err_out_of_bounds, p};
-            val = 0;
-            for (int i = 8 * len - 8; i >= 0; i -= 8)
-                val |= uint64_t(*p++) << i;
-        break;
-        case 28:
-        case 29:
-        case 30:
-            return {{}, err_reserved_ai, p};
-        case ai_indef:
-            switch (mt)
-            {
-            case mt_array:
-            case mt_map:
-                ++nest;
-            break;
-            case mt_simple:
-                if (nest)
-                    nest--;
-                else
-                    return {{}, err_break_without_start, p};
-            break;
-            default:
-                return {{}, err_invalid_indef_mt, p};
-            }
-        }
+            std::tie(e, val, p) = dec::ai_check(val, ++p, end);
 
-        switch (mt)
-        {
-        case mt_uint:
-        case mt_nint:
-        case mt_simple: 
-        break;
-        case mt_data:
-        case mt_text:
+            if (e != err_ok)
+                return {{}, e, p};
+
             p += val;
-        break;
-        case mt_array:
-            if (!nest)
-                skip += val;
-        break;
-        case mt_map:
-            if (!nest)
-                skip += val << 1;
-        break;
-        case mt_tag:
-            if (!nest)
-                skip += 1;
-        break;
         }
+    } else {
+        while (skip || nest) {
 
-        if (skip && !nest)
-            skip--;
+            if (p >= end)
+                return {{}, err_out_of_bounds, end};
+
+            mt  = *p   & 0xe0;
+            val = *p++ & 0x1f;
+
+            if (val == ai_indef) {
+                switch (mt) {
+                case mt_data:
+                case mt_text:
+                case mt_array:
+                case mt_map: ++nest; 
+                break;
+                case mt_simple:
+                    if (!nest)
+                        return {{}, err_break_without_start, p};
+                    --nest;
+                break;
+                default: return {{}, err_invalid_indef_mt, p};
+                }
+            } else {
+                std::tie(e, val, p) = dec::ai_check(val, p, end);
+
+                if (e != err_ok) 
+                    return {{}, e, p};
+                    
+                switch (mt) {
+                case mt_data:
+                case mt_text:   p += val; break;
+                case mt_array:  if (!nest) skip += val;         break;
+                case mt_map:    if (!nest) skip += val << 1;    break;
+                case mt_tag:    if (!nest) skip += 1;           break;
+                }
+            }
+            if (skip && !nest)
+                skip--;
+        }
     }
-
     switch (obj.type) 
     {
     case type_array:        obj.arr  = {head, p, size}; break;
@@ -299,7 +311,7 @@ constexpr std::tuple<item, err, const byte*> decode(const byte* p, const byte* c
  */
 struct seq_iter {
     constexpr seq_iter() = default;
-    constexpr seq_iter(const byte* head, const byte* tail) : head{head}, tail{tail}
+    constexpr seq_iter(pointer head, pointer tail) : head{head}, tail{tail}
     {
         step(key);
     }
@@ -328,8 +340,8 @@ protected:
         std::tie(o, std::ignore, head) = decode(head, tail); 
     }
 protected:
-    const byte* head = nullptr;
-    const byte* tail = nullptr;
+    pointer head = nullptr;
+    pointer tail = nullptr;
     item key;
 };
 
@@ -340,7 +352,7 @@ protected:
  */
 struct map_iter : seq_iter {
     constexpr map_iter() = default;
-    constexpr map_iter(const byte* head, const byte* tail) : seq_iter{head, tail}
+    constexpr map_iter(pointer head, pointer tail) : seq_iter{head, tail}
     {
         if (key.valid()) 
             step(val);
