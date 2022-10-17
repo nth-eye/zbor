@@ -86,11 +86,11 @@ enum err {
     err_ok,
     err_no_memory,
     err_out_of_bounds,
+    err_reserved_ai,
+    err_invalid_break,
     err_invalid_simple,
     err_invalid_indef_mt,
-    err_invalid_indef_item,
-    err_reserved_ai,
-    err_break_without_start,
+    err_invalid_indef_string,
 };
 
 /**
@@ -140,11 +140,11 @@ constexpr auto str_err(err e)
         case err_ok: return "ok";
         case err_no_memory: return "no_memory";
         case err_out_of_bounds: return "out_of_bounds";
+        case err_reserved_ai: return "reserved_ai";
+        case err_invalid_break: return "invalid_break";
         case err_invalid_simple: return "invalid_simple";
         case err_invalid_indef_mt: return "invalid_indef_mt";
-        case err_invalid_indef_item: return "invalid_indef_item";
-        case err_reserved_ai: return "reserved_ai";
-        case err_break_without_start: return "break_without_start";
+        case err_invalid_indef_string: return "invalid_indef_string";
         default: return "<unknown>";
     }
 }

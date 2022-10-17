@@ -165,6 +165,7 @@ constexpr std::tuple<item, err, pointer> decode(pointer p, const pointer end)
         case mt_text: obj.type = type_indef_text; break;
         case mt_array:
         case mt_map: size = size_t(-1); break;
+        case mt_simple: return {{}, err_invalid_break, p};
         default: return {{}, err_invalid_indef_mt, p};
         }
         head = p;
@@ -239,10 +240,10 @@ constexpr std::tuple<item, err, pointer> decode(pointer p, const pointer end)
             }
             val = *p & 0x1f;
 
-            if (obj.type != ((*p & 0xe0) >> 5) + 7 || val == ai_indef)
-                return {{}, err_invalid_indef_item, p};
+            if (obj.type != ((*p++ & 0xe0) >> 5) + 7 || val == ai_indef)
+                return {{}, err_invalid_indef_string, p};
 
-            std::tie(e, val, p) = dec::ai_check(val, ++p, end);
+            std::tie(e, val, p) = dec::ai_check(val, p, end);
 
             if (e != err_ok)
                 return {{}, e, p};
@@ -267,7 +268,7 @@ constexpr std::tuple<item, err, pointer> decode(pointer p, const pointer end)
                 break;
                 case mt_simple:
                     if (!nest)
-                        return {{}, err_break_without_start, p};
+                        return {{}, err_invalid_break, p};
                     --nest;
                 break;
                 default: return {{}, err_invalid_indef_mt, p};

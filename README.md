@@ -147,13 +147,18 @@ else
 
 ## TODO
 
-- [ ] implementation
+- [ ] source
     - [x] constexpr whole library
     - [ ] review naming conventions
 - [ ] tests
     - [x] ~~object~~
-    - [x] decode
+    - [ ] decode
+        - [ ] constexpr
+        - [x] invalid_indef_mt
     - [ ] encode
+        - [ ] explicit mixed
+        - [ ] implicit mixed
+        - [ ] constexpr
 - [ ] reamde
     - [ ] description
     - [ ] explanation

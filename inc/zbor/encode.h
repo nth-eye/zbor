@@ -49,11 +49,10 @@ struct interface {
 
     // ANCHOR Variadic interface
 
-    template<class ...Args>
-    constexpr err encode_(Args&&... args)
+    constexpr err encode_(auto... args)
     {
         err e = err_ok;
-        ((e = encode(std::forward<Args>(args))) || ...);
+        ((e = encode(args)) || ...);
         return e;
     }
 

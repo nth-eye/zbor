@@ -33,17 +33,6 @@ TEST(Decode, TextType)
     ASSERT_NE("hello", dec::txt{text_2});
 }
 
-TEST(Decode, OutOfBounds)
-{
-    const byte test[] = { 0x00 };
-
-    auto [o, e, p] = decode(test + sizeof(test), test + sizeof(test));
-
-    ASSERT_EQ(e, err_out_of_bounds);
-    ASSERT_EQ(p, test + sizeof(test));
-    ASSERT_EQ(o.type, type_invalid);
-}
-
 TEST(Decode, Unsigned)
 {
     const byte test[] = { 
@@ -848,4 +837,170 @@ TEST(Decode, Mixed)
     ASSERT_EQ(o.arr.size(), 2);
 
     ASSERT_EQ(p, end);
+}
+
+TEST(Decode, Constexpr)
+{
+    // TODO
+}
+
+TEST(Decode, ErrorOutOfBounds)
+{
+    err e;
+    item o;
+    pointer p;
+
+    std::array<byte, 1> test_1 = { 0x00 };
+    std::array<byte, 4> test_2 = { 0x7f, 0x62, 0x42, 0x42 };
+    std::array<byte, 4> test_3 = { 0x84, 0x01, 0x02, 0x03 };
+    std::array<byte, 4> test_4 = { 0x1a, 0x00, 0x0f, 0x42 };
+    std::array<byte, 4> test_5 = { 0x7f, 0x63, 0x42, 0xff };
+    std::array<byte, 4> test_6 = { 0xa1, 0x01, 0x19, 0x03 };
+
+    std::tie(o, e, p) = decode(test_1.begin(), test_1.begin());
+
+    ASSERT_EQ(e, err_out_of_bounds);
+    ASSERT_EQ(p, test_1.begin());
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_2.begin(), test_2.end());
+
+    ASSERT_EQ(e, err_out_of_bounds);
+    ASSERT_EQ(p, test_2.begin() + 4);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_3.begin(), test_3.end());
+
+    ASSERT_EQ(e, err_out_of_bounds);
+    ASSERT_EQ(p, test_3.begin() + 4);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_4.begin(), test_4.end());
+
+    ASSERT_EQ(e, err_out_of_bounds);
+    ASSERT_EQ(p, test_4.begin() + 1);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_5.begin(), test_5.end());
+
+    ASSERT_EQ(e, err_out_of_bounds);
+    ASSERT_EQ(p, test_5.begin() + 4);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_6.begin(), test_6.end());
+
+    ASSERT_EQ(e, err_out_of_bounds);
+    ASSERT_EQ(p, test_6.begin() + 3);
+    ASSERT_EQ(o.type, type_invalid);
+}
+
+TEST(Decode, ErrorReservedAi)
+{
+    err e;
+    item o;
+    pointer p;
+
+    std::array<byte, 4> test_1 = { 0x1c, 0xff, 0xff, 0xff };
+    std::array<byte, 4> test_2 = { 0x1d, 0xff, 0xff, 0xff };
+    std::array<byte, 4> test_3 = { 0x1e, 0xff, 0xff, 0xff };
+    std::array<byte, 4> test_4 = { 0x7f, 0x7c, 0x42, 0xff };
+    std::array<byte, 4> test_5 = { 0x83, 0x1d, 0x02, 0x03 };
+
+    std::tie(o, e, p) = decode(test_1.begin(), test_1.end());
+
+    ASSERT_EQ(e, err_reserved_ai);
+    ASSERT_EQ(p, test_1.begin() + 1);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_2.begin(), test_2.end());
+
+    ASSERT_EQ(e, err_reserved_ai);
+    ASSERT_EQ(p, test_2.begin() + 1);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_3.begin(), test_3.end());
+
+    ASSERT_EQ(e, err_reserved_ai);
+    ASSERT_EQ(p, test_3.begin() + 1);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_4.begin(), test_4.end());
+
+    ASSERT_EQ(e, err_reserved_ai);
+    ASSERT_EQ(p, test_4.begin() + 2);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_5.begin(), test_5.end());
+
+    ASSERT_EQ(e, err_reserved_ai);
+    ASSERT_EQ(p, test_5.begin() + 2);
+    ASSERT_EQ(o.type, type_invalid);
+}
+
+TEST(Decode, ErrorInvalidBreak)
+{
+    err e;
+    item o;
+    pointer p;
+
+    std::array<byte, 2> test_1 = { 0xff, 0x00 };
+    std::array<byte, 4> test_2 = { 0x9f, 0x00, 0xff, 0xff };
+
+    std::tie(o, e, p) = decode(test_1.begin(), test_1.end());
+
+    ASSERT_EQ(e, err_invalid_break);
+    ASSERT_EQ(p, test_1.begin() + 1);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_2.begin(), test_2.end());
+
+    ASSERT_EQ(e, err_ok);
+    ASSERT_EQ(p, test_2.begin() + 3);
+    ASSERT_EQ(o.type, type_array);
+
+    std::tie(o, e, p) = decode(p, test_2.end());
+
+    ASSERT_EQ(e, err_invalid_break);
+    ASSERT_EQ(p, test_2.begin() + 4);
+    ASSERT_EQ(o.type, type_invalid);
+}
+
+TEST(Decode, ErrorInvalidIndefMt)
+{
+    err e;
+    item o;
+    pointer p;
+
+    std::array<byte, 2> test_1 = { 0x1f, 0xff };
+    std::array<byte, 2> test_2 = { 0x3f, 0xff };
+    std::array<byte, 2> test_3 = { 0xdf, 0xff };
+
+    std::tie(o, e, p) = decode(test_1.begin(), test_1.end());
+
+    ASSERT_EQ(e, err_invalid_indef_mt);
+    ASSERT_EQ(p, test_1.begin() + 1);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_2.begin(), test_2.end());
+
+    ASSERT_EQ(e, err_invalid_indef_mt);
+    ASSERT_EQ(p, test_2.begin() + 1);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_3.begin(), test_3.end());
+
+    ASSERT_EQ(e, err_invalid_indef_mt);
+    ASSERT_EQ(p, test_3.begin() + 1);
+    ASSERT_EQ(o.type, type_invalid);
+}
+
+TEST(Decode, ErrorInvalidIndefString)
+{
+    std::array<byte, 4> test = { 0x7f, 0x60, 0x00, 0xff };
+
+    auto [o, e, p] = decode(test.begin(), test.end());
+
+    ASSERT_EQ(e, err_invalid_indef_string);
+    ASSERT_EQ(p, test.begin() + 3);
+    ASSERT_EQ(o.type, type_invalid);
 }

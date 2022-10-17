@@ -738,12 +738,12 @@ TEST_F(Encode, ImplicitIndefMap)
 
 TEST_F(Encode, ExplicitMixed)
 {
-
+    // TODO
 }
 
 TEST_F(Encode, ImplicitMixed)
 {
-
+    // TODO
 }
 
 TEST_F(Encode, Variadic)
@@ -792,7 +792,7 @@ TEST_F(Encode, Variadic)
     });
 }
 
-TEST_F(Encode, Failures)
+TEST_F(Encode, Errors)
 {
     const uint8_t dummy[codec.capacity() + 10]{};
 
@@ -806,5 +806,5 @@ TEST_F(Encode, Failures)
 
 TEST_F(Encode, Constexpr)
 {
-
+    // TODO
 }
