@@ -2,7 +2,7 @@
 #include "zbor/encode.h"
 #include "zbor/log.h"
 
-static void check(zbor::ref res, std::initializer_list<uint8_t> exp)
+static void check(zbor::cref res, std::initializer_list<uint8_t> exp)
 {
     ASSERT_EQ(res.size(), exp.size());
     for (size_t i = 0; auto it : exp)
@@ -738,12 +738,46 @@ TEST_F(Encode, ImplicitIndefMap)
 
 TEST_F(Encode, ExplicitMixed)
 {
-    // TODO
+    codec.encode_arr(2);
+    codec.encode("a");
+    codec.encode_map(1);
+    codec.encode("b");
+    codec.encode("c");
+
+    codec.encode_arr(2);
+    codec.encode("a");
+    codec.encode_indef_map();
+    codec.encode("b");
+    codec.encode("c");
+    codec.encode_break();
+
+    check(codec, {
+        0x82, 0x61, 0x61, 0xa1, 0x61, 0x62, 0x61, 0x63, // ["a", {"b": "c"}]
+        0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
+    });
 }
 
 TEST_F(Encode, ImplicitMixed)
 {
-    // TODO
+    using namespace zbor::literals;
+
+    codec.encode(2_arr);
+    codec.encode("a");
+    codec.encode(1_map);
+    codec.encode("b");
+    codec.encode("c");
+
+    codec.encode(2_arr);
+    codec.encode("a");
+    codec.encode(zbor::indef_map);
+    codec.encode("b");
+    codec.encode("c");
+    codec.encode(zbor::breaker);
+
+    check(codec, {
+        0x82, 0x61, 0x61, 0xa1, 0x61, 0x62, 0x61, 0x63, // ["a", {"b": "c"}]
+        0x82, 0x61, 0x61, 0xbf, 0x61, 0x62, 0x61, 0x63, 0xff, // ["a", {_ "b": "c"}]
+    });
 }
 
 TEST_F(Encode, Variadic)
@@ -806,5 +840,74 @@ TEST_F(Encode, Errors)
 
 TEST_F(Encode, Constexpr)
 {
-    // TODO
+    static constexpr auto ce_codec = []()
+    {
+        using namespace zbor::literals;
+        using namespace std::literals;
+
+        const uint8_t data[] = "data";
+
+        zbor::codec<99> codec;
+        codec.encode_(
+            zbor::indef_arr,
+                0,
+                zbor::indef_map,
+                    -1000,
+                    2_map,
+                        true,
+                        3_arr,
+                            zbor::prim_null,
+                            zbor::prim_undefined,
+                            42.42,
+                        zbor::indef_dat,
+                            zbor::list{0xde, 0xad, 0xbe, 0xef},
+                            zbor::span{data},
+                            zbor::span{},
+                            zbor::list{},
+                        zbor::breaker,
+                        69_tag,
+                            "lmao"_txt,
+                    INFINITY,
+                    "text"_txt,
+                zbor::breaker,
+                zbor::indef_txt,
+                    "part_1"_txt,
+                    "part_2"_txt,
+                    "part_3"_txt,
+                zbor::breaker,
+            zbor::breaker
+        );
+        return codec;
+    }();
+    zbor::log_seq(ce_codec);
+
+    check(ce_codec, {
+        0x9f,
+            0x00,
+            0xbf,
+                0x39, 0x03, 0xe7,
+                0xa2,
+                    0xf5,
+                    0x83,
+                        0xf6,
+                        0xf7,
+                        0xfb, 0x40, 0x45, 0x35, 0xc2, 0x8f, 0x5c, 0x28, 0xf6,
+                    0x5f,
+                        0x44, 0xde, 0xad, 0xbe, 0xef,
+                        0x45, 0x64, 0x61, 0x74, 0x61, 0x00,
+                        0x40,
+                        0x40,
+                    0xff,
+                    0xd8, 0x45,
+                        0x64, 0x6c, 0x6d, 0x61, 0x6f,
+                0xf9, 0x7c, 0x00,
+                0x64, 0x74, 0x65, 0x78, 0x74,
+            0xff,
+            0X7f,
+                0x66, 0x70, 0x61, 0x72, 0x74, 0x5f, 0x31,
+                0x66, 0x70, 0x61, 0x72, 0x74, 0x5f, 0x32,
+                0x66, 0x70, 0x61, 0x72, 0x74, 0x5f, 0x33,
+            0xff,
+        0xff,
+    });  
 }

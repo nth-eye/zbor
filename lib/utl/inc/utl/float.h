@@ -16,7 +16,7 @@ constexpr uint32_t u32_add(uint32_t a, uint32_t b)  { return a + b; }
 constexpr uint32_t u32_sub(uint32_t a, uint32_t b)  { return a - b; }
 constexpr uint32_t u32_and(uint32_t a, uint32_t b)  { return a & b; }
 constexpr uint32_t u32_andc(uint32_t a, uint32_t b) { return a & ~b; }
-constexpr uint32_t u32_srl(uint32_t a, int sa)      { return a >> sa; }
+constexpr uint32_t u32_srl(uint32_t a, int sa)      { return a >> (sa & 31); }
 constexpr uint32_t u32_sll(uint32_t a, int sa)      { return a << sa; }
 
 /**

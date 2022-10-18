@@ -17,10 +17,10 @@ struct indef_map    {};
 struct breaker      {};
 template<size_t N>
 struct txt { 
-    consteval txt(const char (&str)[N]) { std::copy_n(str, N - 1, buf); }
-    consteval auto data() const { return &buf[0]; }
-    consteval auto size() const { return N; }
     byte buf[N - 1]{};
+    constexpr txt(const char (&str)[N]) { std::copy_n(str, N - 1, buf); }
+    constexpr auto data() const { return &buf[0]; }
+    constexpr auto size() const { return N - 1; }
 };
 template<class T>
 concept boolean = std::is_same<T, bool>::value;
@@ -107,7 +107,7 @@ struct interface {
         return encode_text(val); 
     }
     template<size_t N>
-    consteval err encode(const enc::txt<N>& val)
+    constexpr err encode(const enc::txt<N>& val)
     {
         return encode_text(val); 
     }
@@ -212,7 +212,7 @@ struct interface {
         return encode_string(mt_text, val, strlen(val)); 
     }
     template<size_t N>
-    consteval err encode_text(const enc::txt<N>& val)
+    constexpr err encode_text(const enc::txt<N>& val)
     {
         return encode_string(mt_text, val.data(), val.size());
     }
@@ -299,6 +299,20 @@ private:
     constexpr auto& idx() const { return static_cast<const T*>(this)->idx; }
 };
 
+/**
+ * @brief Same as zbor::ref but const.
+ * 
+ */
+struct cref : enc::interface<cref> {
+    friend enc::interface<cref>;
+    constexpr cref() = delete;
+    constexpr cref(std::span<const byte> buf, const size_t& len) : idx{len}, max{buf.size()}, buf{buf.data()} {}
+private:
+    const size_t& idx;
+    const size_t max;
+    const byte* const buf;
+};
+
 }
 
 /**
@@ -319,6 +333,12 @@ private:
 };
 
 /**
+ * @brief Same as zbor::ref but const.
+ * 
+ */
+using cref = const enc::cref;
+
+/**
  * @brief CBOR codec with external storage. Basically a view which allows 
  * to use writable referenced memory with codec interface. Unlike zbor::ref, 
  * stores reference only to memory, while current size is part of an instance. 
@@ -328,7 +348,8 @@ private:
  */
 struct view : enc::interface<view> {
     friend enc::interface<view>;
-    constexpr operator ref() { return {{buf, max}, idx}; }
+    constexpr operator ref()        { return {{buf, max}, idx}; }
+    constexpr operator cref() const { return {{buf, max}, idx}; }
     constexpr view() = delete;
     constexpr view(std::span<byte> buf, size_t len = 0) : idx{len}, max{buf.size()}, buf{buf.data()} {}
 private:
@@ -348,8 +369,9 @@ private:
 template<size_t N>
 struct codec : enc::interface<codec<N>> {
     friend enc::interface<codec<N>>;
-    constexpr operator ref() { return {{buf}, idx}; }
-    static constexpr size_t capacity() { return N; }
+    constexpr operator ref()            { return {{buf}, idx}; }
+    constexpr operator cref() const     { return {{buf}, idx}; }
+    static constexpr size_t capacity()  { return N; }
 private:
     size_t idx = 0;
     static constexpr size_t max = N;

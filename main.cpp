@@ -94,24 +94,14 @@ int main(int, char**)
     };
     zbor::log_seq(example);
 
-    // ANCHOR constexpr decode check
-
-    static constexpr auto cnt = [&]()
-    {
-        int i = 0;
-        for ([[maybe_unused]] auto it : zbor::seq{example}) {
-            ++i;
-        }
-        return i;
-    }();
-    printf("count %d \n", cnt);
-
     // ANCHOR codec constexpr example
 
     static constexpr auto codec = [&]() {
         uint8_t str[] = "test";
         zbor::codec<99> codec;
+        using namespace zbor::literals;
         codec.encode_(1, 2, 3, 4);
+        codec.encode("aaa"_txt);
         codec.encode_text({example + 216, 4});
         codec.encode_text(str);
         codec.encode_data(str);
@@ -172,21 +162,21 @@ int main(int, char**)
 
     zbor::log_seq(msg);
 
-    // ANCHOR performance
+    // // ANCHOR performance
 
-    auto test_case_1 = [&, i = 0] () mutable
-    {
-        for ([[maybe_unused]] auto it : zbor::seq{example}) {
-            ++i;
-        }
-        return i;
-    };
-    static constexpr auto count = 30000000;
+    // auto test_case_1 = [&, i = 0] () mutable
+    // {
+    //     for ([[maybe_unused]] auto it : zbor::seq{example}) {
+    //         ++i;
+    //     }
+    //     return i;
+    // };
+    // static constexpr auto count = 30000000;
 
-    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
-    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
-    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
-    printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    // printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    // printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    // printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
+    // printf("1: %3ld clock_t\n", utl::exec_time<count>(test_case_1));
 
     // printf("1 ret %u \n", test_case_1());
 }
