@@ -1,25 +1,29 @@
 # zbor
 
-Small C++20 CBOR codec. No dynamic memory allocation, all items are encoded/parsed on-the-fly in a given buffer (either `zbor::view` or `zbor::codec<>`). Decoding can be done manually with `zbor::decode()` or using `zbor::seq` wrapper in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact `zbor::err` you need to decode and check manually every item.
+Small C++20 CBOR codec. __No dynamic memory allocation, everything is de/encoded on-the-fly in a given buffer, full `constexpr` support for both de/encoder (few limitations for text strings) and half-float support included with__ [`utl::`][1]. Decoding can be done manually or in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact error you need to decode and check manually every item.
 
-__Half-float support included with [`utl::`][1]!__
+## Guide
 
-## Explanation
+`using namespace zbor`
+
+Decoder toolset consists of `::decode()`, which returns decoded `::item`, status `::err`, and pointer to next byte past last interpreted. For convenient use in range-based for loop there is `::seq` wrapper, which decodes adjacent items in a sequence one by one.
+
+<!-- Encoder (either `::view` or `::codec<>`) -->
 
 ## Examples
 
 <!-- ### Decode
 
-#### With range-based for loop
+#### Range-based for loop
 
 ```cpp
 const uint8_t example[] = { 
-    0x01, // 1
-    0x64, 0x5a, 0x42, 0x4f, 0x52, // "ZBOR"
-    0x83, 0x01, 0x02, 0x03, // [1, 2, 3]
+    0x01,                           // 1
+    0x64, 0x5a, 0x42, 0x4f, 0x52,   // "ZBOR"
+    0x83, 0x01, 0x02, 0x03,         // [1, 2, 3]
 };
 
-for (auto it : zbor::seq{example, sizeof(example)}) {
+for (auto it : zbor::seq{example}) { // 
     switch (it.type) {
         case zbor::type_uint:
             printf("got uint %lu \n", it.uint); 
@@ -150,17 +154,12 @@ else
 - [x] source
     - [x] constexpr whole library
     - [x] review naming conventions
-- [ ] tests
+- [x] tests
     - [x] decode
-    - [ ] encode
-        - [x] explicit mixed
-        - [x] implicit mixed
-        - [x] constexpr
-        - [ ] view
-        - [ ] ref
+    - [x] encode
 - [ ] reamde
-    - [ ] description
-    - [ ] explanation
+    - [x] description
+    - [ ] guide
     - [ ] examples
 
 [1]: https://github.com/nth-eye/utl

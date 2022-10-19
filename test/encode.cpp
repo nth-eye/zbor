@@ -909,5 +909,84 @@ TEST_F(Encode, Constexpr)
                 0x66, 0x70, 0x61, 0x72, 0x74, 0x5f, 0x33,
             0xff,
         0xff,
-    });  
+    });
+}
+
+TEST_F(Encode, View)
+{
+    using namespace zbor::literals;
+    using namespace std::literals;
+
+    const uint8_t data[] = "data";
+
+    uint8_t buffer[99];
+
+    zbor::view view{buffer};
+
+    view.encode_(
+        zbor::indef_arr,
+            0,
+            zbor::indef_map,
+                -1000,
+                2_map,
+                    true,
+                    3_arr,
+                        zbor::prim_null,
+                        zbor::prim_undefined,
+                        42.42,
+                    zbor::indef_dat,
+                        zbor::list{0xde, 0xad, 0xbe, 0xef},
+                        zbor::span{data},
+                        zbor::span{},
+                        zbor::list{},
+                    zbor::breaker,
+                    69_tag,
+                        "lmao"_txt,
+                INFINITY,
+                "text"_txt,
+            zbor::breaker,
+            zbor::indef_txt,
+                "part_1"_txt,
+                "part_2"_txt,
+                "part_3"_txt,
+            zbor::breaker,
+        zbor::breaker
+    );
+
+    [](zbor::ref ref) {
+        ref.encode(22);
+        ref.encode(false);
+    }(view);
+
+    check(view, {
+        0x9f,
+            0x00,
+            0xbf,
+                0x39, 0x03, 0xe7,
+                0xa2,
+                    0xf5,
+                    0x83,
+                        0xf6,
+                        0xf7,
+                        0xfb, 0x40, 0x45, 0x35, 0xc2, 0x8f, 0x5c, 0x28, 0xf6,
+                    0x5f,
+                        0x44, 0xde, 0xad, 0xbe, 0xef,
+                        0x45, 0x64, 0x61, 0x74, 0x61, 0x00,
+                        0x40,
+                        0x40,
+                    0xff,
+                    0xd8, 0x45,
+                        0x64, 0x6c, 0x6d, 0x61, 0x6f,
+                0xf9, 0x7c, 0x00,
+                0x64, 0x74, 0x65, 0x78, 0x74,
+            0xff,
+            0X7f,
+                0x66, 0x70, 0x61, 0x72, 0x74, 0x5f, 0x31,
+                0x66, 0x70, 0x61, 0x72, 0x74, 0x5f, 0x32,
+                0x66, 0x70, 0x61, 0x72, 0x74, 0x5f, 0x33,
+            0xff,
+        0xff,
+        0x16,
+        0xf4,
+    });
 }
