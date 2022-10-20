@@ -1,14 +1,14 @@
 # zbor
 
-Small C++20 CBOR codec. __No dynamic memory allocation, everything is de/encoded on-the-fly in a given buffer, full `constexpr` support for both de/encoder (few limitations for text strings) and half-float support included with__ [`utl::`][1]. Decoding can be done manually or in range-based for loop. Range safely stops at anything invalid, but doesn't provide info about failure. To get exact error you need to decode and check manually every item.
+Small C++20 CBOR codec. No dynamic memory allocation, everything is de/encoded on-the-fly in a given buffer, full `constexpr` support for both de/encoder (few limitations for text strings) and half-float support included with [`utl::`][1]. Decoding can be done manually or with range-based for loop.
 
 ## Guide
 
 `using namespace zbor`
 
-Decoder toolset consists of `::decode()`, which returns decoded `::item`, status `::err`, and pointer to next byte past last interpreted. For convenient use in range-based for loop there is `::seq` wrapper, which decodes adjacent items in a sequence one by one.
+Decoder toolset consists of `decode()`, which returns decoded `item`, status `err`, and pointer to next byte past last interpreted. For convenient use in range-based for loop there is `seq` wrapper, which decodes adjacent items in a sequence one by one. Range safely stops at anything invalid, but doesn't provide info about failure if one happens. To get exact error you need to decode and check manually every item.
 
-<!-- Encoder (either `::view` or `::codec<>`) -->
+Encoder can be created with memory provided by user as `view`, or self-contained template as `codec<>`. To pass either of those to handler functions use `ref` and `cref`. All these classes provide same functionality through CRTP base class, so no overhead of virtual function calls, and no unnecessary pointer to self-contained memory for `codec<>`. Encoder also provides `zbor::literals` to make use of overloading for `encode()` and variadic `encode_(...)` API. Encoder is almost fully `constexpr` except for text strings `const char*` and `std::string_view`, because it involves `reinterpret_cast` which is forbidden. At compile time text can instead be encoded with explicit `encode_text()` with byte arrays or special `_txt` literal for strings.
 
 ## Examples
 
@@ -159,7 +159,7 @@ else
     - [x] encode
 - [ ] reamde
     - [x] description
-    - [ ] guide
+    - [x] guide
     - [ ] examples
 
 [1]: https://github.com/nth-eye/utl
