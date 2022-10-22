@@ -289,6 +289,10 @@ if (err == zbor::err_ok)
 else
     printf("error: %d -> %s \n", err, zbor::str_err(err));
 ```
+> \>\>\>
+```
+error: 1 -> no_memory 
+```
 
 ## TODO
 
