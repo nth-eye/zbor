@@ -1,7 +1,7 @@
-#ifndef ZBOR_ENCODE_H
-#define ZBOR_ENCODE_H
+#ifndef ZBOR_ENC_H
+#define ZBOR_ENC_H
 
-#include "zbor/decode.h"
+#include "zbor/dec.h"
 #include <algorithm>
 
 namespace zbor {

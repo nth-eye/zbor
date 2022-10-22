@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "zbor/encode.h"
-#include "zbor/log.h"
+#include <cmath>
+#include "zbor/enc.h"
 
 static void check(zbor::cref res, std::initializer_list<uint8_t> exp)
 {
@@ -879,7 +879,6 @@ TEST_F(Encode, Constexpr)
         );
         return codec;
     }();
-    zbor::log_seq(ce_codec);
 
     check(ce_codec, {
         0x9f,

@@ -1,5 +1,5 @@
-#ifndef ZBOR_DECODE_H
-#define ZBOR_DECODE_H
+#ifndef ZBOR_DEC_H
+#define ZBOR_DEC_H
 
 #include "utl/float.h"
 #include <cstdint>
@@ -280,10 +280,14 @@ constexpr std::tuple<item, err, pointer> decode(pointer p, const pointer end)
         case mt_uint: obj.uint = val; break;
         case mt_nint: obj.sint = ~val; break;
         case mt_data:
+            if (p + val > end)
+                return {{}, err_out_of_bounds, p};
             obj.data = {p, size_t(val)};
             p += val;
         break;
         case mt_text:
+            if (p + val > end)
+                return {{}, err_out_of_bounds, p};
             obj.text = {p, size_t(val)};
             p += val;
         break;
@@ -380,7 +384,11 @@ constexpr std::tuple<item, err, pointer> decode(pointer p, const pointer end)
                     
                 switch (mt) {
                 case mt_data:
-                case mt_text:   p += val; break;
+                case mt_text:   
+                    if (p + val > end)
+                        return {{}, err_out_of_bounds, p};
+                    p += val; 
+                break;
                 case mt_array:  if (!nest) skip += val;         break;
                 case mt_map:    if (!nest) skip += val << 1;    break;
                 case mt_tag:    if (!nest) skip += 1;           break;

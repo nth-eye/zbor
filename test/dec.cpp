@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <cmath>
-#include "zbor/decode.h"
+#include "zbor/dec.h"
 
 using namespace zbor;
 
@@ -939,6 +939,8 @@ TEST(Decode, ErrorOutOfBounds)
     std::array<byte, 4> test_4 = { 0x1a, 0x00, 0x0f, 0x42 };
     std::array<byte, 4> test_5 = { 0x7f, 0x63, 0x42, 0xff };
     std::array<byte, 4> test_6 = { 0xa1, 0x01, 0x19, 0x03 };
+    std::array<byte, 4> test_7 = { 0x64, 0x66, 0x66, 0x66 };
+    std::array<byte, 5> test_8 = { 0x81, 0x64, 0x66, 0x66, 0x66 };
 
     std::tie(o, e, p) = decode(test_1.begin(), test_1.begin());
 
@@ -974,6 +976,18 @@ TEST(Decode, ErrorOutOfBounds)
 
     ASSERT_EQ(e, err_out_of_bounds);
     ASSERT_EQ(p, test_6.begin() + 3);
+    ASSERT_EQ(o.type, type_invalid);
+
+    std::tie(o, e, p) = decode(test_7.begin(), test_7.end());
+
+    ASSERT_EQ(e, err_out_of_bounds);
+    ASSERT_EQ(p, test_7.begin() + 1);
+    ASSERT_EQ(o.type, type_invalid);
+    
+    std::tie(o, e, p) = decode(test_8.begin(), test_8.end());
+
+    ASSERT_EQ(e, err_out_of_bounds);
+    ASSERT_EQ(p, test_8.begin() + 2);
     ASSERT_EQ(o.type, type_invalid);
 }
 

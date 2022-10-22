@@ -1,7 +1,7 @@
 #ifndef ZBOR_LOG_H
 #define ZBOR_LOG_H
 
-#include "zbor/decode.h"
+#include "zbor/dec.h"
 #include "utl/log.h"
 
 namespace zbor {
@@ -145,7 +145,7 @@ inline void log_seq(const seq& s)
     utl::log_hex(s.data(), s.size());
     printf("+--------DIAGNOSTIC-------+\n");
     int i = 0; 
-    for (auto it : s) {
+    for (auto& it : s) {
         printf("| %d) ", ++i);
         log_obj(it);
         printf("\n");
@@ -290,6 +290,23 @@ inline void log_obj_with_pad(const item& obj, int first_pad = 0, int pad = 0)
     default: 
         printf("<unknown>");
     }
+}
+
+/**
+ * @brief Print CBOR sequence as raw bytes and diagnostic notation.
+ * 
+ * @param s CBOR sequence
+ */
+inline void log_seq_with_pad(const seq& s)
+{
+    printf("+-----------HEX-----------+\n");
+    utl::log_hex(s.data(), s.size());
+    printf("+--------DIAGNOSTIC-------+\n");
+    for (auto& it : s) {
+        log_obj_with_pad(it);
+        printf("\n");
+    }
+    printf("+-------------------------+\n");
 }
 
 }
